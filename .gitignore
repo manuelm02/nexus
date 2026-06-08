@@ -1,0 +1,24 @@
+.DS_Store
+
+# Local config
+.env
+backend/.env
+backend/src/main/resources/application-local.yml
+
+# Java
+backend/target/
+backend/.idea/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+.pnpm-store/
+
+# Runtime data
+data/
+.m2/
+
+# IDE
+.idea/
+.vscode/

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs cat)",
+      "Bash(PGPASSWORD=dev123 psql -h localhost -U nexus -d nexus -c \"SELECT config_key, config_val FROM system_configs;\")",
+      "Bash(docker exec *)",
+      "Bash(curl -s -X POST http://localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(python3 -m json.tool)",
+      "Bash(curl -s http://localhost:8080/api/v1/settings/llm/providers -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwY2YxOGVhYjYyNjg4ZWIzOTg0NjFhOTk3MWNhZjNmZSIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc3OTgxMjQzMiwiZXhwIjoxNzc5ODEzMzMyfQ.wWTslRkKrBGgNjxZEeal5WqFDz0NbIdx_g7O_xFTvO0')",
+      "Bash(gh api *)",
+      "Skill(planning-with-files)"
+    ]
+  }
+}

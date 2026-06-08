@@ -1,0 +1,100 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: nexus
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:nexus}
+    username: ${DB_USER:nexus}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  task:
+    execution:
+      pool:
+        core-size: 4
+        max-size: 16
+        queue-capacity: 100
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: assign_uuid
+
+# JWT
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiry: 900        # 15分钟
+  refresh-token-expiry: 2592000   # 30天
+
+# LangChain4j
+langchain4j:
+  open-ai:
+    api-key: ${OPENAI_API_KEY:}
+    chat-model:
+      model-name: ${LLM_MODEL:gpt-4o-mini}
+      timeout: 120s
+    embedding-model:
+      model-name: text-embedding-3-small
+
+# AnythingLLM
+anythingllm:
+  base-url: ${ANYTHINGLLM_BASE_URL:http://localhost:3001}
+  api-key: ${ANYTHINGLLM_API_KEY:}
+
+# 爬虫
+nexus:
+  mindbank:
+    store: anythingllm
+  crawler:
+    preferred: ${CRAWLER_PREFERRED:jina}
+    jina:
+      api-key: ${JINA_API_KEY:}
+    crawl4ai:
+      enabled: ${CRAWL4AI_ENABLED:false}
+      base-url: ${CRAWL4AI_BASE_URL:http://crawl4ai:11235}
+  minio:
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:}
+    secret-key: ${MINIO_SECRET_KEY:}
+    bucket: ${MINIO_BUCKET:nexus-files}
+  encrypt:
+    secret: ${ENCRYPT_SECRET:changeme-32-chars-secret-key!!}
+
+# Notion
+notion:
+  token: ${NOTION_TOKEN:}
+  db:
+    focus: ${NOTION_FOCUS_DB_ID:}
+    fleeting: ${NOTION_FLEETING_DB_ID:}
+    mindbank: ${NOTION_MINDBANK_DB_ID:}
+    ledger: ${NOTION_LEDGER_DB_ID:}
+    forge: ${NOTION_FORGE_DB_ID:}
+    radar: ${NOTION_RADAR_DB_ID:}
+
+# Telegram
+telegram:
+  bot-token: ${TELEGRAM_BOT_TOKEN:}
+  admin-chat-id: ${TELEGRAM_ADMIN_CHAT_ID:}
+
+# SpringDoc
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.nexus: DEBUG
+    org.springframework.security: INFO

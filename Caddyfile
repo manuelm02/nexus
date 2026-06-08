@@ -1,0 +1,25 @@
+:80 {
+	encode gzip
+
+	header X-Frame-Options SAMEORIGIN
+	header X-Content-Type-Options nosniff
+	header Referrer-Policy strict-origin-when-cross-origin
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	@index path /index.html
+	header @index Cache-Control "no-cache, no-store, must-revalidate"
+	header @index Pragma "no-cache"
+	header @index Expires "0"
+
+	@assets path_regexp assets \.(js|css|png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot|ico)$
+	header @assets Cache-Control "public, max-age=2592000, immutable"
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
