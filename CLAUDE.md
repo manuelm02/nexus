@@ -48,7 +48,7 @@ Nexus 是个人 AI 工作台（Knowledge OS），后端为 Spring Boot 3.x + MyB
 - 后端启动：`cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local`（fish shell 不支持 `export $(cat .env)`）
 - 前端启动：`cd frontend && pnpm dev`
 - 统一入口：根目录执行 `make backend-dev` / `make frontend-dev` / `make up`
-- 数据库：统一使用 `192.168.110.10:7001` 的 PostgreSQL；本地调试库为 `nexus_dev`，部署库为 `nexus_prod`
+- 基础设施：dev/prod 默认使用外部服务，真实地址只写入不入库的 `.env.dev` / `.env.prod`；PostgreSQL 用 `nexus_dev` / `nexus_prod` 分库，Redis 用 database 或 key prefix 隔离，Crawl4AI 通过 `CRAWL4AI_BASE_URL` 配置。完整 Compose 仅用于临时启动内部 PostgreSQL/Redis/Crawl4AI。
 
 ## 分支 / 提交规范
 - 功能分支命名：`feat/xxx`，修复：`fix/xxx`

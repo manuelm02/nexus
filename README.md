@@ -11,6 +11,7 @@ nexus/
 ├── docs/           # Architecture, deployment, and development notes
 ├── Caddyfile       # Single ingress: frontend static files + /api reverse proxy
 ├── docker-compose.yml
+├── docker-compose.full.yml
 ├── Makefile
 └── .env.example
 ```
@@ -46,12 +47,61 @@ make build
 - `/api/*` -> `backend:8080`
 - `/*` -> React static files under `/srv`
 
+## Compose Modes
+
+日常本地调试和生产部署都可以使用外部基础设施，真实地址只写入不入库的 `.env.dev` / `.env.prod`：
+
+- PostgreSQL：通过 `DB_HOST` / `DB_PORT` 配置
+- Redis：通过 `REDIS_HOST` / `REDIS_PORT` 配置
+- Crawl4AI：通过 `CRAWL4AI_BASE_URL` 配置
+
+先从示例文件生成真实环境文件，并填入密码和密钥：
+
+```bash
+cp .env.dev.example .env.dev
+cp .env.prod.example .env.prod
+```
+
+开发环境使用 `nexus_dev` 和 `nexus:dev:` 命名空间：
+
+```bash
+make up-dev
+make logs-dev
+make down-dev
+```
+
+生产环境使用 `nexus_prod` 和 `nexus:prod:` 命名空间：
+
+```bash
+make up-prod
+make logs-prod
+make down-prod
+```
+
+默认轻量栈仍读取 `.env`，只启动 Nexus 前后台，适合临时验证当前活动配置：
+
+```bash
+make up
+make logs
+make down
+```
+
+完整栈在轻量栈基础上额外启动 PG、Redis、Crawl4AI，主要用于没有外部基础设施时的临时本机/单机环境：
+
+```bash
+make up-full
+make logs-full
+make down-full
+```
+
+完整栈仍然只通过 `frontend` 暴露 80 端口；PG、Redis、Crawl4AI 只在 Compose 内部网络暴露。
+
 ## Database
 
-Nexus 使用外部 PostgreSQL，不在 Compose 中启动数据库容器。
+dev/prod 轻量栈使用外部 PostgreSQL，不在 Compose 中启动数据库容器。
 
-- 本地调试：`192.168.110.10:7001/nexus_dev`
-- 部署环境：`.env` 中的 `DB_HOST` / `DB_PORT` / `DB_NAME`，默认示例为 `192.168.110.10:7001/nexus_prod`
+- 本地调试：`.env.dev` 中的 `DB_HOST` / `DB_PORT` / `DB_NAME=nexus_dev`
+- 生产部署：`.env.prod` 中的 `DB_HOST` / `DB_PORT` / `DB_NAME=nexus_prod`
 
 需要提前在 PostgreSQL 中创建两个数据库，并授权给 `DB_USER`：
 
@@ -60,14 +110,4 @@ CREATE DATABASE nexus_dev;
 CREATE DATABASE nexus_prod;
 ```
 
-Start the stack:
-
-```bash
-make up
-```
-
-Stop the stack:
-
-```bash
-make down
-```
+完整栈通过 `docker-compose.full.yml` 启动内部 PostgreSQL，数据库名、用户和密码来自根目录 `.env`。
