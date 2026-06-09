@@ -6,7 +6,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("prism")
+@TableName("translations")
 public class Translation {
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;

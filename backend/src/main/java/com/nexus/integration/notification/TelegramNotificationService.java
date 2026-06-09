@@ -47,7 +47,7 @@ public class TelegramNotificationService implements NotificationService {
 
     private String formatMessage(NotificationEvent event, Map<String, Object> payload) {
         return switch (event) {
-            case LEDGER_EXPIRING -> String.format(
+            case SUBSCRIPTION_EXPIRING -> String.format(
                     "⚠️ <b>订阅即将到期</b>\n%s 将在 %s 天后到期（%s）",
                     payload.get("name"), payload.get("days_left"), payload.get("expire_date"));
             case TASK_COMPLETED -> String.format("✅ 任务完成");

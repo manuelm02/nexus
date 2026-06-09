@@ -1,34 +1,116 @@
-import { NavLink } from 'react-router-dom'
-import { Target, Feather, Layers, Brain, Radio, CreditCard, Hammer, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
+import * as Dialog from '@radix-ui/react-dialog'
+import {
+  Target, Feather, Layers, Brain, Radio, CreditCard, Hammer, Sparkles,
+  Languages, ListTodo, LogOut, Menu, Settings, User, X,
+} from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { NAV_ITEMS } from '../../lib/constants'
+import { useAuth } from '../../hooks/useAuth'
 
-const navItems = [
-  { path: '/focus',    label: 'Focus',    Icon: Target     },
-  { path: '/fleeting', label: 'Fleeting', Icon: Feather    },
-  { path: '/prism',    label: 'Prism',    Icon: Layers     },
-  { path: '/mindbank', label: 'Mindbank', Icon: Brain      },
-  { path: '/radar',    label: 'Radar',    Icon: Radio      },
-  { path: '/ledger',   label: 'Ledger',   Icon: CreditCard },
-  { path: '/forge',    label: 'Forge',    Icon: Hammer     },
-  { path: '/muse',     label: 'Muse',     Icon: Sparkles   },
-]
+const icons: Record<string, React.ComponentType<{ className?: string }>> = {
+  Target, Feather, Layers, Brain, Radio, CreditCard, Hammer, Sparkles, Languages,
+  ListTodo, LogOut, Menu, Settings, User,
+}
 
+const PRIMARY_MOBILE_PATHS = ['/chat', '/todo', '/inbox', '/translate'] as const
+
+const moreItems = [
+  ...NAV_ITEMS.filter((item) => !PRIMARY_MOBILE_PATHS.includes(item.path as (typeof PRIMARY_MOBILE_PATHS)[number])),
+  { path: '/tasks', label: 'Jobs', icon: 'ListTodo' },
+  { path: '/profile', label: 'Admin', icon: 'User' },
+  { path: '/settings', label: 'Settings', icon: 'Settings' },
+] as const
+
+// MobileNav 展示移动端底部主导航，并把低频入口收纳到更多面板。
 export function MobileNav() {
+  const [open, setOpen] = useState(false)
+  const location = useLocation()
+  const { user, logout } = useAuth()
+  const primaryItems = NAV_ITEMS.filter((item) => PRIMARY_MOBILE_PATHS.includes(item.path as (typeof PRIMARY_MOBILE_PATHS)[number]))
+  const moreActive = moreItems.some((item) => item.path === location.pathname)
+
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-card border-t flex overflow-x-auto">
-      {navItems.map(({ path, label, Icon }) => (
-        <NavLink
-          key={path}
-          to={path}
-          className={({ isActive }) => cn(
-            'flex flex-col items-center gap-0.5 px-3 py-2 text-xs min-w-[56px] transition-colors',
-            isActive ? 'text-primary' : 'text-muted-foreground',
-          )}
-        >
-          <Icon className="h-5 w-5" />
-          <span>{label}</span>
-        </NavLink>
-      ))}
-    </nav>
+    <Dialog.Root open={open} onOpenChange={setOpen}>
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card/95 px-2 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-1.5 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur md:hidden">
+        <div className="grid grid-cols-5 gap-1">
+          {primaryItems.map(({ path, label, icon }) => {
+            const Icon = icons[icon]
+            return (
+              <NavLink
+                key={path}
+                to={path}
+                className={({ isActive }) => cn(
+                  'flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] leading-tight transition-colors',
+                  isActive ? 'bg-accent text-primary font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                )}
+              >
+                <Icon className="h-5 w-5 shrink-0" />
+                <span className="max-w-full truncate">{label}</span>
+              </NavLink>
+            )
+          })}
+          <Dialog.Trigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[11px] leading-tight transition-colors',
+                moreActive ? 'bg-accent text-primary font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              )}
+            >
+              <Menu className="h-5 w-5 shrink-0" />
+              <span className="max-w-full truncate">更多</span>
+            </button>
+          </Dialog.Trigger>
+        </div>
+      </nav>
+
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[60] bg-background/50 backdrop-blur-sm md:hidden" />
+        <Dialog.Content className="fixed inset-x-3 bottom-3 z-[60] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-xl border bg-card p-3 shadow-2xl md:hidden">
+          <div className="mb-2 flex items-center justify-between gap-3 px-1">
+            <Dialog.Title className="text-sm font-semibold">更多入口</Dialog.Title>
+            <Dialog.Close asChild>
+              <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="关闭">
+                <X className="h-4 w-4" />
+              </button>
+            </Dialog.Close>
+          </div>
+
+          <div className="grid gap-1">
+            {moreItems.map(({ path, label, icon }) => {
+              const Icon = icons[icon]
+              const displayLabel = path === '/profile' ? (user?.nickname || user?.username || label) : label
+              return (
+                <NavLink
+                  key={path}
+                  to={path}
+                  onClick={() => setOpen(false)}
+                  className={({ isActive }) => cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-colors',
+                    isActive ? 'bg-accent text-foreground font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+                  )}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{displayLabel}</span>
+                </NavLink>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false)
+                void logout()
+              }}
+              className="flex items-center gap-3 rounded-lg px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              退出登录
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   )
 }

@@ -2,6 +2,15 @@
 
 Nexus 是个人 AI 工作台 / Knowledge OS，用一套后端 API 和一套统一前端管理个人输入、AI 处理、知识沉淀与多端输出。
 
+当前产品主线按以下顺序推进：
+
+- `ToDo`：待分配池、今日执行、历史状态恢复
+- `Translate`：简化版翻译软件，先保留 LLM，后续可接专业翻译 API
+- `Inbox`：Linkding 书签、paperless-ngx 文档接入、Obsidian Quick Note / Memo
+- `Subscriptions`：基础 CRUD、用量记录、到期提醒
+- `Chat`：轻量日常问答
+- `Mindbank` / `Crawl`：后续单独设计
+
 ## Structure
 
 ```text
@@ -19,6 +28,8 @@ nexus/
 ## Frontend Model
 
 `frontend/` 是一套统一前端代码。Web、PWA 和 Telegram Mini App 共用页面、API、状态管理和构建链路；PWA 通过 Vite PWA 插件增强，Telegram Mini App 通过少量 provider/hook 做环境适配。
+
+旧 `Focus` / `Prism` / `Ledger` / `Fleeting` 命名只作为数据库或迁移兼容存在；当前展示命名统一使用 `ToDo` / `Translate` / `Subscriptions` / `Inbox`。
 
 ## Local Development
 

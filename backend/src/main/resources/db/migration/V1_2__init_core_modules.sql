@@ -1,7 +1,7 @@
 -- V2: 核心功能模块
 
--- Focus（Todo List）
-CREATE TABLE focus (
+-- ToDo
+CREATE TABLE todos (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title           VARCHAR(500) NOT NULL,
     description     TEXT,
@@ -15,10 +15,10 @@ CREATE TABLE focus (
     created_at      TIMESTAMP DEFAULT NOW(),
     updated_at      TIMESTAMP DEFAULT NOW()
 );
-CREATE INDEX idx_focus_status_date ON focus(status, scheduled_date);
+CREATE INDEX idx_todos_status_date ON todos(status, scheduled_date);
 
--- Fleeting（Quick Note）
-CREATE TABLE fleeting (
+-- Inbox
+CREATE TABLE inbox_items (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title           VARCHAR(500),
     content         TEXT NOT NULL,
@@ -30,8 +30,8 @@ CREATE TABLE fleeting (
     updated_at      TIMESTAMP DEFAULT NOW()
 );
 
--- Prism（Translation）
-CREATE TABLE prism (
+-- Translate
+CREATE TABLE translations (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     source_text     TEXT NOT NULL,
     translated_text TEXT NOT NULL,
@@ -42,8 +42,8 @@ CREATE TABLE prism (
     created_at      TIMESTAMP DEFAULT NOW()
 );
 
--- Ledger（Subscription）
-CREATE TABLE ledger (
+-- Subscriptions
+CREATE TABLE subscriptions (
     id                  VARCHAR(36)    PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name                VARCHAR(200)   NOT NULL,
     category            VARCHAR(100),
@@ -73,8 +73,8 @@ CREATE TABLE ledger (
     updated_at          TIMESTAMP      DEFAULT NOW()
 );
 
--- Forge（LeetCode Notes）
-CREATE TABLE forge_notes (
+-- Coding Practice（LeetCode Notes）
+CREATE TABLE coding_practice_notes (
     id                  VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     problem_id          VARCHAR(50),
     problem_title       VARCHAR(300),
@@ -90,8 +90,8 @@ CREATE TABLE forge_notes (
     updated_at          TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE forge_note_contents (
-    note_id      VARCHAR(36) PRIMARY KEY REFERENCES forge_notes(id) ON DELETE CASCADE,
+CREATE TABLE coding_practice_note_contents (
+    note_id      VARCHAR(36) PRIMARY KEY REFERENCES coding_practice_notes(id) ON DELETE CASCADE,
     my_solution  TEXT,
     note_content TEXT,
     updated_at   TIMESTAMP DEFAULT NOW()

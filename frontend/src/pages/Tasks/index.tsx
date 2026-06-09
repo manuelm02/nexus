@@ -14,6 +14,7 @@ const STATUS_LABEL: Record<string, string> = {
   pending: '等待中', running: '执行中', completed: '已完成', failed: '失败',
 }
 
+// TasksPage 展示后台异步任务记录，导航中命名为 Jobs 以区别 ToDo。
 export default function TasksPage() {
   const qc = useQueryClient()
   const { data, isLoading, refetch } = useQuery({
@@ -41,7 +42,7 @@ export default function TasksPage() {
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Tasks</h1>
+        <h1 className="text-xl font-semibold">Jobs</h1>
         <button onClick={() => refetch()} className="text-muted-foreground hover:text-foreground transition-colors">
           <RefreshCw className="h-4 w-4" />
         </button>

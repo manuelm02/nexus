@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -53,6 +54,18 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             // 无状态：每个请求自带 JWT，不创建 HttpSession
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                // 前端只在 401 时执行 token refresh；未登录或 JWT 失效不能落到默认 403，否则会绕过 refresh 流程。
+                .authenticationEntryPoint((req, res, authException) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+                .accessDeniedHandler((req, res, accessDeniedException) -> {
+                    var auth = SecurityContextHolder.getContext().getAuthentication();
+                    if (auth == null || auth instanceof AnonymousAuthenticationToken) {
+                        res.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+                    } else {
+                        res.sendError(HttpServletResponse.SC_FORBIDDEN);
+                    }
+                })
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/v1/auth/login",

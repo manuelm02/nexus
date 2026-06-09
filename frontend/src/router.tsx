@@ -4,16 +4,17 @@ import { lazy, Suspense } from 'react'
 
 // 所有页面懒加载，减少首屏 bundle 体积；Vite 会自动做代码分割
 const LoginPage      = lazy(() => import('./pages/Login'))
-const FocusPage      = lazy(() => import('./pages/Focus'))
-const FleetingPage   = lazy(() => import('./pages/Fleeting'))
-const PrismPage      = lazy(() => import('./pages/Prism'))
+const ChatPage       = lazy(() => import('./pages/Chat'))
+const TodoPage       = lazy(() => import('./pages/ToDo'))
+const InboxPage      = lazy(() => import('./pages/Inbox'))
+const CrawlPage      = lazy(() => import('./pages/Crawl'))
 const MindbankPage   = lazy(() => import('./pages/Mindbank'))
-const RadarPage      = lazy(() => import('./pages/Radar'))
-const LedgerPage     = lazy(() => import('./pages/Ledger'))
-const ForgePage      = lazy(() => import('./pages/Forge'))
-const MusePage       = lazy(() => import('./pages/Muse'))
+const CodingPracticePage = lazy(() => import('./pages/CodingPractice'))
+const TranslatePage  = lazy(() => import('./pages/Translate'))
+const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'))
 const TasksPage      = lazy(() => import('./pages/Tasks'))
 const SettingsPage   = lazy(() => import('./pages/Settings'))
+const ProfilePage    = lazy(() => import('./pages/Profile'))
 
 /** 页面切换时的全局加载占位 */
 function Fallback() {
@@ -31,7 +32,7 @@ function Wrap({ children }: { children: React.ReactNode }) {
 /**
  * 应用路由树。
  * AppLayout 作为根布局（含侧边栏 + 认证守卫），未登录时自动跳转 /login。
- * Mindbank / Radar / Forge / Muse 当前为 Phase 2 占位页面。
+ * 新路径按导航命名保留旧路径别名，避免已收藏链接在重命名后失效。
  */
 export const router = createBrowserRouter([
   {
@@ -42,17 +43,25 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,  // 认证守卫在 AppLayout 中实现
     children: [
-      { index: true, element: <Wrap><FocusPage /></Wrap> },
-      { path: 'focus',    element: <Wrap><FocusPage /></Wrap> },
-      { path: 'fleeting', element: <Wrap><FleetingPage /></Wrap> },
-      { path: 'prism',    element: <Wrap><PrismPage /></Wrap> },
+      { index: true, element: <Wrap><ChatPage /></Wrap> },
+      { path: 'chat', element: <Wrap><ChatPage /></Wrap> },
+      { path: 'todo', element: <Wrap><TodoPage /></Wrap> },
+      { path: 'inbox', element: <Wrap><InboxPage /></Wrap> },
+      { path: 'crawl', element: <Wrap><CrawlPage /></Wrap> },
       { path: 'mindbank', element: <Wrap><MindbankPage /></Wrap> },
-      { path: 'radar',    element: <Wrap><RadarPage /></Wrap> },
-      { path: 'ledger',   element: <Wrap><LedgerPage /></Wrap> },
-      { path: 'forge',    element: <Wrap><ForgePage /></Wrap> },
-      { path: 'muse',     element: <Wrap><MusePage /></Wrap> },
+      { path: 'coding-practice', element: <Wrap><CodingPracticePage /></Wrap> },
+      { path: 'translate', element: <Wrap><TranslatePage /></Wrap> },
+      { path: 'subscriptions', element: <Wrap><SubscriptionsPage /></Wrap> },
+      { path: 'focus', element: <Wrap><TodoPage /></Wrap> },
+      { path: 'fleeting', element: <Wrap><InboxPage /></Wrap> },
+      { path: 'prism', element: <Wrap><TranslatePage /></Wrap> },
+      { path: 'radar', element: <Wrap><CrawlPage /></Wrap> },
+      { path: 'ledger', element: <Wrap><SubscriptionsPage /></Wrap> },
+      { path: 'forge', element: <Wrap><CodingPracticePage /></Wrap> },
+      { path: 'muse', element: <Wrap><ChatPage /></Wrap> },
       { path: 'tasks',    element: <Wrap><TasksPage /></Wrap> },
       { path: 'settings', element: <Wrap><SettingsPage /></Wrap> },
+      { path: 'profile',  element: <Wrap><ProfilePage /></Wrap> },
     ],
   },
 ])
