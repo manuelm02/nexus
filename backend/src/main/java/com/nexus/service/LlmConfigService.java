@@ -39,7 +39,7 @@ public class LlmConfigService {
      * 优先级：工作流绑定的 Provider > 全局默认 Provider。
      * 若两者均未配置，抛出异常由调用方捕获并返回给前端友好提示。
      *
-     * @param workflowType 工作流类型标识，对应 workflow_llm_configs.workflow_type（如 "prism"）
+     * @param workflowType 工作流类型标识，对应 workflow_llm_configs.workflow_type（如 "translate"）
      */
     public ChatLanguageModel resolveModel(String workflowType) {
         // 先查工作流是否绑定了特定 Provider

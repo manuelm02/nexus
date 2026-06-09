@@ -3,8 +3,8 @@ package com.nexus.integration.notification;
 public enum NotificationEvent {
     TASK_COMPLETED,
     MINDBANK_INGESTED,
-    LEDGER_EXPIRING,
-    FORGE_NOTE_GENERATED,
-    RADAR_COMPLETED,
-    FOCUS_REMINDER
+    SUBSCRIPTION_EXPIRING,
+    CODING_PRACTICE_NOTE_GENERATED,
+    CRAWL_COMPLETED,
+    TODO_REMINDER
 }

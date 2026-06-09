@@ -1,9 +1,9 @@
-export interface Focus {
+export interface Todo {
   id: string
   title: string
   description?: string
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  status: 'not_started' | 'in_progress' | 'done' | 'archived'
+  status: 'pending' | 'cancelled' | 'not_started' | 'in_progress' | 'done'
   scheduledDate?: string
   dueDate?: string
   notionPageUrl?: string
@@ -12,7 +12,7 @@ export interface Focus {
   updatedAt: string
 }
 
-export interface Fleeting {
+export interface InboxItem {
   id: string
   title?: string
   content: string
@@ -33,7 +33,7 @@ export interface Translation {
   createdAt: string
 }
 
-export interface Ledger {
+export interface Subscription {
   id: string
   name: string
   category?: string

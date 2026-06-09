@@ -1,12 +1,12 @@
 export const NAV_ITEMS = [
-  { path: '/focus',    label: 'Focus',    icon: 'Target'    },
-  { path: '/fleeting', label: 'Fleeting', icon: 'Feather'   },
-  { path: '/prism',    label: 'Prism',    icon: 'Layers'    },
-  { path: '/mindbank', label: 'Mindbank', icon: 'Brain'     },
-  { path: '/radar',    label: 'Radar',    icon: 'Radio'     },
-  { path: '/ledger',   label: 'Ledger',   icon: 'CreditCard'},
-  { path: '/forge',    label: 'Forge',    icon: 'Hammer'    },
-  { path: '/muse',     label: 'Muse',     icon: 'Sparkles'  },
+  { path: '/chat',            label: 'Chat',            icon: 'Sparkles'  },
+  { path: '/todo',            label: 'ToDo',            icon: 'Target'    },
+  { path: '/inbox',           label: 'Inbox',           icon: 'Feather'   },
+  { path: '/crawl',           label: 'Crawl',           icon: 'Radio'     },
+  { path: '/mindbank',        label: 'Mindbank',        icon: 'Brain'     },
+  { path: '/coding-practice', label: 'Coding Practice', icon: 'Hammer'    },
+  { path: '/translate',       label: 'Translate',       icon: 'Languages' },
+  { path: '/subscriptions',   label: 'Subscriptions',   icon: 'CreditCard'},
 ] as const
 
 export const PRIORITY_LABELS: Record<string, string> = {
@@ -17,10 +17,11 @@ export const PRIORITY_LABELS: Record<string, string> = {
 }
 
 export const STATUS_LABELS: Record<string, string> = {
+  pending:     '待分配',
+  cancelled:   '已取消',
   not_started: '未开始',
   in_progress: '进行中',
   done:        '已完成',
-  archived:    '已归档',
 }
 
 export const BILLING_TYPE_LABELS: Record<string, string> = {

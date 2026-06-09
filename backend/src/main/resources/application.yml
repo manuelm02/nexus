@@ -82,12 +82,12 @@ nexus:
 notion:
   token: ${NOTION_TOKEN:}
   db:
-    focus: ${NOTION_FOCUS_DB_ID:}
-    fleeting: ${NOTION_FLEETING_DB_ID:}
+    todo: ${NOTION_TODO_DB_ID:${NOTION_FOCUS_DB_ID:}}
+    inbox: ${NOTION_INBOX_DB_ID:${NOTION_FLEETING_DB_ID:}}
     mindbank: ${NOTION_MINDBANK_DB_ID:}
-    ledger: ${NOTION_LEDGER_DB_ID:}
-    forge: ${NOTION_FORGE_DB_ID:}
-    radar: ${NOTION_RADAR_DB_ID:}
+    subscriptions: ${NOTION_SUBSCRIPTIONS_DB_ID:${NOTION_LEDGER_DB_ID:}}
+    coding-practice: ${NOTION_CODING_PRACTICE_DB_ID:${NOTION_FORGE_DB_ID:}}
+    crawl: ${NOTION_CRAWL_DB_ID:${NOTION_RADAR_DB_ID:}}
 
 # Telegram
 telegram:
