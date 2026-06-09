@@ -2,13 +2,15 @@ import { apiClient } from './client'
 import type { Todo } from '../types/domain.types'
 import type { ApiResponse } from '../types/api.types'
 
+type TodoPriority = Todo['priority']
+
 export const todoApi = {
   // list 查询 ToDo 列表；overdue=true 时由后端按 today 计算已过期分组。
   list: (params?: { status?: string; date?: string; overdue?: boolean }) =>
     apiClient.get<ApiResponse<Todo[]>>('/todo', { params }),
 
   // create 只创建待分配池任务，scheduledDate/dueDate 由选入今日或后续调整写入。
-  create: (data: { title: string; priority?: string }) =>
+  create: (data: { title: string; priority?: TodoPriority }) =>
     apiClient.post<ApiResponse<Todo>>('/todo', data),
 
   updateStatus: (id: string, status: string) =>

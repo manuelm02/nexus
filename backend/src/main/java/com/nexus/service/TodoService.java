@@ -54,7 +54,7 @@ public class TodoService {
     public Todo create(TodoCreateRequest req) {
         Todo todo = new Todo();
         todo.setTitle(req.getTitle());
-        todo.setPriority(req.getPriority() != null ? req.getPriority() : "medium");
+        todo.setPriority(normalizePriority(req.getPriority()));
         todo.setStatus("pending");
         todoMapper.insert(todo);
         return todo;
@@ -102,7 +102,7 @@ public class TodoService {
         Todo todo = getOrThrow(id);
         if (req.getTitle() != null) todo.setTitle(req.getTitle());
         if (req.getDescription() != null) todo.setDescription(req.getDescription());
-        if (req.getPriority() != null) todo.setPriority(req.getPriority());
+        if (req.getPriority() != null) todo.setPriority(normalizePriority(req.getPriority()));
         if (req.getStatus() != null) todo.setStatus(req.getStatus());
         if (req.getScheduledDate() != null) todo.setScheduledDate(req.getScheduledDate());
         if (req.getDueDate() != null) todo.setDueDate(req.getDueDate());
@@ -124,5 +124,14 @@ public class TodoService {
         Todo todo = todoMapper.selectById(id);
         if (todo == null) throw new IllegalArgumentException("Todo 不存在: " + id);
         return todo;
+    }
+
+    private String normalizePriority(String priority) {
+        if (priority == null || priority.isBlank()) return "medium";
+        return switch (priority) {
+            case "low", "medium", "high" -> priority;
+            case "urgent" -> "high";
+            default -> "medium";
+        };
     }
 }

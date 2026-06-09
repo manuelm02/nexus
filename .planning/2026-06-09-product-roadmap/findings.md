@@ -13,6 +13,7 @@
 - Phase 1 实现后，ToDo 不再通过 scheduler 把过期任务自动滚动到今天；过期任务保留原日期并进入“已过期”分组，便于用户集中修正。
 - ToDo 创建请求已收束为 title + priority，scheduledDate/dueDate 只在选入今日或后续调整时写入。
 - 当前后端验证需使用 Java 21；默认 `mvn` 所在 Java 不支持 `--release 21`。
+- `system_configs` 表列名是 `config_key/config_val`，不是 `key/value`；后续配置迁移脚本必须按 V1_4 的实际 schema 写。
 
 ## Open Questions
 

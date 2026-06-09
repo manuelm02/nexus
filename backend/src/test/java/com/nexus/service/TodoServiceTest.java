@@ -41,6 +41,18 @@ class TodoServiceTest {
     }
 
     @Test
+    void createMapsRemovedUrgentPriorityToHigh() {
+        TodoCreateRequest req = new TodoCreateRequest();
+        req.setTitle("处理旧数据");
+        req.setPriority("urgent");
+
+        Todo todo = todoService.create(req);
+
+        assertThat(todo.getPriority()).isEqualTo("high");
+        verify(todoMapper).insert(todo);
+    }
+
+    @Test
     void scheduleTodayFallsBackDueDateToToday() {
         LocalDate today = LocalDate.now();
         Todo existing = new Todo();

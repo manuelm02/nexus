@@ -7,13 +7,13 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("focus")
+@TableName("todos")
 public class Todo {
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
     private String title;
     private String description;
-    private String priority;   // low|medium|high|urgent
+    private String priority;   // low|medium|high
     private String status;     // pending|cancelled|not_started|in_progress|done
     private LocalDate scheduledDate;
     private LocalDate dueDate;

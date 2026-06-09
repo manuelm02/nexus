@@ -24,15 +24,15 @@ CREATE TABLE workflow_llm_configs (
 
 -- 预置工作流类型
 INSERT INTO workflow_llm_configs (id, workflow_type) VALUES
-(gen_random_uuid()::text, 'prism'),
+(gen_random_uuid()::text, 'translate'),
 (gen_random_uuid()::text, 'mindbank_extract'),
 (gen_random_uuid()::text, 'mindbank_summary'),
 (gen_random_uuid()::text, 'mindbank_chat'),
 (gen_random_uuid()::text, 'radar_extract'),
-(gen_random_uuid()::text, 'forge_tutor'),
-(gen_random_uuid()::text, 'forge_summary'),
+(gen_random_uuid()::text, 'coding_practice_tutor'),
+(gen_random_uuid()::text, 'coding_practice_summary'),
 (gen_random_uuid()::text, 'muse'),
-(gen_random_uuid()::text, 'focus_ai');
+(gen_random_uuid()::text, 'todo_ai');
 
 CREATE TABLE system_configs (
     id          VARCHAR(36)  PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -43,10 +43,10 @@ CREATE TABLE system_configs (
 );
 
 INSERT INTO system_configs (id, config_key, config_val, description) VALUES
-(gen_random_uuid()::text, 'focus.archive_days',        '30',    'Focus 完成后归档天数'),
-(gen_random_uuid()::text, 'focus.rollover_time',       '00:05', '每日 Rollover 时间'),
+(gen_random_uuid()::text, 'todo.archive_days',         '30',    'ToDo 完成后归档天数'),
+(gen_random_uuid()::text, 'todo.rollover_time',        '00:05', '每日 ToDo Rollover 时间'),
 (gen_random_uuid()::text, 'task.cleanup_days',         '30',    '任务结果清理天数'),
-(gen_random_uuid()::text, 'ledger.notify_days_before', '7',     '订阅到期提醒天数'),
+(gen_random_uuid()::text, 'subscription.notify_days_before', '7', '订阅到期提醒天数'),
 (gen_random_uuid()::text, 'mindbank.default_domain',   '其他',  'Mindbank 默认领域'),
 (gen_random_uuid()::text, 'crawler.preferred',         'jina',  '默认爬虫：jina|crawl4ai');
 

@@ -325,11 +325,11 @@ nexus-backend/
     │   ├── RefreshToken.java
     │   ├── UserDevice.java
     │   ├── VerifyCode.java
-    │   ├── Todo.java                     # ToDo，映射历史 focus 表
+    │   ├── Todo.java                     # ToDo，映射 todos 表
     │   ├── InboxItem.java                # Linkding / paperless 接入展示
     │   ├── Translation.java
     │   ├── MindbankDoc.java
-    │   ├── Subscription.java             # Subscription，映射历史 ledger 表
+    │   ├── Subscription.java             # Subscription，映射 subscriptions 表
     │   ├── Task.java
     │   ├── LlmProvider.java
     │   ├── WorkflowLlmConfig.java
@@ -457,8 +457,8 @@ CREATE TABLE user_devices (
 ### V2：核心功能模块
 
 ```sql
--- ToDo（历史表名仍为 focus；Flyway 已应用后不直接改表名）
-CREATE TABLE focus (
+-- ToDo
+CREATE TABLE todos (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title           VARCHAR(500) NOT NULL,
     description     TEXT,
@@ -472,14 +472,23 @@ CREATE TABLE focus (
     created_at      TIMESTAMP DEFAULT NOW(),
     updated_at      TIMESTAMP DEFAULT NOW()
 );
-CREATE INDEX idx_focus_status_date ON focus(status, scheduled_date);
+CREATE INDEX idx_todos_status_date ON todos(status, scheduled_date);
 
--- Inbox（当前阶段不强制新增业务表）
--- Linkding 书签和 paperless-ngx 文档分别以外部系统为事实源
--- Quick Note / Memo 直接写入 Obsidian Markdown，不落 PostgreSQL 业务表
+-- Inbox
+CREATE TABLE inbox_items (
+    id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    title           VARCHAR(500),
+    content         TEXT NOT NULL,
+    tags            TEXT[],
+    task_id         VARCHAR(36),
+    notion_page_url VARCHAR(500),
+    notion_synced   BOOLEAN DEFAULT FALSE,
+    created_at      TIMESTAMP DEFAULT NOW(),
+    updated_at      TIMESTAMP DEFAULT NOW()
+);
 
--- Translate（历史表名可为 prism/translation；新实现展示名统一为 Translate）
-CREATE TABLE prism (
+-- Translate
+CREATE TABLE translations (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     source_text     TEXT NOT NULL,
     translated_text TEXT NOT NULL,
@@ -490,8 +499,8 @@ CREATE TABLE prism (
     created_at      TIMESTAMP DEFAULT NOW()
 );
 
--- Subscriptions（历史命名 ledger；API 展示名统一为 Subscriptions）
-CREATE TABLE ledger (
+-- Subscriptions
+CREATE TABLE subscriptions (
     id                  VARCHAR(36)    PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name                VARCHAR(200)   NOT NULL,
     category            VARCHAR(100),               -- AI工具|云服务|娱乐|开发工具|...
@@ -1033,7 +1042,7 @@ services:
     ├── mindbank/
     │   └── {docId}/
     │       └── {filename}.pdf
-    ├── forge/
+    ├── coding-practice/
     │   └── {noteId}/
     │       └── solution.md
     └── radar/
@@ -1112,7 +1121,7 @@ public class MinioClient {
 
 ```
 https://files.yourdomain.com/nexus-files/mindbank/{docId}/{filename}
-https://files.yourdomain.com/nexus-files/forge/{noteId}/solution.md
+https://files.yourdomain.com/nexus-files/coding-practice/{noteId}/solution.md
 https://files.yourdomain.com/nexus-files/radar/{taskId}/content.md
 ```
 
@@ -1221,7 +1230,7 @@ GET    /api/v1/settings/notifications
 PATCH  /api/v1/settings/notifications
 ```
 
-> 旧 `/focus`、`/fleeting`、`/prism`、`/ledger` 路径只作为迁移兼容考虑；新开发统一使用当前收束版路由。
+> 旧 `/focus`、`/fleeting`、`/prism`、`/ledger` 路径只作为 API 路由兼容考虑；数据库表名统一使用当前模块命名。
 
 ---
 

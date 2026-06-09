@@ -11,6 +11,6 @@ import java.util.List;
 @Mapper
 public interface SubscriptionMapper extends BaseMapper<Subscription> {
 
-    @Select("SELECT * FROM ledger WHERE status = 'active' AND expire_date IS NOT NULL AND expire_date <= #{threshold}")
+    @Select("SELECT * FROM subscriptions WHERE status = 'active' AND expire_date IS NOT NULL AND expire_date <= #{threshold}")
     List<Subscription> selectExpiringSoon(LocalDate threshold);
 }

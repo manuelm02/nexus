@@ -10,5 +10,5 @@ public class TodoCreateRequest {
     @Size(max = 500)
     private String title;
 
-    private String priority = "medium";  // low|medium|high|urgent
+    private String priority = "medium";  // low|medium|high
 }

@@ -71,3 +71,4 @@
 |---|---|---|
 | 旧文档与新方向冲突 | 读取 docs 与 .planning | 删除旧文档，只保留当前主开发文档和当前计划 |
 | 默认 Java 不支持 release 21 | `mvn -q -Dtest=TodoServiceTest test` | 改用 `mise exec java@21 -- mvn ...` 运行后端验证 |
+| Flyway V1.5 启动失败：`column "key" does not exist` | 启动 local profile | 将 `system_configs.key` 修正为 `system_configs.config_key`，并新增迁移脚本列名测试 |

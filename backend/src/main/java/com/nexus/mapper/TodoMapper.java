@@ -13,7 +13,7 @@ import java.util.List;
 public interface TodoMapper extends BaseMapper<Todo> {
 
     @Select("""
-            SELECT * FROM focus
+            SELECT * FROM todos
             WHERE status <> 'done'
               AND (
                 (scheduled_date IS NOT NULL AND scheduled_date < #{today})

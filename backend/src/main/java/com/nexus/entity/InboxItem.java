@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
-@TableName(value = "fleeting", autoResultMap = true)
+@TableName(value = "inbox_items", autoResultMap = true)
 public class InboxItem {
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;

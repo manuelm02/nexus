@@ -13,3 +13,41 @@
 - 新增用户信息页 `/profile`，桌面侧边栏增加用户入口和退出登录按钮。
 - 新增后端单元测试 `TodoServiceTest` 覆盖 pending 创建、选入今日 dueDate 兜底、取消恢复和过期查询边界。
 - 验证通过：`mise exec java@21 -- mvn -q -Dtest=TodoServiceTest test`、`mise exec java@21 -- mvn -q test`、`pnpm build`。
+- 修复 `V1_5__rename_module_keys.sql` 中 `system_configs.key` 列名错误，改为 V1_4 实际创建的 `config_key`，解决 Flyway 启动失败。
+- 新增 `SystemConfigMigrationTest` 防止配置迁移脚本再次误用 `key` 列名。
+- 验证通过：`mise exec java@21 -- mvn -q -Dtest=SystemConfigMigrationTest test`、`mise exec java@21 -- mvn -q test`、`mise exec java@21 -- mvn spring-boot:run -Dspring-boot.run.profiles=local`；启动日志显示 V1.5 migration successfully applied，随后已停止临时进程。
+- 根据用户反馈优化 ToDo 交互：页面默认展示今日 tab，历史 ToDo 移入独立 tab；今日 tab 内顺序为今日、待分配、已过期。
+- 新建 ToDo 改为混合式交互：默认快速录入，展开后可设置优先级、是否加入今日和截止日期；优先级由原生 select 改为触控友好的 swatch 按钮。
+- 列表行将状态展示和状态操作合并为统一状态 chip/dropdown，5 种状态均可自由切换；完成后因今日列表过滤 `done` 会自动进入历史。
+- 待分配加入今日改为弹窗选择截止日期；删除按钮移入详情弹窗，并使用“确认删除这个 ToDo？此操作无法撤销。”二次确认。
+- 每条 ToDo 可打开详情弹窗查看/编辑标题、备注、优先级、状态、计划日期、截止日期。
+- 验证通过：`pnpm build`、`mise exec java@21 -- mvn -q test`、`curl -I --max-time 5 http://localhost:5174/`。in-app browser 当前无可用 `iab` 实例，项目未安装 Playwright，因此未完成截图级浏览器 QA。
+- 按 `.design/DESIGN.md` 先完成全局 UI 基座 + ToDo 重构：全局切换为暖纸色背景、白色 surface、Notion blue 主色、细边框和轻阴影；桌面/移动导航同步调整为文档型低噪声风格。
+- ToDo 优先级移除“紧急”，前端仅保留低/中/高；后端新增兼容逻辑，将旧请求或旧数据中的 `urgent` 归并到 `high`，避免继续产生紧急值。
+- ToDo 页面补充 API 错误提示，加载列表失败和操作失败时明确提示检查后端服务与登录状态，降低“未对接后台”的误判。
+- 验证通过：`mise exec java@21 -- mvn -q test`、`pnpm build`；`rg -n "urgent|紧急" frontend/src backend/src/main/java backend/src/test` 确认前端无“紧急”展示，只保留后端兼容和测试。
+- 优化 ToDo 单行展示：列表行改为移动端友好的一行必要信息，标题截断，桌面端额外展示优先级和截止日期，状态下拉移入详情弹窗。
+- 左侧状态控件改为三段点击流转：`not_started` 空心圆，点击变 `in_progress` 实心圆并带执行动画，再点击变 `done` 对勾；`pending` 展示暂停图标，`cancelled` 展示叉号。
+- 详情弹窗保存成功后自动关闭，并触发 ToDo 查询刷新，避免保存后界面无反馈。
+- 验证通过：`pnpm build`、`mise exec java@21 -- mvn -q test`。
+- 继续优化 ToDo 行展示：左侧状态按钮从 40px 收敛到 32px，内部圆点/对勾同步缩小；移动端保持一行必要信息，桌面端补充优先级和截止日期。
+- 今日分组改为“进行中”在上、“未开始”在下；待分配和已过期支持折叠/展开。
+- 排查并修复空闲后误报“检查后端服务”的根因：后端 refresh token rotation 会作废旧 refresh token，前端此前只更新 access token，未保存新 refresh token；并发 401 还会重复使用旧 refresh token。现在前端保存新的 access/refresh token，并用共享 refresh promise 合并并发刷新。
+- 验证通过：`pnpm build`、`mise exec java@21 -- mvn -q test`。
+- ToDo 空状态去掉大边框容器，今日/待分配/已过期/历史无任务时只展示轻量文本提示；有任务时仍保持一条 ToDo 一个独立框。
+- 验证通过：`pnpm build`、`mise exec java@21 -- mvn -q test`。
+- 重新设计 ToDo 新建栏：去掉重复优先级与展开设置按钮，改为标题输入、三段优先级、加入今日和添加按钮的 responsive 表单；移动端按自然顺序堆叠，减少首屏高度占用。
+- 优先级颜色调整为低=绿色、中=黄色、高=暗红色，并同步用于列表和详情弹窗。
+- 验证通过：`pnpm build`、`mise exec java@21 -- mvn -q test`；Browser 插件当前仍无可用 `iab` 实例，未完成截图级浏览器 QA。
+- 修复 ToDo 空闲后仍报“后端服务未启动”的 403 根因：Spring Security 默认把未认证 API 请求落到 403，前端 refresh 拦截器只处理 401，导致 access token 过期后不会刷新。现在后端对未登录/失效 token 统一返回 401，保留已认证但无权限时的 403。
+- 新增 `SecurityConfigTest` 覆盖受保护 API 无 token 时返回 401，防止该行为回退。
+- 验证通过：`mise exec java@21 -- mvn -q -Dtest=SecurityConfigTest test`、`mise exec java@21 -- mvn -q test`、`pnpm build`。
+- ToDo 新建栏取消默认优先级，用户未选择时点击添加会在表单内提示“请选择一个优先级后再添加”；ToDo 行改为按优先级使用浅色背景和左侧色条，而不是大面积强色填充。
+- 验证通过：`pnpm build`。
+- ToDo 行移除左侧优先级色条，仅保留优先级浅色背景和边框，避免状态圆圈旁出现突兀竖线。
+- 待分配 ToDo 行补充“取消”按钮，点击后切换为 `cancelled`；左侧状态控件重做为更轻的 28px 圆形交互，使用细圆环、实心点、勾选来表达 Notion/Apple 风格状态。
+- 验证通过：`pnpm build`。
+- 历史状态筛选和详情状态选择从浏览器原生 `select` 改为 Radix Select 自绘菜单，统一为 Nexus 浅色弹层、圆角、轻阴影和自定义选中态。
+- 验证通过：`pnpm build`。
+- 移动端底部导航重构为固定 5 项：Chat、ToDo、Inbox、Translate、更多；Crawl、Mindbank、Coding Practice、Subscriptions、Jobs、Admin/Profile、Settings、退出登录统一收纳到“更多入口”底部弹层，避免移动端标签挤压和溢出。
+- 验证通过：`pnpm build`。

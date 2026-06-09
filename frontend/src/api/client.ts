@@ -1,8 +1,10 @@
 import axios from 'axios'
 import { useAuthStore } from '../stores/authStore'
+import type { TokenResponse } from '../types/api.types'
 
 // 开发环境通过 Vite proxy 转发到后端（见 vite.config.ts）；生产环境由 Caddy 反代
 const BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1'
+let refreshPromise: Promise<TokenResponse> | null = null
 
 /** 全局 Axios 实例，所有 API 调用统一使用此实例 */
 export const apiClient = axios.create({
@@ -41,10 +43,14 @@ apiClient.interceptors.response.use(
         return Promise.reject(err)
       }
       try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, { refreshToken })
-        const newToken = data.data.accessToken  // ApiResponse<TokenResponse>.data.accessToken
-        useAuthStore.getState().setAccessToken(newToken)
-        err.config.headers.Authorization = `Bearer ${newToken}`
+        // 后端 refresh 使用 Token Rotation；并发 401 必须共享同一次刷新，否则旧 refresh token 会被重复使用并触发撤销失败。
+        refreshPromise ??= axios
+          .post(`${BASE_URL}/auth/refresh`, { refreshToken })
+          .then(({ data }) => data.data as TokenResponse)
+          .finally(() => { refreshPromise = null })
+        const tokenResponse = await refreshPromise
+        useAuthStore.getState().setTokens(tokenResponse.accessToken, tokenResponse.refreshToken, tokenResponse.user)
+        err.config.headers.Authorization = `Bearer ${tokenResponse.accessToken}`
         return apiClient(err.config)  // 用新 token 重发原始请求
       } catch {
         // refresh token 无效或过期，强制重新登录

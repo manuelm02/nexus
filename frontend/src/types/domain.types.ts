@@ -2,7 +2,7 @@ export interface Todo {
   id: string
   title: string
   description?: string
-  priority: 'low' | 'medium' | 'high' | 'urgent'
+  priority: 'low' | 'medium' | 'high'
   status: 'pending' | 'cancelled' | 'not_started' | 'in_progress' | 'done'
   scheduledDate?: string
   dueDate?: string

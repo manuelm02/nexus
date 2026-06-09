@@ -9,7 +9,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
-@TableName(value = "ledger", autoResultMap = true)
+@TableName(value = "subscriptions", autoResultMap = true)
 public class Subscription {
     @TableId(type = IdType.ASSIGN_UUID)
     private String id;
