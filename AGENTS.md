@@ -44,6 +44,38 @@ Nexus 是个人 AI 工作台（Knowledge OS），后端为 Spring Boot 3.x + MyB
 - **Tailwind v3**：必须有 `postcss.config.js`，否则样式不生效
 - **pnpm 11**：新依赖若有 postinstall 脚本需执行 `pnpm approve-builds`
 
+## 前端响应式架构规范（强制遵守）
+
+Nexus 后续所有页面都必须按“同一路由、业务共享、视图按复杂度拆分”的方式适配桌面端和移动端。
+
+### 基本原则
+1. **同一路由，不拆 URL**：例如 `/todo` 同时承载桌面端和移动端，不新增 `/m/todo` 这类移动端路由。
+2. **业务逻辑只写一套**：API 调用、TanStack Query、mutation、权限、校验、数据转换和状态流转放在 page 或 hook 中共享，禁止复制两套业务逻辑。
+3. **视图层按复杂度拆分**：简单页面只用 Tailwind responsive class；复杂页面必须拆出 `DesktopView` / `MobileView` 或桌面/移动专用交互组件。
+4. **交互模式允许设备差异**：桌面端优先 modal、table、sidebar、hover/dropdown；移动端优先 sheet、bottom action bar、compact list、tap-first interaction。
+5. **移动端不是桌面缩放版**：当布局顺序、信息密度、操作方式发生变化时，必须单独设计移动端组件，不能继续堆响应式 class 硬撑。
+
+### 推荐目录结构
+复杂功能页按以下结构组织：
+
+```text
+src/pages/<Feature>/
+  index.tsx                 # 数据编排、query/mutation、共享状态
+  <Feature>DesktopView.tsx  # 桌面视图
+  <Feature>MobileView.tsx   # 移动视图
+  components/
+    SharedControl.tsx       # 共享小组件
+    DetailDialog.tsx        # 桌面 modal/dialog
+    DetailSheet.tsx         # 移动 bottom sheet
+```
+
+### 拆分判断标准
+- 仅字号、间距、列数变化：使用 Tailwind responsive class。
+- 布局顺序变化：拆 `MobileView`。
+- table 变 card list、modal 变 sheet、sidebar 变 bottom nav、hover 操作变点击操作：拆移动端专用组件。
+- 同一个表单字段和校验规则在两端一致：抽共享 hook 或共享字段组件，不复制逻辑。
+- 调整移动端 UI 时，不允许无意改变桌面端行为；桌面端和移动端修改范围要清晰隔离。
+
 ## 开发环境
 - 后端启动：`cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local`（fish shell 不支持 `export $(cat .env)`）
 - 前端启动：`cd frontend && pnpm dev`

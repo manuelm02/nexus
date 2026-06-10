@@ -4,27 +4,59 @@
 
 @layer base {
   :root {
-    --background: 30 10% 96%;
-    --foreground: 30 3% 4%;
+    --background: 214 33% 97%;
+    --background-rgb: 246 248 251;
+    --foreground: 221 61% 5%;
+    --foreground-rgb: 7 11 18;
     --card: 0 0% 100%;
-    --card-foreground: 30 3% 4%;
+    --card-rgb: 255 255 255;
+    --card-foreground: 221 61% 5%;
+    --card-foreground-rgb: 7 11 18;
     --popover: 0 0% 100%;
-    --popover-foreground: 30 3% 4%;
-    --primary: 208 100% 44%;
+    --popover-rgb: 255 255 255;
+    --popover-foreground: 221 61% 5%;
+    --popover-foreground-rgb: 7 11 18;
+    --primary: 215 65% 12%;
+    --primary-rgb: 11 29 51;
     --primary-foreground: 0 0% 100%;
-    --secondary: 232 59% 32%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 30 9% 92%;
-    --muted-foreground: 30 4% 36%;
-    --accent: 30 9% 92%;
-    --accent-foreground: 30 3% 4%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 87%;
-    --ring: 208 100% 44%;
-    --radius: 0.5rem;
-    --shadow-soft: 0 0.175px 1.041px rgba(0,0,0,0.01), 0 0.8px 2.925px rgba(0,0,0,0.02), 0 2.025px 7.847px rgba(0,0,0,0.027), 0 4px 18px rgba(0,0,0,0.04);
+    --primary-foreground-rgb: 255 255 255;
+    --secondary: 213 58% 15%;
+    --secondary-rgb: 16 36 61;
+    --secondary-foreground: 214 45% 93%;
+    --secondary-foreground-rgb: 220 232 248;
+    --muted: 214 35% 94%;
+    --muted-rgb: 238 243 249;
+    --muted-foreground: 213 20% 41%;
+    --muted-foreground-rgb: 83 101 123;
+    --accent: 214 35% 94%;
+    --accent-rgb: 238 243 249;
+    --accent-foreground: 218 35% 15%;
+    --accent-foreground-rgb: 24 34 52;
+    --destructive: 355 67% 42%;
+    --destructive-rgb: 180 35 47;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground-rgb: 255 255 255;
+    --border: 214 34% 90%;
+    --border-rgb: 220 227 238;
+    --input: 215 32% 84%;
+    --input-rgb: 203 213 227;
+    --ring: 212 45% 45%;
+    --ring-rgb: 63 110 165;
+    --success: 159 60% 24%;
+    --success-rgb: 22 98 75;
+    --success-soft: 150 55% 96%;
+    --success-soft-rgb: 239 250 246;
+    --warning: 39 74% 33%;
+    --warning-rgb: 147 101 22;
+    --warning-soft: 43 100% 96%;
+    --warning-soft-rgb: 255 249 234;
+    --destructive-soft: 0 100% 98%;
+    --destructive-soft-rgb: 255 247 247;
+    --radius: 0.75rem;
+    --shadow-xs: 0 1px 2px rgba(var(--primary-rgb), 0.04);
+    --shadow-sm: 0 8px 24px rgba(var(--primary-rgb), 0.04);
+    --shadow-soft: 0 18px 50px rgba(var(--primary-rgb), 0.08);
+    --shadow-lg: 0 28px 80px rgba(var(--primary-rgb), 0.14);
   }
 
   .dark {
@@ -56,11 +88,12 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: "Noto Sans SC", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     font-feature-settings: "lnum" 1, "locl" 1;
+    letter-spacing: 0;
   }
   h1, h2, h3 {
-    letter-spacing: -0.025em;
+    letter-spacing: 0;
   }
   button, input, select, textarea {
     font: inherit;
@@ -69,19 +102,43 @@
 
 @layer components {
   .nexus-surface {
-    @apply border bg-card;
+    @apply rounded-[1.125rem] border bg-card;
     box-shadow: var(--shadow-soft);
   }
 
   .nexus-button-primary {
-    @apply inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50;
+    @apply inline-flex min-h-11 items-center justify-center rounded-full bg-primary font-extrabold text-primary-foreground transition-all hover:bg-secondary hover:shadow-[0_10px_24px_rgba(var(--primary-rgb),0.14)] active:translate-y-px active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none;
   }
 
   .nexus-button-utility {
-    @apply inline-flex items-center justify-center rounded-md border bg-card text-foreground transition-colors hover:bg-accent disabled:opacity-50;
+    @apply inline-flex min-h-10 items-center justify-center rounded-[0.625rem] border bg-card text-accent-foreground transition-colors hover:border-input hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
   .nexus-input {
-    @apply rounded border bg-card text-foreground outline-none transition-shadow focus:ring-2 focus:ring-ring;
+    @apply min-h-11 rounded-xl border border-input bg-card text-foreground outline-none transition-all placeholder:text-muted-foreground/70 hover:border-ring focus:border-ring focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60;
+  }
+
+  .nexus-page-enter {
+    animation: nexus-fade-in 220ms ease-out both;
+  }
+}
+
+@keyframes nexus-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
   }
 }

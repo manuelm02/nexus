@@ -51,3 +51,19 @@
 - 验证通过：`pnpm build`。
 - 移动端底部导航重构为固定 5 项：Chat、ToDo、Inbox、Translate、更多；Crawl、Mindbank、Coding Practice、Subscriptions、Jobs、Admin/Profile、Settings、退出登录统一收纳到“更多入口”底部弹层，避免移动端标签挤压和溢出。
 - 验证通过：`pnpm build`。
+- 待分配 ToDo 的“加入今日”交互从居中弹窗改为按钮附近的上浮日期气泡，标题为“选择截止日期”，保留日期选择器、取消和确认加入操作，减少对列表上下文的打断。
+- 验证通过：`pnpm build`。
+- ToDo 详情里的删除二次确认从嵌套模态改为删除按钮旁的上浮确认气泡，避免详情弹窗内再叠一层弹窗。
+- 验证通过：`pnpm build`。
+- ToDo 移动端专项适配：顶部标题/指标/Tab 收紧，新建 ToDo 表单降为 compact 尺寸；详情页在手机端改为底部抽屉式编辑面板，操作区调整为取消/保存在上、删除在下，避免照搬桌面弹窗造成比例失衡。
+- 验证通过：`pnpm build`。
+- 将前端响应式架构规范写入 `AGENTS.md`：后续页面统一采用同一路由、业务逻辑共享、复杂视图拆 `DesktopView` / `MobileView`、桌面 modal 与移动 sheet 分离的标准。
+- 继续收敛 ToDo 移动端比例：顶部标题/说明/指标卡再降一档，新建 ToDo 表单、优先级按钮、列表行和分组标题进一步 compact；移动端详情 sheet 隐藏右上角关闭叉，改用顶部 handle 和遮罩/操作按钮关闭。
+- 验证通过：`pnpm build`。
+- 拆分 ToDo 前端文件边界：`index.tsx` 收敛为数据编排、状态分组和 mutation 事件，新增 `todo.shared.ts` 管理类型/状态流转/样式 token，新增 `todo.components.tsx` 承载快速创建、列表、状态选择、加入今日气泡和详情 sheet/dialog，为后续按 `DesktopView` / `MobileView` 继续拆分打基础。
+- 验证通过：`pnpm build`。
+- 进一步抽出 `TodoView.tsx` 作为 ToDo 视图入口；`index.tsx` 现在只保留 query/mutation、数据分组和事件回调，视图 props 边界已形成，后续拆桌面/移动专用视图不会再牵动接口编排。
+- 验证通过：`pnpm build`。
+- 按“Web 端和移动端风格隔离”继续重构 ToDo：新增 `TodoDesktopView.tsx` 保留桌面端布局，新增 `TodoMobileView.tsx` 提供移动端专用信息架构；移动端顶部、指标、快速创建、Tab、列表行和待分配操作重新按小屏密度设计，不再复用桌面大卡片。
+- ToDo 详情 sheet 继续做移动端密度优化：手机端标题、字段高度、备注区、日期输入和底部操作区整体收紧；桌面端通过 `sm:` 保持原有 modal 尺寸。
+- 验证通过：`pnpm build`。`pnpm lint` 当前受项目 ESLint 9 配置缺失阻塞；Browser 插件仍返回 `Browser is not available: iab`，项目未安装 Playwright，未完成截图级 QA。
