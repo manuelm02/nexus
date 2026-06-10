@@ -21,6 +21,7 @@ frontend/.vite/
 # Runtime data
 data/
 .m2/
+.superpowers/
 
 # IDE
 .idea/

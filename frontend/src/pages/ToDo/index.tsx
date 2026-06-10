@@ -19,15 +19,15 @@ const PRIORITIES: Priority[] = ['low', 'medium', 'high']
 const TODO_STATUSES: TodoStatus[] = ['pending', 'cancelled', 'not_started', 'in_progress', 'done']
 
 const PRIORITY_STYLES: Record<Priority, string> = {
-  low: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  medium: 'border-amber-200 bg-amber-50 text-amber-700',
-  high: 'border-red-300 bg-red-50 text-red-900',
+  low: 'border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success-soft))] text-[hsl(var(--success))]',
+  medium: 'border-[hsl(var(--warning)/0.28)] bg-[hsl(var(--warning-soft))] text-[hsl(var(--warning))]',
+  high: 'border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] text-[hsl(var(--destructive))]',
 }
 
 const PRIORITY_ROW_STYLES: Record<Priority, string> = {
-  low: 'border-emerald-200 bg-emerald-50/45 hover:bg-emerald-50/70',
-  medium: 'border-amber-200 bg-amber-50/45 hover:bg-amber-50/70',
-  high: 'border-red-300 bg-red-50/45 hover:bg-red-50/70',
+  low: 'border-l-[hsl(var(--success)/0.5)]',
+  medium: 'border-l-[hsl(var(--ring)/0.8)]',
+  high: 'border-l-[hsl(var(--primary))]',
 }
 
 const todayString = () => new Date().toISOString().slice(0, 10)
@@ -120,12 +120,33 @@ export default function TodoPage() {
     if (nextStatus !== item.status) handleStatusChange(item, nextStatus)
   }
 
+  const headerMetrics = [
+    { label: '今日', value: todayItems.length, tone: 'default' },
+    { label: '待分配', value: pendingItems.length, tone: 'default' },
+    { label: '过期', value: overdueItems.length, tone: 'danger' },
+  ] as const
+
   return (
-    <div className="mx-auto max-w-5xl p-4 md:p-8 space-y-5">
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+    <div className="nexus-page-enter mx-auto max-w-[1180px] space-y-5 p-4 md:p-8">
+      <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
-          <h1 className="text-3xl font-bold tracking-[-0.04em] md:text-4xl">ToDo</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">今日执行、待分配、过期处理和历史恢复。</p>
+          <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Today execution</p>
+          <h1 className="mt-1 text-[34px] font-black leading-[1.08] md:text-[44px] md:leading-[1.03]">ToDo</h1>
+          <p className="mt-2 text-sm font-medium leading-7 text-muted-foreground md:text-[15px]">今日执行、待分配、过期处理和历史恢复。</p>
+        </div>
+        <div className="grid grid-cols-3 gap-2 md:justify-self-end">
+          {headerMetrics.map((metric) => (
+            <div
+              key={metric.label}
+              className={cn(
+                'min-w-0 rounded-xl border bg-card px-3 py-2 shadow-[var(--shadow-sm)] md:min-w-16',
+                metric.tone === 'danger' && 'border-[hsl(var(--destructive)/0.22)] bg-[hsl(var(--destructive-soft))]',
+              )}
+            >
+              <p className={cn('text-lg font-black leading-none', metric.tone === 'danger' && 'text-destructive')}>{metric.value}</p>
+              <p className={cn('mt-1 truncate text-[10px] font-bold text-muted-foreground', metric.tone === 'danger' && 'text-destructive/75')}>{metric.label}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -135,12 +156,12 @@ export default function TodoPage() {
         onCreate={(input) => createMutation.mutate(input)}
       />
       {(createMutation.isError || statusMutation.isError || scheduleMutation.isError || updateMutation.isError || deleteMutation.isError) && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+        <div className="rounded-xl border border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] px-4 py-3 text-sm font-semibold text-destructive">
           ToDo 操作失败，请确认后端服务和登录状态后再试。
         </div>
       )}
 
-      <div className="flex rounded-md border bg-card p-1">
+      <div className="grid grid-cols-2 rounded-[0.9375rem] border bg-card p-1 shadow-[var(--shadow-xs)]">
         {([
           ['today', '今日'],
           ['history', '历史'],
@@ -150,8 +171,8 @@ export default function TodoPage() {
             type="button"
             onClick={() => setActiveTab(key)}
             className={cn(
-              'h-9 flex-1 rounded-sm text-sm transition-colors',
-              activeTab === key ? 'bg-primary text-primary-foreground font-medium' : 'text-muted-foreground hover:bg-accent hover:text-foreground',
+              'h-11 rounded-[0.6875rem] text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+              activeTab === key ? 'bg-primary text-primary-foreground' : 'text-accent-foreground hover:bg-accent',
             )}
           >
             {label}
@@ -302,15 +323,15 @@ function QuickCreate({ today, pending, onCreate }: {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="nexus-surface rounded-lg p-3 sm:p-4">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto] lg:items-center">
+    <form onSubmit={handleSubmit} className="nexus-surface p-3 sm:p-4">
+      <div className="grid gap-3 xl:grid-cols-[minmax(320px,1fr)_204px_auto_auto] xl:items-center">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="写下要处理的事"
-          className="nexus-input h-11 w-full min-w-0 px-3 text-base sm:text-sm lg:min-w-[320px]"
+          className="nexus-input h-12 w-full min-w-0 px-4 text-base font-semibold sm:text-sm xl:min-w-[320px]"
         />
-        <div className="min-w-0 lg:w-[216px]">
+        <div className="min-w-0">
           <PriorityPicker
             value={priority}
             onChange={(nextPriority) => {
@@ -320,7 +341,7 @@ function QuickCreate({ today, pending, onCreate }: {
             compact
           />
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[auto_auto] sm:justify-end lg:justify-start">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[auto_auto] sm:justify-end xl:justify-start">
           <label className="nexus-button-utility h-11 justify-start gap-2 px-3 text-sm text-foreground">
             <input
               type="checkbox"
@@ -333,7 +354,7 @@ function QuickCreate({ today, pending, onCreate }: {
           <button
             type="submit"
             disabled={!title.trim() || pending}
-            className="nexus-button-primary h-11 gap-2 px-5 text-sm"
+            className="nexus-button-primary h-12 gap-2 px-6 text-sm"
           >
             <Plus className="h-4 w-4" /> 添加
           </button>
@@ -346,13 +367,13 @@ function QuickCreate({ today, pending, onCreate }: {
 
       {addToday && (
         <div className="mt-3 border-t pt-3">
-          <label className="grid gap-1.5 text-xs font-medium text-muted-foreground sm:max-w-xs">
+          <label className="grid gap-1.5 text-xs font-bold text-muted-foreground sm:max-w-xs">
             截止日期
             <input
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
-              className="nexus-input h-10 px-3 text-sm font-normal text-foreground"
+              className="nexus-input h-10 px-3 text-sm font-semibold text-foreground"
             />
           </label>
         </div>
@@ -370,10 +391,10 @@ function PriorityPicker({ value, onChange, compact = false }: { value?: Priority
           type="button"
           onClick={() => onChange(priority)}
           className={cn(
-            'h-10 min-w-0 rounded-md border px-3 text-sm font-medium transition-all',
+            'h-10 min-w-0 rounded-xl border px-3 text-sm font-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             PRIORITY_STYLES[priority],
-            value === priority ? 'ring-2 ring-ring ring-offset-1' : 'opacity-75 hover:opacity-100',
-            compact && 'h-11 px-2 text-sm',
+            value === priority ? 'ring-2 ring-ring ring-offset-1' : 'opacity-78 hover:opacity-100',
+            compact && 'h-12 px-2 text-sm',
           )}
         >
           {PRIORITY_LABELS[priority]}
@@ -463,20 +484,20 @@ function TodoSection({ title, loading, empty, toolbar, children, collapsible = f
   const rendered = useMemo(() => ReactChildren(children), [children])
   const visible = !collapsible || open !== false
   return (
-    <section className="space-y-2">
+    <section className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <button
           type="button"
           disabled={!collapsible}
           onClick={() => collapsible && onOpenChange?.(!(open ?? true))}
           className={cn(
-            'flex min-h-8 items-center gap-1.5 rounded-md text-sm font-semibold',
-            collapsible && 'pr-2 text-left hover:text-primary',
+            'flex min-h-9 items-center gap-2 rounded-lg text-left text-lg font-black',
+            collapsible && 'pr-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
           )}
         >
           {collapsible && <ChevronDown className={cn('h-4 w-4 transition-transform', open === false && '-rotate-90')} />}
           {title}
-          <span className="text-xs font-normal text-muted-foreground">{rendered.filter(isTodoItemNode).length}</span>
+          <span className="text-xs font-bold text-muted-foreground">{rendered.filter(isTodoItemNode).length}</span>
         </button>
         {toolbar}
       </div>
@@ -497,7 +518,7 @@ function isTodoItemNode(node: React.ReactNode) {
 
 function TodoGroupLabel({ label }: { label: string }) {
   return (
-    <li data-group-label className="px-1 pt-1 text-xs font-medium text-muted-foreground">
+    <li data-group-label className="px-1 pt-1 text-xs font-bold text-muted-foreground">
       {label}
     </li>
   )
@@ -509,7 +530,7 @@ function ReactChildren(children: React.ReactNode) {
 
 function ErrorRow({ text }: { text: string }) {
   return (
-    <li className="rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+    <li className="rounded-xl border border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] px-4 py-3 text-sm font-semibold text-destructive">
       {text}
     </li>
   )
@@ -524,13 +545,13 @@ function TodoRow({ item, trailing, onOpen, onStatusStep }: {
   const priority = normalizePriority(item.priority)
 
   return (
-    <li className={cn('group flex min-h-12 items-center gap-2 rounded-lg border px-2.5 py-1.5 transition-colors sm:px-3', PRIORITY_ROW_STYLES[priority])}>
+    <li className={cn('group flex min-h-14 items-center gap-3 rounded-xl border border-l-4 bg-card px-3 py-2 shadow-[var(--shadow-sm)] transition-colors hover:border-input sm:px-4', PRIORITY_ROW_STYLES[priority])}>
       <StatusCycleButton status={item.status} onClick={onStatusStep} />
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-2 text-left">
-        <p className={cn('min-w-0 flex-1 truncate text-sm font-medium', item.status === 'done' && 'text-muted-foreground line-through')}>
+        <p className={cn('min-w-0 flex-1 truncate text-sm font-bold', item.status === 'done' && 'text-muted-foreground line-through')}>
           {item.title}
         </p>
-        <span className={cn('hidden rounded border px-1.5 py-0.5 text-xs sm:inline-flex', PRIORITY_STYLES[priority])}>
+        <span className={cn('hidden rounded-full border px-2 py-1 text-xs font-bold sm:inline-flex', PRIORITY_STYLES[priority])}>
           {PRIORITY_LABELS[priority]}
         </span>
         {item.dueDate && <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">截止 {item.dueDate}</span>}
@@ -558,7 +579,7 @@ function StatusCycleButton({ status, onClick }: { status: TodoStatus; onClick: (
       onClick={onClick}
       disabled={!clickable}
       className={cn(
-        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-all',
+        'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
         clickable && 'hover:bg-background/70 hover:text-primary',
         !clickable && status !== 'done' && 'cursor-default',
       )}

@@ -5,16 +5,16 @@ import { formatRelative, cn } from '../../lib/utils'
 import { Pin, Trash2, RefreshCw } from 'lucide-react'
 
 const STATUS_COLOR: Record<string, string> = {
-  pending:   'bg-yellow-100 text-yellow-700',
-  running:   'bg-blue-100 text-blue-700',
-  completed: 'bg-green-100 text-green-700',
-  failed:    'bg-red-100 text-red-700',
+  pending:   'border-[hsl(var(--warning)/0.28)] bg-[hsl(var(--warning-soft))] text-[hsl(var(--warning))]',
+  running:   'border-[hsl(var(--ring)/0.28)] bg-accent text-primary',
+  completed: 'border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success-soft))] text-[hsl(var(--success))]',
+  failed:    'border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] text-destructive',
 }
 const STATUS_LABEL: Record<string, string> = {
   pending: '等待中', running: '执行中', completed: '已完成', failed: '失败',
 }
 
-// TasksPage 展示后台异步任务记录，导航中命名为 Jobs 以区别 ToDo。
+// TasksPage 展示后台异步任务记录，入口收纳在 Settings 中以减少主导航噪音。
 export default function TasksPage() {
   const qc = useQueryClient()
   const { data, isLoading, refetch } = useQuery({
@@ -40,10 +40,14 @@ export default function TasksPage() {
   const items: TaskResponse[] = data?.data?.data ?? []
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Jobs</h1>
-        <button onClick={() => refetch()} className="text-muted-foreground hover:text-foreground transition-colors">
+    <div className="nexus-page-enter mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System jobs</p>
+          <h1 className="mt-1 text-3xl font-black md:text-4xl">Jobs</h1>
+          <p className="mt-2 text-sm text-muted-foreground">后台异步任务记录、保留状态和错误信息。</p>
+        </div>
+        <button onClick={() => refetch()} className="nexus-button-utility h-10 w-10 text-muted-foreground" aria-label="刷新任务">
           <RefreshCw className="h-4 w-4" />
         </button>
       </div>
@@ -53,25 +57,27 @@ export default function TasksPage() {
       ) : (
         <ul className="space-y-2">
           {items.map((task) => (
-            <li key={task.id} className="rounded-lg border bg-card p-4 group space-y-2">
+            <li key={task.id} className="group space-y-2 rounded-xl border bg-card p-4 shadow-[var(--shadow-sm)]">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-sm font-medium">{task.type}</span>
-                  <span className={cn('text-xs rounded px-1.5 py-0.5', STATUS_COLOR[task.status])}>
+                  <span className="text-sm font-bold">{task.type}</span>
+                  <span className={cn('rounded-full border px-2 py-0.5 text-xs font-bold', STATUS_COLOR[task.status])}>
                     {STATUS_LABEL[task.status]}
                   </span>
                   {task.keepForever && <Pin className="h-3.5 w-3.5 text-primary" />}
                 </div>
-                <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                <div className="flex gap-1.5 opacity-100 transition-all sm:opacity-0 sm:group-hover:opacity-100">
                   <button
                     onClick={() => toggleKeep.mutate(task.id)}
-                    className={cn('hover:text-primary transition-colors', task.keepForever ? 'text-primary' : 'text-muted-foreground')}
+                    className={cn('nexus-button-utility h-8 w-8 hover:text-primary', task.keepForever ? 'text-primary' : 'text-muted-foreground')}
+                    aria-label={task.keepForever ? '取消保留任务' : '保留任务'}
                   >
                     <Pin className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => deleteMutation.mutate(task.id)}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    className="nexus-button-utility h-8 w-8 text-muted-foreground hover:text-destructive"
+                    aria-label="删除任务"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
@@ -79,7 +85,7 @@ export default function TasksPage() {
               </div>
 
               {task.status === 'running' && (
-                <div className="h-1 bg-muted rounded-full overflow-hidden">
+                <div className="h-1 overflow-hidden rounded-full bg-muted">
                   <div className="h-full bg-primary rounded-full animate-pulse w-1/2" />
                 </div>
               )}
@@ -88,7 +94,7 @@ export default function TasksPage() {
                 <p className="text-sm text-muted-foreground line-clamp-2">{task.resultText}</p>
               )}
               {task.errorMessage && (
-                <p className="text-sm text-red-500 line-clamp-2">{task.errorMessage}</p>
+                <p className="line-clamp-2 text-sm text-destructive">{task.errorMessage}</p>
               )}
 
               <p className="text-xs text-muted-foreground">{formatRelative(task.createdAt)}</p>

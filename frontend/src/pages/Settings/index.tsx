@@ -1,16 +1,20 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import type { ApiResponse } from '../../types/api.types'
 import type { LlmProvider, WorkflowLlmConfig } from '../../types/domain.types'
-import { Plus, Trash2, Save, AlertCircle, Loader2 } from 'lucide-react'
+import { Plus, Trash2, Save, AlertCircle, Loader2, ListTodo } from 'lucide-react'
 
 export default function SettingsPage() {
   const [tab, setTab] = useState<'llm' | 'system'>('llm')
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <h1 className="text-xl font-semibold">Settings</h1>
+    <div className="nexus-page-enter mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+      <div>
+        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System control</p>
+        <h1 className="mt-1 text-3xl font-black md:text-4xl">Settings</h1>
+      </div>
       <div className="flex gap-2 border-b">
         {[{ key: 'llm', label: 'LLM 配置' }, { key: 'system', label: '系统参数' }].map(({ key, label }) => (
           <button
@@ -268,14 +272,28 @@ function SystemConfig() {
     </p>
   )
 
-  if (Object.keys(merged).length === 0) return (
-    <p className="text-sm text-muted-foreground text-center py-8">
-      暂无系统配置项（请确认数据库迁移已执行）
-    </p>
-  )
-
   return (
     <div className="space-y-3">
+      <Link
+        to="/tasks"
+        className="nexus-surface flex items-center justify-between gap-3 p-4 transition-colors hover:border-input focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span className="flex min-w-0 items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <ListTodo className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-bold">Jobs / Tasks</span>
+            <span className="block truncate text-xs text-muted-foreground">查看后台异步任务记录和保留状态。</span>
+          </span>
+        </span>
+        <span className="text-xs font-bold text-muted-foreground">打开</span>
+      </Link>
+      {Object.keys(merged).length === 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          暂无系统配置项（请确认数据库迁移已执行）
+        </p>
+      )}
       {Object.entries(merged).map(([key, val]) => (
         <div key={key} className="flex items-center gap-3">
           <label className="text-sm text-muted-foreground w-52 shrink-0 font-mono text-xs">{key}</label>
