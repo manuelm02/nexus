@@ -77,6 +77,11 @@ nexus:
     secret: ${ENCRYPT_SECRET:changeme-32-chars-secret-key!!}
   redis:
     key-prefix: "${REDIS_KEY_PREFIX:nexus:}"
+  translate:
+    tencent:
+      secret-id: ${TENCENT_SECRET_ID:}
+      secret-key: ${TENCENT_SECRET_KEY:}
+      region: ${TENCENT_TMT_REGION:ap-guangzhou}
 
 # Notion
 notion:

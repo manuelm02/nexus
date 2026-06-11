@@ -23,15 +23,21 @@ export interface InboxItem {
   updatedAt: string
 }
 
-export interface Translation {
+export interface TranslationResult {
   id: string
   sourceText: string
   translatedText: string
   sourceLang?: string
   targetLang: string
   style?: string
+  explanation?: string
+  keywords?: string[]
+  alternatives?: string[]
+  provider?: string
   createdAt: string
 }
+
+export type Translation = TranslationResult
 
 export interface Subscription {
   id: string

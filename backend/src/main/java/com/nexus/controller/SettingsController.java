@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/** SettingsController 提供 LLM 和系统配置的管理接口。 */
 @RestController
 @RequestMapping("/api/v1/settings")
 @RequiredArgsConstructor

@@ -6,9 +6,13 @@ import com.nexus.entity.WorkflowLlmConfig;
 import com.nexus.mapper.LlmProviderMapper;
 import com.nexus.mapper.WorkflowLlmConfigMapper;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -82,6 +86,48 @@ public class LlmConfigService {
             case "anthropic" -> AnthropicChatModel.builder()
                     .apiKey(apiKey).modelName(model).build();
             case "ollama" -> OllamaChatModel.builder()
+                    .baseUrl(p.getBaseUrl()).modelName(model).build();
+            default -> throw new IllegalStateException("未知 Provider: " + p.getProvider());
+        };
+    }
+
+    /**
+     * 解析指定工作流类型的流式模型实例，供 SSE 逐 token 输出使用。
+     * 优先级同 resolveModel：工作流绑定 Provider > 全局默认。
+     */
+    public StreamingChatLanguageModel resolveStreamingModel(String workflowType) {
+        WorkflowLlmConfig wf = workflowLlmConfigMapper.selectOne(
+                new LambdaQueryWrapper<WorkflowLlmConfig>()
+                        .eq(WorkflowLlmConfig::getWorkflowType, workflowType));
+
+        LlmProvider provider = null;
+        if (wf != null && wf.getProviderId() != null) {
+            provider = llmProviderMapper.selectById(wf.getProviderId());
+        }
+        if (provider == null) {
+            provider = llmProviderMapper.selectOne(new LambdaQueryWrapper<LlmProvider>()
+                    .eq(LlmProvider::isDefaultProvider, true)
+                    .eq(LlmProvider::isEnabled, true));
+        }
+        if (provider == null) {
+            throw new IllegalStateException("未配置可用的 LLM Provider，请在设置页面添加");
+        }
+        return buildStreamingModel(provider, wf);
+    }
+
+    private StreamingChatLanguageModel buildStreamingModel(LlmProvider p, WorkflowLlmConfig wf) {
+        String model = (wf != null && wf.getModelOverride() != null) ? wf.getModelOverride() : p.getModel();
+        String apiKey = decrypt(p.getApiKey());
+
+        return switch (p.getProvider()) {
+            case "openai" -> OpenAiStreamingChatModel.builder()
+                    .apiKey(apiKey).modelName(model).build();
+            // DeepSeek 兼容 OpenAI 协议
+            case "deepseek" -> OpenAiStreamingChatModel.builder()
+                    .apiKey(apiKey).baseUrl("https://api.deepseek.com/v1").modelName(model).build();
+            case "anthropic" -> AnthropicStreamingChatModel.builder()
+                    .apiKey(apiKey).modelName(model).build();
+            case "ollama" -> OllamaStreamingChatModel.builder()
                     .baseUrl(p.getBaseUrl()).modelName(model).build();
             default -> throw new IllegalStateException("未知 Provider: " + p.getProvider());
         };

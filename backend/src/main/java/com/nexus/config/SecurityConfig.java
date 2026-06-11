@@ -1,6 +1,7 @@
 package com.nexus.config;
 
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -67,10 +68,13 @@ public class SecurityConfig {
                 })
             )
             .authorizeHttpRequests(auth -> auth
+                // StreamingResponseBody/SSE 会触发 ASYNC dispatch；错误页会触发 ERROR dispatch，二次鉴权会在响应已提交后抛 AccessDenied。
+                .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                 .requestMatchers(
                     "/api/v1/auth/login",
                     "/api/v1/auth/refresh",
                     "/api/v1/auth/send-code",
+                    "/error",
                     "/api-docs/**",        // SpringDoc OpenAPI JSON
                     "/swagger-ui/**",
                     "/swagger-ui.html"
@@ -93,6 +97,16 @@ public class SecurityConfig {
     @Bean
     public OncePerRequestFilter jwtAuthFilter() {
         return new OncePerRequestFilter() {
+            @Override
+            protected boolean shouldNotFilterAsyncDispatch() {
+                return true;
+            }
+
+            @Override
+            protected boolean shouldNotFilterErrorDispatch() {
+                return true;
+            }
+
             @Override
             protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
                     throws ServletException, IOException {

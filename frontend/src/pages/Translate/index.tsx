@@ -1,39 +1,110 @@
 import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { translateApi } from '../../api/translate.api'
-import type { Translation } from '../../types/domain.types'
-import { formatRelative, cn } from '../../lib/utils'
-import { ArrowRight, Copy, Check } from 'lucide-react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import type { AxiosError } from 'axios'
+import { apiClient } from '../../api/client'
+import { normalizeTranslationResult, translateApi } from '../../api/translate.api'
+import type { ApiResponse } from '../../types/api.types'
+import type { LlmProvider, TranslationResult, WorkflowLlmConfig } from '../../types/domain.types'
+import { TranslateDesktopView } from './TranslateDesktopView'
+import { TranslateMobileView } from './TranslateMobileView'
 
-const LANGUAGES = ['中文', '英文', '日文', '法文', '德文', '西班牙文', '韩文']
-const STYLES = [
-  { value: '',         label: '默认' },
-  { value: 'formal',   label: '正式' },
-  { value: 'casual',   label: '口语' },
-  { value: 'technical',label: '技术' },
-]
-
-// TranslatePage 提供文本翻译和最近翻译历史。
+// TranslatePage 负责统一编排查询、mutation、回填和复制反馈，桌面端与移动端共用这一套业务状态。
 export default function TranslatePage() {
   const [sourceText, setSourceText] = useState('')
   const [targetLang, setTargetLang] = useState('英文')
   const [style, setStyle] = useState('')
   const [copied, setCopied] = useState(false)
-  const [result, setResult] = useState<Translation | null>(null)
+  const [result, setResult] = useState<TranslationResult | null>(null)
+  const [resultStage, setResultStage] = useState<'idle' | 'waiting-draft' | 'draft' | 'streaming' | 'enhancing' | 'done' | 'error'>('idle')
+  // 历史搜索和分页：搜索仍是前端处理（后端返回全量），分页走后端接口
+  const [historyQuery, setHistoryQuery] = useState('')
+  const [historyPage, setHistoryPage] = useState(1)
+  const [historyPageSize, setHistoryPageSize] = useState(10)
+  const queryClient = useQueryClient()
 
-  const { data: historyData } = useQuery({
-    queryKey: ['translate-history'],
-    queryFn: () => translateApi.history(),
+  // 后端分页查询历史记录，页面/每页条数切换或翻译完成后刷新
+  const { data: historyData, isLoading: historyLoading } = useQuery({
+    queryKey: ['translate-history', historyPage, historyPageSize],
+    queryFn: () => translateApi.history(historyPage, historyPageSize),
   })
 
-  const translateMutation = useMutation({
-    mutationFn: () => translateApi.translate({ sourceText, targetLang, style: style || undefined }),
-    onSuccess: ({ data }) => {
-      if (data.data) setResult(data.data)
+  // provider 状态提前查询，避免翻译时才发现不可用。
+  const providerQuery = useQuery({
+    queryKey: ['llm-providers'],
+    queryFn: () => apiClient.get<ApiResponse<LlmProvider[]>>('/settings/llm/providers'),
+  })
+  const workflowQuery = useQuery({
+    queryKey: ['llm-workflows'],
+    queryFn: () => apiClient.get<ApiResponse<WorkflowLlmConfig[]>>('/settings/llm/workflows'),
+  })
+
+  // 删除历史记录，成功后刷新当前页（如果当前页变空则回退一页）
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => translateApi.deleteHistory(id),
+    onSuccess: () => {
+      const items = historyData?.data?.data?.items ?? []
+      // 如果当前页只剩最后一条且不是第一页，回退一页
+      if (items.length <= 1 && historyPage > 1) {
+        setHistoryPage(historyPage - 1)
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['translate-history'] })
+      }
     },
   })
 
-  const history: Translation[] = historyData?.data?.data ?? []
+  // mutation 只在 page 层存在，避免桌面端和移动端复制两套翻译业务流。
+  const translateMutation = useMutation({
+    mutationFn: () => translateApi.stream({ sourceText, targetLang, style: style || undefined }, (event) => {
+      if (event.type === 'draft') {
+        setResultStage('draft')
+        setResult(normalizeTranslationResult({
+          id: 'streaming', sourceText, targetLang, style,
+          translatedText: event.payload.translatedText,
+          provider: event.payload.provider,
+          createdAt: new Date().toISOString(),
+        }))
+      } else if (event.type === 'token') {
+        setResultStage('streaming')
+        setResult((current) => normalizeTranslationResult({
+          id: current?.id ?? 'streaming', sourceText, targetLang, style,
+          createdAt: current?.createdAt ?? new Date().toISOString(),
+          translatedText: event.payload.translatedText,
+          provider: 'llm',
+        }))
+      } else if (event.type === 'enhanced') {
+        setResult(normalizeTranslationResult({
+          id: 'streaming', sourceText, targetLang, style,
+          createdAt: new Date().toISOString(),
+          translatedText: event.payload.translatedText,
+          explanation: event.payload.explanation,
+          keywords: event.payload.keywords,
+          alternatives: event.payload.alternatives,
+          provider: event.payload.provider,
+        }))
+      } else if (event.type === 'done') {
+        setResultStage('done')
+      }
+    }),
+    onSuccess: () => {
+      setResultStage('done')
+      setHistoryPage(1)
+      queryClient.invalidateQueries({ queryKey: ['translate-history'] })
+    },
+    onError: () => setResultStage('error'),
+  })
+
+  const history: TranslationResult[] = historyData?.data?.data?.items ?? []
+  const historyTotal = historyData?.data?.data?.total ?? 0
+  const historyTotalPages = Math.max(1, Math.ceil(historyTotal / historyPageSize))
+
+  const error = translateMutation.error as AxiosError<ApiResponse<unknown>> | null
+  const providers = providerQuery.data?.data?.data ?? []
+  const translateWorkflow = workflowQuery.data?.data?.data?.find((workflow) => workflow.workflowType === 'translate')
+  const translateProvider = providers.find((provider) => provider.id === translateWorkflow?.providerId)
+  const hasResolvableProvider = Boolean(translateProvider?.enabled) || providers.some((provider) => provider.enabled && provider.defaultProvider)
+  const providerMissing = error?.response?.data?.errorCode === 'TRANSLATION_PROVIDER_NOT_CONFIGURED' || (!providerQuery.isLoading && !workflowQuery.isLoading && !hasResolvableProvider)
+  const providerChecking = providerQuery.isLoading || workflowQuery.isLoading
+  const errorMessage = providerMissing ? undefined : error?.response?.data?.message
 
   const handleCopy = async () => {
     if (!result) return
@@ -42,90 +113,55 @@ export default function TranslatePage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleReuseHistory = (item: TranslationResult) => {
+    const normalized = normalizeTranslationResult(item)
+    setSourceText(normalized.sourceText)
+    setTargetLang(normalized.targetLang)
+    setStyle(normalized.style ?? '')
+    setResult(normalized)
+    setResultStage('done')
+    setCopied(false)
+  }
+
+  const viewProps = {
+    sourceText, targetLang, style, result, resultStage, history,
+    pending: translateMutation.isPending, copied,
+    providerMissing, providerChecking, errorMessage,
+    onSourceTextChange: setSourceText,
+    onTargetLangChange: setTargetLang,
+    onStyleChange: setStyle,
+    onTranslate: () => {
+      if (providerMissing || providerQuery.isLoading) return
+      setResult(null)
+      setCopied(false)
+      setResultStage('waiting-draft')
+      setHistoryQuery('')
+      setHistoryPage(1)
+      translateMutation.mutate()
+    },
+    onCopy: handleCopy,
+    onReuseHistory: handleReuseHistory,
+  }
+
+  const historyProps = {
+    history,
+    historyLoading,
+    historyQuery,
+    historyPage,
+    historyPageSize,
+    historyTotal,
+    historyTotalPages,
+    onHistoryQueryChange: (q: string) => { setHistoryQuery(q); setHistoryPage(1) },
+    onHistoryPageChange: setHistoryPage,
+    onHistoryPageSizeChange: (size: number) => { setHistoryPageSize(size); setHistoryPage(1) },
+    onReuse: handleReuseHistory,
+    onDelete: (id: string) => deleteMutation.mutate(id),
+  }
+
   return (
-    <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">Translate</h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          同一个意思，换一种语言，你会看见它不同的棱角。
-        </p>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex gap-3 flex-wrap items-center">
-          <select
-            value={targetLang}
-            onChange={(e) => setTargetLang(e.target.value)}
-            className="rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
-          </select>
-          <div className="flex gap-1">
-            {STYLES.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setStyle(value)}
-                className={cn(
-                  'rounded px-2.5 py-1 text-xs border transition-colors',
-                  style === value ? 'bg-primary text-primary-foreground border-primary' : 'hover:bg-accent',
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid md:grid-cols-2 gap-3">
-          <textarea
-            value={sourceText}
-            onChange={(e) => setSourceText(e.target.value)}
-            placeholder="输入要翻译的文本…"
-            rows={6}
-            className="rounded-lg border bg-card p-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-          />
-          <div className="relative rounded-lg border bg-card p-3 min-h-[120px]">
-            {result ? (
-              <>
-                <p className="text-sm whitespace-pre-wrap">{result.translatedText}</p>
-                <button
-                  onClick={handleCopy}
-                  className="absolute top-2 right-2 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                </button>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">翻译结果将显示在这里</p>
-            )}
-          </div>
-        </div>
-
-        <button
-          onClick={() => translateMutation.mutate()}
-          disabled={!sourceText.trim() || translateMutation.isPending}
-          className="flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm hover:bg-primary/90 disabled:opacity-50 transition-colors"
-        >
-          {translateMutation.isPending ? '翻译中…' : <>翻译 <ArrowRight className="h-4 w-4" /></>}
-        </button>
-      </div>
-
-      {history.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-medium text-muted-foreground">历史记录</h2>
-          <ul className="space-y-2">
-            {history.slice(0, 10).map((t) => (
-              <li key={t.id} className="rounded-lg border bg-card p-3 text-sm">
-                <div className="grid md:grid-cols-2 gap-2">
-                  <p className="text-muted-foreground line-clamp-2">{t.sourceText}</p>
-                  <p className="line-clamp-2">{t.translatedText}</p>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{formatRelative(t.createdAt)} · {t.targetLang}</p>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </div>
+    <main className="nexus-page-enter mx-auto w-full max-w-[1180px] p-4 sm:p-6 lg:p-8">
+      <TranslateDesktopView {...viewProps} {...historyProps} />
+      <TranslateMobileView {...viewProps} {...historyProps} />
+    </main>
   )
 }
