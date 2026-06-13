@@ -97,7 +97,17 @@ Cons:
 
 Reject for now. Consider after Mindbank / Crawl are redesigned.
 
-## 4. Recommended Information Architecture
+## 4. Confirmed Scope Updates
+
+The user confirmed the following product decisions:
+
+- Bookmark bulk import is included in the first implementation batch.
+- The first pass does **not** fetch webpage metadata or page content. AI works from user-provided URL/title/notes only.
+- Bookmark smart groups should be a persisted first-class bookmark feature, not just virtual tag filters.
+- Notes consolidation scans only notes created by Nexus under the configured Obsidian Inbox directory. The current Obsidian vault is empty, so full-vault scan is unnecessary.
+- paperless configuration should be managed from Settings, not only from environment variables.
+
+## 5. Recommended Information Architecture
 
 Use `/inbox` as one route.
 
@@ -145,7 +155,7 @@ Panel
 
 Do not put page sections inside nested cards. Use full-width workbench bands and individual cards only for repeated rows, dialogs, and review items.
 
-## 5. Bookmark Workflow
+## 6. Bookmark Workflow
 
 ### 5.1 Core User Stories
 
@@ -184,8 +194,9 @@ Useful behaviors to convert into Nexus features:
   - create short Chinese tags when no match
   - keep tag names consistent
 - `sync_bundles`:
-  - map Linkding bundle idea into Nexus "smart groups"
-  - first version should be virtual groups derived from tags, not a new complex hierarchy
+  - map Linkding bundle idea into Nexus persisted smart groups
+  - each group stores a name, matching rule, order, and enabled state
+  - newly inserted bookmarks can be compared against group rules and assigned consistently
 
 Do not carry over:
 
@@ -224,6 +235,11 @@ Primary desktop components:
   - AI suggested merges
   - unused tags
   - per-tag counts
+- `BookmarkSmartGroupPanel`
+  - group list with counts
+  - group rule editor
+  - AI suggested group for ungrouped bookmarks
+  - "apply to existing bookmarks" review action
 - `BookmarkList`
   - filters: 全部 / 未读 / 已归档 / 未分类 / 冲突待处理
   - search
@@ -247,6 +263,12 @@ POST /api/v1/inbox/bookmarks/analyze
 POST /api/v1/inbox/bookmarks/import/preview
 POST /api/v1/inbox/bookmarks/import/commit
 POST /api/v1/inbox/bookmarks/tags/suggest
+GET  /api/v1/inbox/bookmarks/groups
+POST /api/v1/inbox/bookmarks/groups
+PATCH /api/v1/inbox/bookmarks/groups/{id}
+DELETE /api/v1/inbox/bookmarks/groups/{id}
+POST /api/v1/inbox/bookmarks/groups/preview
+POST /api/v1/inbox/bookmarks/groups/apply
 ```
 
 Suggested DTOs:
@@ -283,6 +305,22 @@ BookmarkImportPreviewResponse
 
 BookmarkImportCommitRequest
 - decisions[] { sourceIndex, action: create | update | skip, finalTitle?, finalTags?, finalDescription? }
+
+BookmarkSmartGroup
+- id
+- name
+- description?
+- matchMode: any_tag | all_tags | domain | keyword | ai_suggested
+- matchValue
+- orderIndex
+- enabled
+
+BookmarkGroupPreviewResponse
+- groupId
+- groupName
+- matchedBookmarks[]
+- unmatchedBookmarks[]
+- aiAvailable
 ```
 
 LLM usage rule:
@@ -291,7 +329,30 @@ LLM usage rule:
 - If no model is configured, return `aiAvailable=false` and deterministic non-AI results.
 - AI suggestions must be advisory; user confirmation controls writes.
 
-## 6. Paperless Gateway Workflow
+### 6.5 Smart Group Rules
+
+Smart groups are persisted in Nexus.
+
+Recommended first implementation:
+
+- Store groups in a `bookmark_smart_groups` table.
+- Add a `bookmark_smart_group_assignments` join table so a bookmark can belong to multiple groups when rules overlap.
+- Group rule types:
+  - `any_tag`: bookmark has any listed tag.
+  - `all_tags`: bookmark has all listed tags.
+  - `domain`: bookmark domain matches one of the configured domains.
+  - `keyword`: title/url/description/notes contains keyword.
+  - `ai_suggested`: AI recommends a group, but user confirms before persistent assignment.
+- New bookmark creation flow should:
+  1. normalize URL
+  2. suggest tags/title/description if AI is available
+  3. evaluate deterministic group rules
+  4. ask AI for group suggestion only if no deterministic group matches
+  5. show final group in review UI before save
+
+Do not silently move existing bookmarks between groups. Bulk apply must use preview -> confirm -> apply.
+
+## 7. Paperless Gateway Workflow
 
 paperless should be a gateway, not a clone.
 
@@ -300,6 +361,7 @@ paperless should be a gateway, not a clone.
 Nexus should provide:
 
 - Configuration status.
+- Settings-managed connection parameters.
 - Upload document.
 - Recent documents.
 - Basic search/list entry.
@@ -377,7 +439,7 @@ message?
 entryLinks[]
 ```
 
-Entry links can be generated from `PAPERLESS_BASE_URL`:
+Entry links should be generated from the paperless base URL stored in Settings, with `PAPERLESS_BASE_URL` / application properties only as fallback:
 
 - `/documents`
 - `/inbox`
@@ -390,7 +452,158 @@ Entry links can be generated from `PAPERLESS_BASE_URL`:
 
 If exact paperless route differs by version, make these centralized constants and keep UI labels decoupled.
 
-## 7. Quick Note / Memo AI Workflow
+## 8. Settings: Inbox Integrations
+
+Inbox requires a Settings section because paperless and Obsidian are user-owned integrations, and users should not have to edit environment variables for normal product use.
+
+### 8.1 Settings IA
+
+Add a dedicated Settings section:
+
+```text
+Settings
+  LLM Providers
+  Workflow Models
+  Inbox
+    Bookmarks
+    paperless-ngx
+    Obsidian
+```
+
+If the current Settings page remains a single workbench page, the Inbox section should appear as a full-width panel below Workflow Models, not as a tiny generic key/value list.
+
+### 8.2 paperless Settings Panel
+
+Fields:
+
+```text
+paperless.enabled
+paperless.baseUrl
+paperless.apiToken
+paperless.openInNewTab
+paperless.defaultUploadTags
+paperless.entryRouteOverrides?   // optional advanced JSON or per-route fields
+```
+
+UI behavior:
+
+- `Enabled` toggle controls whether Inbox tries to call paperless.
+- `Base URL` input placeholder: `https://paperless.example.com`.
+- `API Token` is a secret field:
+  - never render existing token in plain text
+  - show status such as `已保存 token`
+  - allow "替换 token"
+  - allow "清除 token" with confirmation
+- `Test connection` button calls backend status/test endpoint.
+- Show connection result inline:
+  - Connected
+  - Not configured
+  - Unauthorized
+  - Unreachable
+  - Unexpected response
+- Show last checked time if available.
+- If paperless is not configured, Inbox document panel should link to this Settings section.
+
+Design details:
+
+- Use compact labeled fields, not a raw config table.
+- Put token field after base URL.
+- Put destructive "清除 token" as a secondary destructive action, not next to Save as a primary action.
+- Avoid showing full backend error stack; show user-actionable status and keep logs server-side.
+
+### 8.3 Obsidian Settings Panel
+
+Fields:
+
+```text
+obsidian.enabled
+obsidian.vaultPath
+obsidian.inboxDir
+obsidian.fileNamingPattern
+obsidian.consolidationDir
+```
+
+Recommended defaults:
+
+```text
+obsidian.inboxDir = Inbox
+obsidian.fileNamingPattern = yyyy/MM/yyyy-MM-dd-HHmmss-slug.md
+obsidian.consolidationDir = Inbox/Consolidated
+```
+
+UI behavior:
+
+- "Test write" creates and deletes a tiny temporary probe file, or calls a safe backend validation endpoint.
+- Show whether the configured directory is writable.
+- Explain that consolidation only scans Nexus-created files under Inbox.
+
+### 8.4 Bookmark Settings Panel
+
+Fields:
+
+```text
+bookmarks.aiAssistEnabled
+bookmarks.bulkImportEnabled
+bookmarks.stripTrackingParams
+bookmarks.defaultUnread
+bookmarks.smartGroupsEnabled
+```
+
+UI behavior:
+
+- "AI Assist" should also show the Inbox workflow model status.
+- If no Inbox LLM provider is configured, show a direct link to Workflow Models.
+- Smart groups can be enabled/disabled globally, but group management itself belongs in the Inbox bookmark workspace.
+
+### 8.5 Backend Settings Contract
+
+Do not rely only on `application.yml` once Settings UI exists.
+
+Recommended config keys in `system_configs`:
+
+```text
+inbox.paperless.enabled
+inbox.paperless.base_url
+inbox.paperless.api_token
+inbox.paperless.open_in_new_tab
+inbox.paperless.default_upload_tags
+
+inbox.obsidian.enabled
+inbox.obsidian.vault_path
+inbox.obsidian.inbox_dir
+inbox.obsidian.file_naming_pattern
+inbox.obsidian.consolidation_dir
+
+inbox.bookmarks.ai_assist_enabled
+inbox.bookmarks.bulk_import_enabled
+inbox.bookmarks.strip_tracking_params
+inbox.bookmarks.default_unread
+inbox.bookmarks.smart_groups_enabled
+```
+
+Secret handling:
+
+- `inbox.paperless.api_token` must be encrypted before storage, using the same encryption approach already used for LLM provider API keys.
+- `/settings/system` should not return the raw token.
+- Return metadata instead:
+
+```text
+paperlessTokenConfigured: true | false
+paperlessTokenUpdatedAt?: string
+```
+
+If the current generic `/settings/system` endpoint cannot support secret masking cleanly, add scoped endpoints:
+
+```http
+GET   /api/v1/settings/inbox
+PATCH /api/v1/settings/inbox
+POST  /api/v1/settings/inbox/paperless/test
+POST  /api/v1/settings/inbox/obsidian/test
+```
+
+This scoped endpoint is preferable because it avoids leaking secret values through the generic config map.
+
+## 9. Quick Note / Memo AI Workflow
 
 ### 7.1 Product Boundary
 
@@ -418,6 +631,7 @@ First version:
 Second version:
 
 - existing note hints:
+  - scan Nexus-created notes under the configured Obsidian Inbox directory
   - "可能相关的历史笔记"
   - "建议合并到某个主题"
 - consolidation:
@@ -501,11 +715,11 @@ NoteConsolidatePreviewResponse
 
 Important:
 
-- Do not scan the whole Obsidian vault in Phase 3.1 unless explicitly approved.
-- For "existing note hints", start with files created by Nexus under `OBSIDIAN_INBOX_DIR`.
+- Do not scan the whole Obsidian vault in Phase 3.1.
+- For "existing note hints", scan files created by Nexus under `OBSIDIAN_INBOX_DIR`.
 - Avoid writing anything during preview endpoints.
 
-## 8. Visual Design Rules
+## 10. Visual Design Rules
 
 Use the existing Nexus `DESIGN.md` direction:
 
@@ -542,7 +756,7 @@ Avoid:
 - animated background
 - oversized hero blocks
 
-## 9. Frontend Architecture Plan
+## 11. Frontend Architecture Plan
 
 Keep:
 
@@ -563,6 +777,7 @@ frontend/src/pages/Inbox/components/bookmarks/
   BookmarkImportDrawer.tsx
   BookmarkConflictReview.tsx
   BookmarkTagWorkbench.tsx
+  BookmarkSmartGroupPanel.tsx
   BookmarkList.tsx
   BookmarkCard.tsx
 
@@ -591,6 +806,17 @@ frontend/src/pages/Inbox/components/shared/
   CompactToolbar.tsx
 ```
 
+Settings additions:
+
+```text
+frontend/src/pages/Settings/components/InboxSettingsPanel.tsx
+frontend/src/pages/Settings/components/PaperlessSettingsCard.tsx
+frontend/src/pages/Settings/components/ObsidianSettingsCard.tsx
+frontend/src/pages/Settings/components/BookmarkSettingsCard.tsx
+```
+
+The Settings page should continue to use one shared data orchestration layer and separate desktop/mobile views when layout complexity requires it.
+
 `index.tsx` remains the only data orchestration layer:
 
 - queries
@@ -603,7 +829,7 @@ frontend/src/pages/Inbox/components/shared/
 
 Do not duplicate API logic inside Desktop/Mobile components.
 
-## 10. Backend Architecture Plan
+## 12. Backend Architecture Plan
 
 Add services with clear boundaries:
 
@@ -629,6 +855,16 @@ NoteAiService
 PaperlessGatewayService
   status check
   generate entry links
+
+InboxSettingsService
+  read/write scoped Inbox settings
+  encrypt/decrypt paperless token internally
+  return masked token metadata to frontend
+
+BookmarkSmartGroupService
+  CRUD persisted groups
+  preview group assignment
+  apply group assignment after confirmation
 ```
 
 LLM integration:
@@ -644,7 +880,7 @@ No secrets:
 - Do not log prompt content if it may contain personal notes or URLs.
 - Do not log tokens.
 
-## 11. Implementation Phases
+## 13. Implementation Phases
 
 ### Phase 3.1-A: UI Shell Redesign
 
@@ -665,6 +901,7 @@ Acceptance:
 - Add `/bookmarks/analyze`.
 - Add AI review panel in create flow.
 - If LLM missing, still normalize URL and show `aiAvailable=false`.
+- Persist and evaluate smart groups for new bookmark suggestions.
 
 Acceptance:
 
@@ -678,6 +915,7 @@ Acceptance:
 - Add desktop import drawer.
 - Add conflict review UI.
 - Preserve explicit user decision for every conflict.
+- Include smart group suggestions in the import preview.
 
 Acceptance:
 
@@ -685,11 +923,28 @@ Acceptance:
 - Summary counts are clear.
 - Conflicts are not auto-resolved silently.
 
-### Phase 3.1-D: Paperless Gateway
+### Phase 3.1-D: Inbox Settings
+
+- Add Settings Inbox panel.
+- Add paperless base URL / token / enabled / default upload tags fields.
+- Add Obsidian vault path / inbox dir / consolidation dir fields.
+- Add bookmark AI/bulk import/tracking cleanup/default unread/smart group settings.
+- Add connection test actions.
+- Store paperless token encrypted and never return it raw.
+
+Acceptance:
+
+- User can configure paperless from Settings.
+- Inbox paperless empty state links to Settings.
+- Token field shows saved/unsaved state without exposing the token.
+- Connection test produces actionable status.
+
+### Phase 3.1-E: Paperless Gateway
 
 - Add status endpoint.
 - Add entry grid and deep links.
 - Keep upload/list/detail.
+- Read config from Inbox Settings first, with env/application config as fallback if needed.
 
 Acceptance:
 
@@ -697,19 +952,19 @@ Acceptance:
 - Connected state shows entry points for core paperless pages.
 - Unsupported paperless functions open in paperless directly.
 
-### Phase 3.1-E: Note AI Assist
+### Phase 3.1-F: Note AI Assist
 
 - Add `/notes/analyze`.
 - Add AI suggestion panel.
 - Add "save raw" and "apply suggestions and save".
-- Do not scan full vault yet.
+- Scan only Nexus-created notes under the configured Obsidian Inbox directory.
 
 Acceptance:
 
 - User can write a note, ask AI for title/tags/folder/category, edit suggestions, then save.
 - LLM missing does not block raw note saving.
 
-### Phase 3.1-F: Note Consolidation Preview
+### Phase 3.1-G: Note Consolidation Preview
 
 - Only for Nexus-created notes under `OBSIDIAN_INBOX_DIR`.
 - Add preview endpoint and UI.
@@ -721,19 +976,14 @@ Acceptance:
 - Consolidation output preserves source paths.
 - User confirms before write.
 
-## 12. Open Decisions For User Confirmation
+## 14. Finalized Decisions
 
-Recommended defaults:
+Confirmed:
 
-1. Bookmark AI scope: include single URL analyze + bulk import preview in Phase 3.1.
-2. Smart groups: implement as virtual groups derived from tags, not a new table.
-3. Notes existing context: only scan Nexus-created notes under Obsidian inbox dir, not full vault.
-4. Interaction level: L1+ compact workbench, no L2/L3 motion.
-5. Paperless: gateway cards + deep links, not a paperless clone.
-
-Need confirmation:
-
-- Should Phase 3.1 include bookmark bulk import immediately, or ship single URL AI analyze first?
-- Should AI be allowed to fetch webpage metadata/content, or only use user-provided URL/title?
-- Should notes consolidation scan only Nexus-created notes, or do you want a broader Obsidian vault scan later?
-- Should smart groups remain tag-derived, or do you want explicit group management similar to Linkding bundles?
+1. Bookmark AI scope includes single URL analyze and bulk import preview/commit in Phase 3.1.
+2. AI does not fetch webpage metadata/content in the first pass.
+3. Smart groups are persisted bookmark groups and should be used for future insert classification.
+4. Notes consolidation scans Nexus-created notes under Obsidian Inbox only.
+5. Interaction level is L1+ compact workbench, no L2/L3 motion.
+6. Paperless remains a gateway plus deep links, not a paperless clone.
+7. paperless configuration belongs in Settings under an Inbox section.
