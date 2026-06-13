@@ -1,116 +1,105 @@
-import { X } from 'lucide-react'
-import type { Todo } from '../../types/domain.types'
 import { cn } from '../../lib/utils'
+import type { Todo } from '../../types/domain.types'
 import {
   ErrorRow,
   QuickCreate,
-  ScheduleTodayPopover,
   StatusFilterSelect,
-  TodoGroupLabel,
   TodoRow,
   TodoSection,
+  TaskCard,
 } from './todo.components'
 import type { Priority, TodoStatus, TodoTab } from './todo.shared'
 
 export type HeaderMetric = {
   label: string
   value: number
-  tone: 'default' | 'danger'
+  tone: 'primary' | 'success' | 'danger' | 'warning'
+}
+
+const METRIC_CARD_STYLES: Record<HeaderMetric['tone'], string> = {
+  primary: 'border-[hsl(var(--primary)/0.25)] bg-[hsl(var(--primary)/0.06)] text-primary',
+  success: 'border-[hsl(var(--success)/0.22)] bg-[hsl(var(--success-soft))] text-[hsl(var(--success))]',
+  danger: 'border-[hsl(var(--destructive)/0.22)] bg-[hsl(var(--destructive-soft))] text-destructive',
+  warning: 'border-[hsl(var(--warning)/0.28)] bg-[hsl(var(--warning-soft))] text-[hsl(var(--warning))]',
 }
 
 export type TodoMainViewProps = {
   activeTab: TodoTab
   historyStatus: TodoStatus | ''
-  today: string
   headerMetrics: readonly HeaderMetric[]
   operationError: boolean
   createPending: boolean
-  schedulePending: boolean
-  todayLoading: boolean
-  todayError: boolean
-  pendingLoading: boolean
-  pendingError: boolean
-  overdueLoading: boolean
-  overdueError: boolean
+  boardLoading: boolean
+  boardError: boolean
   historyLoading: boolean
   historyError: boolean
-  todayInProgress: Todo[]
-  todayNotStarted: Todo[]
-  pendingItems: Todo[]
+  todayItems: Todo[]
+  futureItems: Todo[]
   overdueItems: Todo[]
+  taskItems: Todo[]
   historyItems: Todo[]
-  poolOpen: boolean
   overdueOpen: boolean
-  onCreate: (input: { title: string; priority: Priority; addToday: boolean; dueDate?: string }) => void
+  onCreate: (input: { title: string; priority: Priority; scheduledDate?: string; dueDate?: string }) => void
   onTabChange: (tab: TodoTab) => void
   onHistoryStatusChange: (status: TodoStatus | '') => void
-  onPoolOpenChange: (open: boolean) => void
   onOverdueOpenChange: (open: boolean) => void
   onStatusStep: (item: Todo) => void
   onStatusChange: (item: Todo, status: TodoStatus) => void
-  onScheduleToday: (item: Todo, dueDate: string) => void
+  onScheduleTask: (id: string, scheduledDate: string) => void
   onOpenTodo: (item: Todo) => void
 }
 
-// TodoDesktopView 保留桌面端信息密度和 hover 交互，避免移动端重构影响 Web 端。
+// TodoDesktopView 保留桌面端信息密度和 hover 交互，展示看板三栏 + 任务 + 历史。
 export function TodoDesktopView({
   activeTab,
   historyStatus,
-  today,
   headerMetrics,
   operationError,
   createPending,
-  schedulePending,
-  todayLoading,
-  todayError,
-  pendingLoading,
-  pendingError,
-  overdueLoading,
-  overdueError,
+  boardLoading,
+  boardError,
   historyLoading,
   historyError,
-  todayInProgress,
-  todayNotStarted,
-  pendingItems,
+  todayItems,
+  futureItems,
   overdueItems,
+  taskItems,
   historyItems,
-  poolOpen,
   overdueOpen,
   onCreate,
   onTabChange,
   onHistoryStatusChange,
-  onPoolOpenChange,
   onOverdueOpenChange,
   onStatusStep,
   onStatusChange,
-  onScheduleToday,
+  onScheduleTask,
   onOpenTodo,
 }: TodoMainViewProps) {
   return (
-    <div className="nexus-page-enter mx-auto hidden max-w-[1180px] space-y-5 p-8 md:block">
+    <div className="nexus-page-enter mx-auto hidden max-w-[1180px] space-y-4 p-4 md:block lg:p-6">
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Today execution</p>
-          <h1 className="mt-1 text-[44px] font-black leading-[1.03]">ToDo</h1>
-          <p className="mt-2 text-[15px] font-medium leading-7 text-muted-foreground">今日执行、待分配、过期处理和历史恢复。</p>
+          <h1 className="mt-1 text-[28px] font-black leading-tight">ToDo</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">看板、任务和历史。</p>
         </div>
-        <div className="grid grid-cols-3 gap-2 justify-self-end">
+        <div className="grid grid-cols-4 gap-2 justify-self-end">
           {headerMetrics.map((metric) => (
             <div
               key={metric.label}
               className={cn(
-                'min-w-16 rounded-xl border bg-card px-3 py-2 shadow-[var(--shadow-sm)]',
-                metric.tone === 'danger' && 'border-[hsl(var(--destructive)/0.22)] bg-[hsl(var(--destructive-soft))]',
+                'flex h-14 w-[68px] flex-col justify-center rounded-lg border bg-card px-3 shadow-[var(--shadow-xs)]',
+                METRIC_CARD_STYLES[metric.tone],
               )}
             >
-              <p className={cn('text-lg font-black leading-none', metric.tone === 'danger' && 'text-destructive')}>{metric.value}</p>
-              <p className={cn('mt-1 truncate text-[10px] font-bold text-muted-foreground', metric.tone === 'danger' && 'text-destructive/75')}>{metric.label}</p>
+              <p className="text-lg font-black leading-none">{metric.value}</p>
+              <p className="mt-1 truncate text-[10px] font-bold text-muted-foreground">{metric.label}</p>
             </div>
           ))}
         </div>
       </div>
 
-      <QuickCreate today={today} pending={createPending} onCreate={onCreate} />
+      <QuickCreate pending={createPending} onCreate={onCreate} />
       {operationError && (
         <div className="rounded-xl border border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] px-4 py-3 text-sm font-semibold text-destructive">
           ToDo 操作失败，请确认后端服务和登录状态后再试。
@@ -119,39 +108,43 @@ export function TodoDesktopView({
 
       <TodoTabs activeTab={activeTab} onTabChange={onTabChange} />
 
-      {activeTab === 'today' ? (
-        <TodaySections
-          today={today}
-          schedulePending={schedulePending}
-          todayLoading={todayLoading}
-          todayError={todayError}
-          pendingLoading={pendingLoading}
-          pendingError={pendingError}
-          overdueLoading={overdueLoading}
-          overdueError={overdueError}
-          todayInProgress={todayInProgress}
-          todayNotStarted={todayNotStarted}
-          pendingItems={pendingItems}
+      {activeTab === 'list' ? (
+        <BoardSections
+          boardLoading={boardLoading}
+          boardError={boardError}
+          todayItems={todayItems}
+          futureItems={futureItems}
           overdueItems={overdueItems}
-          poolOpen={poolOpen}
           overdueOpen={overdueOpen}
-          onPoolOpenChange={onPoolOpenChange}
           onOverdueOpenChange={onOverdueOpenChange}
           onStatusStep={onStatusStep}
-          onStatusChange={onStatusChange}
-          onScheduleToday={onScheduleToday}
           onOpenTodo={onOpenTodo}
         />
+      ) : activeTab === 'tasks' ? (
+        <TodoSection title="任务" loading={boardLoading} empty="没有任务">
+          {boardError && <ErrorRow text="任务加载失败，请确认后端服务已启动。" />}
+          {taskItems.map((item) => (
+            <TaskCard
+              key={item.id}
+              item={item}
+              onOpen={() => onOpenTodo(item)}
+              onSchedule={(date) => onScheduleTask(item.id, date)}
+              onCancel={() => onStatusChange(item, 'cancelled')}
+            />
+          ))}
+        </TodoSection>
       ) : (
-        <HistorySection
-          historyStatus={historyStatus}
-          historyLoading={historyLoading}
-          historyError={historyError}
-          historyItems={historyItems}
-          onHistoryStatusChange={onHistoryStatusChange}
-          onStatusStep={onStatusStep}
-          onOpenTodo={onOpenTodo}
-        />
+        <TodoSection
+          title="历史 ToDo"
+          loading={historyLoading}
+          empty="没有匹配的历史任务"
+          toolbar={<StatusFilterSelect value={historyStatus} onChange={onHistoryStatusChange} />}
+        >
+          {historyError && <ErrorRow text="历史 ToDo 加载失败，请确认后端服务已启动。" />}
+          {historyItems.map((item) => (
+            <TodoRow key={item.id} item={item} onOpen={() => onOpenTodo(item)} onStatusStep={() => onStatusStep(item)} />
+          ))}
+        </TodoSection>
       )}
     </div>
   )
@@ -159,9 +152,10 @@ export function TodoDesktopView({
 
 function TodoTabs({ activeTab, onTabChange }: { activeTab: TodoTab; onTabChange: (tab: TodoTab) => void }) {
   return (
-    <div className="grid grid-cols-2 rounded-[0.9375rem] border bg-card p-1 shadow-[var(--shadow-xs)]">
+    <div className="grid h-11 grid-cols-3 rounded-lg border bg-card p-1 shadow-[var(--shadow-xs)]">
       {([
-        ['today', '今日'],
+        ['list', 'ToDo List'],
+        ['tasks', '任务'],
         ['history', '历史'],
       ] as const).map(([key, label]) => (
         <button
@@ -169,7 +163,7 @@ function TodoTabs({ activeTab, onTabChange }: { activeTab: TodoTab; onTabChange:
           type="button"
           onClick={() => onTabChange(key)}
           className={cn(
-            'h-11 rounded-[0.6875rem] text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+            'h-full rounded-md text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
             activeTab === key ? 'bg-primary text-primary-foreground' : 'text-accent-foreground hover:bg-accent',
           )}
         >
@@ -180,102 +174,37 @@ function TodoTabs({ activeTab, onTabChange }: { activeTab: TodoTab; onTabChange:
   )
 }
 
-function TodaySections({
-  today,
-  schedulePending,
-  todayLoading,
-  todayError,
-  pendingLoading,
-  pendingError,
-  overdueLoading,
-  overdueError,
-  todayInProgress,
-  todayNotStarted,
-  pendingItems,
+function BoardSections({
+  boardLoading,
+  boardError,
+  todayItems,
+  futureItems,
   overdueItems,
-  poolOpen,
   overdueOpen,
-  onPoolOpenChange,
   onOverdueOpenChange,
   onStatusStep,
-  onStatusChange,
-  onScheduleToday,
   onOpenTodo,
-}: Pick<TodoMainViewProps,
-  'today' | 'schedulePending' | 'todayLoading' | 'todayError' | 'pendingLoading' | 'pendingError' |
-  'overdueLoading' | 'overdueError' | 'todayInProgress' | 'todayNotStarted' | 'pendingItems' |
-  'overdueItems' | 'poolOpen' | 'overdueOpen' | 'onPoolOpenChange' | 'onOverdueOpenChange' |
-  'onStatusStep' | 'onStatusChange' | 'onScheduleToday' | 'onOpenTodo'
->) {
+}: Pick<TodoMainViewProps, 'boardLoading' | 'boardError' | 'todayItems' | 'futureItems' | 'overdueItems' | 'overdueOpen' | 'onOverdueOpenChange' | 'onStatusStep' | 'onOpenTodo'>) {
   return (
-    <div className="space-y-5">
-      <TodoSection title="今日" loading={todayLoading} empty="今天还没有执行项">
-        {todayError && <ErrorRow text="今日 ToDo 加载失败，请确认后端服务已启动。" />}
-        {todayInProgress.length > 0 && <TodoGroupLabel label="进行中" />}
-        {todayInProgress.map((item) => (
-          <TodoRow key={item.id} item={item} onOpen={() => onOpenTodo(item)} onStatusStep={() => onStatusStep(item)} />
-        ))}
-        {todayNotStarted.length > 0 && <TodoGroupLabel label="未开始" />}
-        {todayNotStarted.map((item) => (
+    <div className="space-y-4">
+      <TodoSection title="今日" loading={boardLoading} empty="今天还没有执行项">
+        {boardError && <ErrorRow text="看板加载失败，请确认后端服务已启动。" />}
+        {todayItems.map((item) => (
           <TodoRow key={item.id} item={item} onOpen={() => onOpenTodo(item)} onStatusStep={() => onStatusStep(item)} />
         ))}
       </TodoSection>
 
-      <TodoSection title="待分配" loading={pendingLoading} empty="没有待分配任务" collapsible open={poolOpen} onOpenChange={onPoolOpenChange}>
-        {pendingError && <ErrorRow text="待分配 ToDo 加载失败，请确认后端服务已启动。" />}
-        {pendingItems.map((item) => (
-          <TodoRow
-            key={item.id}
-            item={item}
-            onOpen={() => onOpenTodo(item)}
-            onStatusStep={() => onStatusStep(item)}
-            trailing={
-              <div className="flex items-center gap-1.5">
-                <ScheduleTodayPopover item={item} today={today} pending={schedulePending} onConfirm={(dueDate) => onScheduleToday(item, dueDate)} />
-                <button
-                  type="button"
-                  onClick={() => onStatusChange(item, 'cancelled')}
-                  className="nexus-button-utility h-9 shrink-0 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-destructive"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">取消</span>
-                </button>
-              </div>
-            }
-          />
+      <TodoSection title="未来" loading={boardLoading} empty="没有未来计划">
+        {futureItems.map((item) => (
+          <TodoRow key={item.id} item={item} onOpen={() => onOpenTodo(item)} onStatusStep={() => onStatusStep(item)} />
         ))}
       </TodoSection>
 
-      <TodoSection title="已过期" loading={overdueLoading} empty="没有过期任务" collapsible open={overdueOpen} onOpenChange={onOverdueOpenChange}>
-        {overdueError && <ErrorRow text="已过期 ToDo 加载失败，请确认后端服务已启动。" />}
+      <TodoSection title="已过期" loading={boardLoading} empty="没有过期任务" collapsible open={overdueOpen} onOpenChange={onOverdueOpenChange}>
         {overdueItems.map((item) => (
           <TodoRow key={item.id} item={item} onOpen={() => onOpenTodo(item)} onStatusStep={() => onStatusStep(item)} />
         ))}
       </TodoSection>
     </div>
-  )
-}
-
-function HistorySection({
-  historyStatus,
-  historyLoading,
-  historyError,
-  historyItems,
-  onHistoryStatusChange,
-  onStatusStep,
-  onOpenTodo,
-}: Pick<TodoMainViewProps, 'historyStatus' | 'historyLoading' | 'historyError' | 'historyItems' | 'onHistoryStatusChange' | 'onStatusStep' | 'onOpenTodo'>) {
-  return (
-    <TodoSection
-      title="历史 ToDo"
-      loading={historyLoading}
-      empty="没有匹配的历史任务"
-      toolbar={<StatusFilterSelect value={historyStatus} onChange={onHistoryStatusChange} />}
-    >
-      {historyError && <ErrorRow text="历史 ToDo 加载失败，请确认后端服务已启动。" />}
-      {historyItems.map((item) => (
-        <TodoRow key={item.id} item={item} onOpen={() => onOpenTodo(item)} onStatusStep={() => onStatusStep(item)} />
-      ))}
-    </TodoSection>
   )
 }

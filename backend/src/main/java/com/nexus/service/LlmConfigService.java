@@ -6,9 +6,13 @@ import com.nexus.entity.WorkflowLlmConfig;
 import com.nexus.mapper.LlmProviderMapper;
 import com.nexus.mapper.WorkflowLlmConfigMapper;
 import dev.langchain4j.model.anthropic.AnthropicChatModel;
+import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaStreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
+import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -74,14 +78,70 @@ public class LlmConfigService {
         String apiKey = decrypt(p.getApiKey());
 
         return switch (p.getProvider()) {
-            case "openai" -> OpenAiChatModel.builder()
-                    .apiKey(apiKey).modelName(model).build();
+            case "openai" -> {
+                var builder = OpenAiChatModel.builder().apiKey(apiKey).modelName(model);
+                // openai 类型支持自定义 baseUrl，让 MiMo / GLM 等 OpenAI 兼容协议模型直接接入
+                if (p.getBaseUrl() != null && !p.getBaseUrl().isBlank()) builder.baseUrl(p.getBaseUrl());
+                yield builder.build();
+            }
             // DeepSeek 兼容 OpenAI 协议，直接复用 OpenAiChatModel 并指定 baseUrl
             case "deepseek" -> OpenAiChatModel.builder()
                     .apiKey(apiKey).baseUrl("https://api.deepseek.com/v1").modelName(model).build();
-            case "anthropic" -> AnthropicChatModel.builder()
-                    .apiKey(apiKey).modelName(model).build();
+            case "anthropic" -> {
+                var builder = AnthropicChatModel.builder().apiKey(apiKey).modelName(model);
+                // anthropic 类型也支持自定义 baseUrl，兼容代理/自部署
+                if (p.getBaseUrl() != null && !p.getBaseUrl().isBlank()) builder.baseUrl(p.getBaseUrl());
+                yield builder.build();
+            }
             case "ollama" -> OllamaChatModel.builder()
+                    .baseUrl(p.getBaseUrl()).modelName(model).build();
+            default -> throw new IllegalStateException("未知 Provider: " + p.getProvider());
+        };
+    }
+
+    /**
+     * 解析指定工作流类型的流式模型实例，供 SSE 逐 token 输出使用。
+     * 优先级同 resolveModel：工作流绑定 Provider > 全局默认。
+     */
+    public StreamingChatLanguageModel resolveStreamingModel(String workflowType) {
+        WorkflowLlmConfig wf = workflowLlmConfigMapper.selectOne(
+                new LambdaQueryWrapper<WorkflowLlmConfig>()
+                        .eq(WorkflowLlmConfig::getWorkflowType, workflowType));
+
+        LlmProvider provider = null;
+        if (wf != null && wf.getProviderId() != null) {
+            provider = llmProviderMapper.selectById(wf.getProviderId());
+        }
+        if (provider == null) {
+            provider = llmProviderMapper.selectOne(new LambdaQueryWrapper<LlmProvider>()
+                    .eq(LlmProvider::isDefaultProvider, true)
+                    .eq(LlmProvider::isEnabled, true));
+        }
+        if (provider == null) {
+            throw new IllegalStateException("未配置可用的 LLM Provider，请在设置页面添加");
+        }
+        return buildStreamingModel(provider, wf);
+    }
+
+    private StreamingChatLanguageModel buildStreamingModel(LlmProvider p, WorkflowLlmConfig wf) {
+        String model = (wf != null && wf.getModelOverride() != null) ? wf.getModelOverride() : p.getModel();
+        String apiKey = decrypt(p.getApiKey());
+
+        return switch (p.getProvider()) {
+            case "openai" -> {
+                var builder = OpenAiStreamingChatModel.builder().apiKey(apiKey).modelName(model);
+                if (p.getBaseUrl() != null && !p.getBaseUrl().isBlank()) builder.baseUrl(p.getBaseUrl());
+                yield builder.build();
+            }
+            // DeepSeek 兼容 OpenAI 协议
+            case "deepseek" -> OpenAiStreamingChatModel.builder()
+                    .apiKey(apiKey).baseUrl("https://api.deepseek.com/v1").modelName(model).build();
+            case "anthropic" -> {
+                var builder = AnthropicStreamingChatModel.builder().apiKey(apiKey).modelName(model);
+                if (p.getBaseUrl() != null && !p.getBaseUrl().isBlank()) builder.baseUrl(p.getBaseUrl());
+                yield builder.build();
+            }
+            case "ollama" -> OllamaStreamingChatModel.builder()
                     .baseUrl(p.getBaseUrl()).modelName(model).build();
             default -> throw new IllegalStateException("未知 Provider: " + p.getProvider());
         };
@@ -180,7 +240,8 @@ public class LlmConfigService {
                 new LambdaQueryWrapper<WorkflowLlmConfig>()
                         .eq(WorkflowLlmConfig::getWorkflowType, workflowType));
         if (wf == null) throw new IllegalArgumentException("工作流不存在: " + workflowType);
-        if (providerId    != null) wf.setProviderId(providerId);
+        // providerId 为空串时视为"清除绑定，恢复继承全局默认"
+        if (providerId    != null) wf.setProviderId(providerId.isBlank() ? null : providerId);
         if (modelOverride != null) wf.setModelOverride(modelOverride);
         if (temperature   != null) wf.setTemperature(temperature);
         workflowLlmConfigMapper.updateById(wf);

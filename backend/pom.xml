@@ -138,6 +138,13 @@
             <version>${minio.version}</version>
         </dependency>
 
+        <!-- Tencent Cloud Machine Translation SDK -->
+        <dependency>
+            <groupId>com.tencentcloudapi</groupId>
+            <artifactId>tencentcloud-sdk-java-tmt</artifactId>
+            <version>3.1.1436</version>
+        </dependency>
+
         <!-- SpringDoc OpenAPI -->
         <dependency>
             <groupId>org.springdoc</groupId>

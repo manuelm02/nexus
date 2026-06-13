@@ -14,7 +14,7 @@ public interface TodoMapper extends BaseMapper<Todo> {
 
     @Select("""
             SELECT * FROM todos
-            WHERE status <> 'done'
+            WHERE status NOT IN ('done', 'cancelled')
               AND (
                 (scheduled_date IS NOT NULL AND scheduled_date < #{today})
                 OR (due_date IS NOT NULL AND due_date < #{today})

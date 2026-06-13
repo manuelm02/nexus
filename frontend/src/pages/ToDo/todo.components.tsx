@@ -1,33 +1,33 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as Popover from '@radix-ui/react-popover'
 import * as Select from '@radix-ui/react-select'
 import {
-  CalendarPlus, Check, ChevronDown, Info, Pause, Plus, Trash2, X,
+  CalendarDays, Check, ChevronDown, Info, Plus, Trash2, X,
 } from 'lucide-react'
 import type { Todo } from '../../types/domain.types'
 import { PRIORITY_LABELS, STATUS_LABELS } from '../../lib/constants'
 import { cn } from '../../lib/utils'
+import { TodoDatePicker } from './components/TodoDatePicker'
 import {
   PRIORITIES,
   PRIORITY_ROW_STYLES,
   PRIORITY_STYLES,
   TODO_STATUSES,
+  isDueDateInvalid,
   normalizePriority,
   type Priority,
   type TodoStatus,
 } from './todo.shared'
 
-// QuickCreate 提供 ToDo 快速录入入口；移动端保持紧凑，复杂日期选择下沉到待分配操作。
-export function QuickCreate({ today, pending, onCreate }: {
-  today: string
+// QuickCreate 提供 ToDo 快速录入入口；计划日期可选，不选则进入任务。
+export function QuickCreate({ pending, onCreate }: {
   pending: boolean
-  onCreate: (input: { title: string; priority: Priority; addToday: boolean; dueDate?: string }) => void
+  onCreate: (input: { title: string; priority: Priority; scheduledDate?: string; dueDate?: string }) => void
 }) {
   const [title, setTitle] = useState('')
   const [priority, setPriority] = useState<Priority | null>(null)
-  const [addToday, setAddToday] = useState(false)
-  const [dueDate, setDueDate] = useState(today)
+  const [scheduledDate, setScheduledDate] = useState('')
   const [priorityError, setPriorityError] = useState(false)
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -38,22 +38,27 @@ export function QuickCreate({ today, pending, onCreate }: {
       setPriorityError(true)
       return
     }
-    onCreate({ title: trimmed, priority, addToday, dueDate: addToday ? dueDate : undefined })
+    // 有计划日期时 dueDate 默认等于 scheduledDate
+    onCreate({
+      title: trimmed,
+      priority,
+      scheduledDate: scheduledDate || undefined,
+      dueDate: scheduledDate || undefined,
+    })
     setTitle('')
     setPriority(null)
-    setAddToday(false)
-    setDueDate(today)
+    setScheduledDate('')
     setPriorityError(false)
   }
 
   return (
-    <form onSubmit={handleSubmit} className="nexus-surface rounded-xl p-2 sm:rounded-2xl sm:p-4">
-      <div className="grid gap-2 xl:grid-cols-[minmax(320px,1fr)_204px_auto_auto] xl:items-center">
+    <form onSubmit={handleSubmit} className="nexus-surface rounded-xl p-2 sm:p-3">
+      <div className="grid gap-2 xl:grid-cols-[minmax(320px,1fr)_204px_204px_112px] xl:items-center">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="写下要处理的事"
-          className="nexus-input h-9 w-full min-w-0 rounded-lg px-3 text-sm font-semibold sm:h-12 sm:rounded-xl sm:px-4 xl:min-w-[320px]"
+          className="nexus-input h-9 w-full min-w-0 rounded-lg px-3 text-sm font-semibold sm:h-9 sm:px-3 xl:min-w-[320px]"
         />
         <div className="min-w-0">
           <PriorityPicker
@@ -65,42 +70,26 @@ export function QuickCreate({ today, pending, onCreate }: {
             compact
           />
         </div>
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:grid-cols-[auto_auto] sm:justify-end xl:justify-start">
-          <label className="nexus-button-utility h-9 justify-start gap-2 px-3 text-sm text-foreground sm:h-11">
-            <input
-              type="checkbox"
-              checked={addToday}
-              onChange={(e) => setAddToday(e.target.checked)}
-              className="h-4 w-4 rounded border-muted-foreground/40"
-            />
-            加入今日
-          </label>
-          <button
-            type="submit"
-            disabled={!title.trim() || pending}
-            className="nexus-button-primary h-9 gap-2 px-4 text-sm sm:h-12 sm:px-6"
-          >
-            <Plus className="h-4 w-4" /> 添加
-          </button>
+        <div className="min-w-0">
+          <TodoDatePicker
+            value={scheduledDate}
+            onChange={setScheduledDate}
+            allowClear
+            compact
+            placeholder="计划日期"
+          />
         </div>
+        <button
+          type="submit"
+          disabled={!title.trim() || pending}
+          className="nexus-button-primary h-9 w-full gap-2 px-4 text-sm"
+        >
+          <Plus className="h-4 w-4" /> 添加
+        </button>
       </div>
 
       {priorityError && (
         <p className="mt-2 px-1 text-xs text-destructive">请选择一个优先级后再添加。</p>
-      )}
-
-      {addToday && (
-        <div className="mt-3 border-t pt-3">
-          <label className="grid gap-1.5 text-xs font-bold text-muted-foreground sm:max-w-xs">
-            截止日期
-            <input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              className="nexus-input h-10 px-3 text-sm font-semibold text-foreground"
-            />
-          </label>
-        </div>
       )}
     </form>
   )
@@ -116,10 +105,10 @@ export function PriorityPicker({ value, onChange, compact = false }: { value?: P
           type="button"
           onClick={() => onChange(priority)}
           className={cn(
-            'h-9 min-w-0 rounded-lg border px-3 text-sm font-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-10 sm:rounded-xl',
+            'h-9 min-w-0 rounded-lg border px-3 text-sm font-black transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-9 sm:rounded-lg',
             PRIORITY_STYLES[priority],
             value === priority ? 'ring-2 ring-ring ring-offset-1' : 'opacity-78 hover:opacity-100',
-            compact && 'h-9 rounded-lg px-2 text-sm sm:h-12 sm:rounded-xl',
+            compact && 'h-9 rounded-lg px-2 text-sm sm:h-9 sm:rounded-lg',
           )}
         >
           {PRIORITY_LABELS[priority]}
@@ -243,19 +232,6 @@ function isTodoItemNode(node: React.ReactNode) {
   return typeof node === 'object' && node !== null && 'props' in node && !(node as { props?: { 'data-group-label'?: boolean } }).props?.['data-group-label']
 }
 
-// TodoGroupLabel 标记今日列表内的状态小分组。
-export function TodoGroupLabel({ label }: { label: string }) {
-  return (
-    <li data-group-label className="px-1 pt-1 text-xs font-bold text-muted-foreground">
-      {label}
-    </li>
-  )
-}
-
-function ReactChildren(children: React.ReactNode) {
-  return Array.isArray(children) ? children.flat().filter(Boolean) : [children].filter(Boolean)
-}
-
 // ErrorRow 在列表区域内展示局部加载失败提示。
 export function ErrorRow({ text }: { text: string }) {
   return (
@@ -263,6 +239,10 @@ export function ErrorRow({ text }: { text: string }) {
       {text}
     </li>
   )
+}
+
+function ReactChildren(children: React.ReactNode) {
+  return Array.isArray(children) ? children.flat().filter(Boolean) : [children].filter(Boolean)
 }
 
 // TodoRow 渲染桌面端 ToDo 单行，并保留状态流转和详情入口。
@@ -275,7 +255,7 @@ export function TodoRow({ item, trailing, onOpen, onStatusStep }: {
   const priority = normalizePriority(item.priority)
 
   return (
-    <li className={cn('group flex min-h-12 items-center gap-2.5 rounded-xl border border-l-4 bg-card px-3 py-1.5 shadow-[var(--shadow-sm)] transition-colors hover:border-input sm:min-h-14 sm:gap-3 sm:px-4 sm:py-2', PRIORITY_ROW_STYLES[priority])}>
+    <li className={cn('group flex min-h-12 items-center gap-2.5 rounded-lg border border-l-4 bg-card px-3 py-1.5 shadow-[var(--shadow-xs)] transition-colors hover:border-input sm:min-h-12 sm:gap-3 sm:px-3', PRIORITY_ROW_STYLES[priority])}>
       <StatusCycleButton status={item.status} onClick={onStatusStep} />
       <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-2 text-left">
         <p className={cn('min-w-0 flex-1 truncate text-sm font-bold', item.status === 'done' && 'text-muted-foreground line-through')}>
@@ -284,8 +264,8 @@ export function TodoRow({ item, trailing, onOpen, onStatusStep }: {
         <span className={cn('hidden rounded-full border px-2 py-1 text-xs font-bold sm:inline-flex', PRIORITY_STYLES[priority])}>
           {PRIORITY_LABELS[priority]}
         </span>
+        {item.scheduledDate && <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">计划 {item.scheduledDate}</span>}
         {item.dueDate && <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">截止 {item.dueDate}</span>}
-        {item.dueDate && <span className="shrink-0 text-xs text-muted-foreground sm:hidden">{item.dueDate.slice(5)}</span>}
         <Info className="hidden h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 sm:block" />
       </button>
       {trailing && <div className="flex shrink-0 justify-end">{trailing}</div>}
@@ -315,7 +295,7 @@ function StatusCycleButton({ status, onClick }: { status: TodoStatus; onClick: (
       )}
       {status === 'pending' && (
         <span className="flex h-4 w-4 items-center justify-center rounded-full border border-muted-foreground/30 bg-background/70">
-          <Pause className="h-2.5 w-2.5" />
+          <div className="h-2.5 w-2.5" />
         </span>
       )}
       {status === 'cancelled' && (
@@ -334,97 +314,171 @@ function StatusCycleButton({ status, onClick }: { status: TodoStatus; onClick: (
   )
 }
 
-// ScheduleTodayPopover 让待分配任务在原地选择截止日期后加入今日。
-export function ScheduleTodayPopover({ item, today, pending, onConfirm }: {
+// TaskCard 桌面端任务卡片：展示待分配任务，提供计划日期选择器和取消按钮。
+export function TaskCard({ item, onOpen, onSchedule, onCancel }: {
   item: Todo
-  today: string
-  pending: boolean
-  onConfirm: (dueDate: string) => void
+  onOpen: () => void
+  onSchedule: (scheduledDate: string) => void
+  onCancel: () => void
 }) {
-  const [open, setOpen] = useState(false)
-  const [dueDate, setDueDate] = useState(today)
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [scheduledDate, setScheduledDate] = useState('')
+  const priority = normalizePriority(item.priority)
 
-  useEffect(() => {
-    if (open) setDueDate(item.dueDate || today)
-  }, [item.dueDate, open, today])
+  const handleScheduleDateChange = (value: string) => {
+    setScheduledDate(value)
+    if (value) {
+      onSchedule(value)
+      setScheduledDate('')
+    }
+  }
 
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
-      <Popover.Trigger asChild>
-        <button
-          type="button"
-          className="nexus-button-utility h-9 shrink-0 gap-1.5 px-2.5 text-xs text-muted-foreground"
-        >
-          <CalendarPlus className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">加入今日</span>
-        </button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="top"
-          align="end"
-          sideOffset={8}
-          className="z-[70] w-[min(calc(100vw-2rem),20rem)] rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl"
-        >
-          <div className="space-y-3">
-            <div>
-              <Popover.Close asChild>
-                <button
-                  type="button"
-                  aria-label="关闭"
-                  className="float-right flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </Popover.Close>
-              <p className="text-sm font-bold">选择截止日期</p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">{item.title}</p>
-            </div>
-            <label className="grid gap-2 text-xs font-bold text-muted-foreground">
-              截止日期
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="nexus-input h-10 w-full px-3 text-sm font-normal text-foreground"
-              />
-            </label>
-          </div>
-          <div className="mt-4 flex items-center justify-end gap-2">
-            <Popover.Close asChild>
-              <button
-                type="button"
-                className="inline-flex h-9 min-w-16 items-center justify-center rounded-md border bg-card px-3 text-xs font-semibold text-foreground transition-colors hover:bg-accent"
-              >
-                取消
-              </button>
-            </Popover.Close>
+    <li className={cn('group flex min-h-12 items-center gap-2.5 rounded-lg border border-l-4 bg-card px-3 py-1.5 shadow-[var(--shadow-xs)] transition-colors', PRIORITY_ROW_STYLES[priority])}>
+      <StatusCycleButton status={item.status} onClick={() => {}} />
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+        <p className="min-w-0 flex-1 truncate text-sm font-bold">
+          {item.title}
+        </p>
+        <span className={cn('hidden rounded-full border px-2 py-1 text-xs font-bold sm:inline-flex', PRIORITY_STYLES[priority])}>
+          {PRIORITY_LABELS[priority]}
+        </span>
+      </button>
+      <div className="flex items-center gap-1.5">
+        <div className="hidden w-36 sm:block">
+          <TodoDatePicker
+            value={scheduledDate}
+            onChange={handleScheduleDateChange}
+            allowClear
+            compact
+            placeholder="计划日期"
+          />
+        </div>
+        {showCancelConfirm ? (
+          <>
             <button
               type="button"
-              disabled={pending}
-              onClick={() => {
-                onConfirm(dueDate || today)
-                setOpen(false)
-              }}
-              className="nexus-button-primary h-9 px-4 text-xs"
+              onClick={() => { onCancel(); setShowCancelConfirm(false) }}
+              className="rounded-md border border-destructive bg-destructive px-2.5 py-1 text-xs font-semibold text-destructive-foreground hover:bg-destructive/90"
             >
-              确认加入
+              确认取消
             </button>
-          </div>
-          <Popover.Arrow className="fill-popover" />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+            <button
+              type="button"
+              onClick={() => setShowCancelConfirm(false)}
+              className="rounded-md border bg-card px-2.5 py-1 text-xs font-semibold text-foreground hover:bg-accent"
+            >
+              返回
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowCancelConfirm(true)}
+            className="nexus-button-utility hidden h-8 shrink-0 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive sm:inline-flex"
+          >
+            <X className="h-3.5 w-3.5" />
+            取消
+          </button>
+        )}
+      </div>
+    </li>
   )
 }
 
-// TodoDetailDialog 在桌面表现为居中弹窗，在移动端转为底部 sheet，避免移动端照搬桌面弹窗。
-export function TodoDetailDialog({ item, saving, deleting, onOpenChange, onSave, onDelete }: {
+// MobileTaskCard 移动端任务卡片：展示待分配任务，提供计划日期选择器和取消按钮。
+export function MobileTaskCard({ item, onOpen, onSchedule, onCancel }: {
+  item: Todo
+  onOpen: () => void
+  onSchedule: (scheduledDate: string) => void
+  onCancel: () => void
+}) {
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false)
+  const [scheduledDate, setScheduledDate] = useState('')
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const priority = normalizePriority(item.priority)
+
+  const handleDateChange = (val: string) => {
+    setScheduledDate(val)
+    // 一旦选中日期立即提交
+    if (val) {
+      onSchedule(val)
+      setScheduledDate('')
+      setShowDatePicker(false)
+    }
+  }
+
+  return (
+    <li className={cn('flex min-h-[3.5rem] items-start gap-2 rounded-xl border border-l-4 bg-card px-2.5 py-1.5 shadow-[var(--shadow-xs)]', PRIORITY_ROW_STYLES[priority])}>
+      <span className="mt-1 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border bg-background">
+        <div className="h-2.5 w-2.5" />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+        <button type="button" onClick={onOpen} className="text-left">
+          <span className="text-sm font-black">{item.title}</span>
+        </button>
+        {showDatePicker && (
+          <TodoDatePicker
+            value={scheduledDate}
+            onChange={handleDateChange}
+            allowClear
+            showQuickChips
+            compact
+            placeholder="计划日期"
+          />
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-1 pt-0.5">
+        {!showDatePicker && (
+          <button
+            type="button"
+            onClick={() => setShowDatePicker(true)}
+            className="inline-flex h-9 items-center gap-1 rounded-lg border bg-background px-2.5 text-xs font-bold text-muted-foreground"
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            计划
+          </button>
+        )}
+        {showCancelConfirm ? (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => { onCancel(); setShowCancelConfirm(false) }}
+              className="rounded-lg border border-destructive bg-destructive px-2 py-1 text-xs font-semibold text-destructive-foreground"
+            >
+              确认
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCancelConfirm(false)}
+              className="rounded-lg border bg-card px-2 py-1 text-xs font-semibold"
+            >
+              返回
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowCancelConfirm(true)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border bg-background text-muted-foreground"
+            aria-label="取消"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </li>
+  )
+}
+
+// TodoDetailDialog 在桌面表现为居中弹窗，在移动端转为底部 sheet。
+export function TodoDetailDialog({ item, dateValidation, saving, deleting, onOpenChange, onSave, onDelete }: {
   item: Todo | null
+  dateValidation: string | null
   saving: boolean
   deleting: boolean
   onOpenChange: (open: boolean) => void
-  onSave: (id: string, data: Partial<Todo>) => void
+  onSave: (id: string, data: Partial<Todo> & { clearScheduledDate?: boolean; clearDueDate?: boolean }) => void
   onDelete: (id: string) => void
 }) {
   const [form, setForm] = useState({
@@ -435,6 +489,10 @@ export function TodoDetailDialog({ item, saving, deleting, onOpenChange, onSave,
     scheduledDate: '',
     dueDate: '',
   })
+  // 用户是否手动修改过截止日期
+  const [dueDateTouched, setDueDateTouched] = useState(false)
+  const [localValidation, setLocalValidation] = useState<string | null>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
     if (!item) return
@@ -446,19 +504,63 @@ export function TodoDetailDialog({ item, saving, deleting, onOpenChange, onSave,
       scheduledDate: item.scheduledDate ?? '',
       dueDate: item.dueDate ?? '',
     })
-  }, [item])
+    setDueDateTouched(false)
+    setLocalValidation(dateValidation)
+  }, [item, dateValidation])
+
+  // 备注输入框自适应高度
+  const handleTextareaInput = () => {
+    const el = textareaRef.current
+    if (el) {
+      el.style.height = 'auto'
+      el.style.height = `${Math.min(el.scrollHeight, 192)}px`
+    }
+  }
+
+  const handleScheduledDateChange = (value: string) => {
+    setForm((prev) => {
+      if (!value) {
+        // 清空计划日期 → 同时清空截止日期
+        return { ...prev, scheduledDate: '', dueDate: '' }
+      }
+      // 用户未手动修改过截止日期 → 自动补为计划日期
+      const newDueDate = dueDateTouched ? prev.dueDate : value
+      return { ...prev, scheduledDate: value, dueDate: newDueDate }
+    })
+    setLocalValidation(null)
+  }
+
+  const handleDueDateChange = (value: string) => {
+    setForm((prev) => ({ ...prev, dueDate: value }))
+    setDueDateTouched(true)
+    setLocalValidation(null)
+  }
 
   const handleSave = () => {
     if (!item || !form.title.trim()) return
+
+    // 必填校验
+    const s = form.scheduledDate || undefined
+    const d = form.dueDate || undefined
+    if (isDueDateInvalid(s, d)) {
+      setLocalValidation('截止日期不能早于计划日期')
+      return
+    }
+
     onSave(item.id, {
       title: form.title.trim(),
       description: form.description,
       priority: form.priority,
       status: form.status,
-      scheduledDate: form.scheduledDate || undefined,
-      dueDate: form.dueDate || undefined,
+      scheduledDate: s,
+      dueDate: d,
+      // 清空日期必须用显式 flag，否则后端无法区分"不修改"和"清空"
+      clearScheduledDate: !form.scheduledDate && !!item.scheduledDate,
+      clearDueDate: !form.dueDate && !!item.dueDate,
     })
   }
+
+  const validationError = localValidation ?? dateValidation
 
   return (
     <Dialog.Root open={!!item} onOpenChange={onOpenChange}>
@@ -476,6 +578,7 @@ export function TodoDetailDialog({ item, saving, deleting, onOpenChange, onSave,
           </div>
 
           <div className="mt-3 space-y-2.5 sm:mt-4 sm:space-y-4">
+            {/* 标题 */}
             <label className="block space-y-2">
               <span className="text-xs font-medium text-muted-foreground">标题</span>
               <input
@@ -485,21 +588,13 @@ export function TodoDetailDialog({ item, saving, deleting, onOpenChange, onSave,
               />
             </label>
 
-            <label className="block space-y-2">
-              <span className="text-xs font-medium text-muted-foreground">备注</span>
-              <textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={2}
-                className="nexus-input min-h-16 w-full resize-y rounded-lg px-3 py-2 text-base sm:min-h-32 sm:rounded-md sm:text-sm"
-              />
-            </label>
-
+            {/* 优先级 */}
             <div className="space-y-2">
               <span className="text-xs font-medium text-muted-foreground">优先级</span>
               <PriorityPicker value={form.priority} onChange={(priority) => setForm({ ...form, priority })} />
             </div>
 
+            {/* 状态 */}
             <label className="block space-y-2">
               <span className="text-xs font-medium text-muted-foreground">状态</span>
               <StatusSelect
@@ -508,26 +603,45 @@ export function TodoDetailDialog({ item, saving, deleting, onOpenChange, onSave,
               />
             </label>
 
+            {/* 计划日期 + 截止日期 */}
             <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-3">
               <label className="block space-y-2">
                 <span className="text-xs font-medium text-muted-foreground">计划日期</span>
-                <input
-                  type="date"
+                <TodoDatePicker
                   value={form.scheduledDate}
-                  onChange={(e) => setForm({ ...form, scheduledDate: e.target.value })}
-                  className="nexus-input h-9 w-full rounded-lg px-3 text-base sm:h-10 sm:rounded-md sm:text-sm"
+                  onChange={handleScheduledDateChange}
+                  allowClear
+                  placeholder="未安排计划日期"
                 />
               </label>
               <label className="block space-y-2">
                 <span className="text-xs font-medium text-muted-foreground">截止日期</span>
-                <input
-                  type="date"
+                <TodoDatePicker
                   value={form.dueDate}
-                  onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
-                  className="nexus-input h-9 w-full rounded-lg px-3 text-base sm:h-10 sm:rounded-md sm:text-sm"
+                  onChange={handleDueDateChange}
+                  allowClear
+                  invalid={!!validationError}
+                  placeholder="暂无截止日期"
                 />
               </label>
             </div>
+            {validationError && (
+              <p className="text-xs font-semibold text-destructive">{validationError}</p>
+            )}
+
+            {/* 备注 */}
+            <label className="block space-y-2">
+              <span className="text-xs font-medium text-muted-foreground">备注</span>
+              <textarea
+                ref={textareaRef}
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onInput={handleTextareaInput}
+                rows={2}
+                className="nexus-input min-h-16 w-full resize-y rounded-lg px-3 py-2 text-base sm:min-h-20 sm:rounded-md sm:text-sm"
+                style={{ maxHeight: '192px' }}
+              />
+            </label>
           </div>
 
           <div className="mt-3 grid gap-2 border-t pt-3 sm:mt-5 sm:flex sm:flex-row sm:items-center sm:justify-between sm:pt-4">
@@ -574,7 +688,7 @@ function DeleteTodoConfirm({ deleting, onConfirm }: { deleting: boolean; onConfi
           side="top"
           align="start"
           sideOffset={8}
-          className="z-[70] w-[min(calc(100vw-2rem),18rem)] rounded-xl border bg-popover p-4 text-popover-foreground shadow-xl"
+          className="z-[70] w-[min(calc(100vw-2rem),18rem)] rounded-lg border bg-popover p-3 text-popover-foreground shadow-lg"
         >
           <p className="text-sm font-bold">确认删除这个 ToDo？</p>
           <p className="mt-1 text-xs leading-5 text-muted-foreground">此操作无法撤销。</p>

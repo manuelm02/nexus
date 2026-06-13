@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 
+/** SettingsController 提供 LLM 和系统配置的管理接口。 */
 @RestController
 @RequestMapping("/api/v1/settings")
 @RequiredArgsConstructor
@@ -48,7 +49,9 @@ public class SettingsController {
         LlmProvider patch = new LlmProvider();
         patch.setName(req.getName());
         patch.setProvider(req.getProvider());
-        patch.setApiKey(req.getApiKey());
+        // 仅当 apiKey 非空时才覆盖，避免空串将已有 key 意外清空
+        String rawKey = req.getApiKey();
+        patch.setApiKey(rawKey != null && !rawKey.isBlank() ? rawKey : null);
         patch.setBaseUrl(req.getBaseUrl());
         patch.setModel(req.getModel());
         if (Boolean.TRUE.equals(req.getIsDefault())) patch.setDefaultProvider(true);

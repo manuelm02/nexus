@@ -34,6 +34,15 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        // 禁用 SSE 代理缓冲：Vite 内置 http-proxy 默认对 text/event-stream 会缓冲，需显式关闭。
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            if (proxyRes.headers['content-type']?.includes('text/event-stream')) {
+              // 阻止 http-proxy 缓冲 SSE 响应体，让数据块立即透传到浏览器。
+              proxyRes.headers['cache-control'] = 'no-cache';
+            }
+          });
+        },
       },
     },
   },

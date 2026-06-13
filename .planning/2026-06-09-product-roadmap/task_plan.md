@@ -6,7 +6,7 @@
 
 - [x] Phase 0: 清理旧文档和旧阶段计划
 - [x] Phase 1: ToDo 减法工作流
-- [ ] Phase 2: Translate 简化版翻译软件
+- [x] Phase 2: Translate 简化版翻译软件
 - [ ] Phase 3: Inbox 三类接入
 - [ ] Phase 4: Subscriptions 基础订阅管理
 - [ ] Phase 5: Chat 日常问答
@@ -26,14 +26,14 @@
 
 ## Phase 2: Translate
 
-- [ ] 抽象翻译 Provider，先保留 LLM，预留有道等专业 API
-- [ ] 输出包括译文、解释、关键词、备选表达
-- [ ] 前端提供输入、语言、风格、结果和历史
-- [ ] Provider 缺失时提供明确配置引导
+- [x] 抽象翻译 Provider，先保留 LLM，预留有道等专业 API
+- [x] 输出包括译文、解释、关键词、备选表达
+- [x] 前端提供输入、语言、风格、结果和历史
+- [x] Provider 缺失时提供明确配置引导
 
 ## Phase 3: Inbox
 
-- [ ] Linkding 书签 API 接入和展示
+- [ ] 复刻 Linkding 核心书签功能：Nexus 本地 bookmarks、URL 保存、标签、搜索、未读/归档、编辑删除
 - [ ] paperless-ngx 文档上传、列表、详情展示
 - [ ] Quick Note / Memo 写入 Obsidian Markdown，不落业务库
 - [ ] 开发前确认 Obsidian vault 路径和文件组织规则
