@@ -32,18 +32,20 @@
 
 ## Phase 0: Confirm Scope Before Coding
 
-- [ ] Confirm whether bookmark bulk import is included in first implementation batch.
-- [ ] Confirm whether AI may fetch webpage metadata/content or only analyze URL/title supplied by the user.
-- [ ] Confirm whether smart groups are virtual tag-derived groups or explicit persisted groups.
-- [ ] Confirm whether note consolidation scans only Nexus-created notes under `OBSIDIAN_INBOX_DIR`.
+- [x] Bookmark bulk import is included in the first implementation batch.
+- [x] AI must not fetch webpage metadata/content in the first pass; analyze URL/title/notes only.
+- [x] Bookmark smart groups are explicit persisted groups, not virtual tag-only groups.
+- [x] Note consolidation scans only Nexus-created notes under `OBSIDIAN_INBOX_DIR`.
+- [x] paperless configuration must be editable from Settings under an Inbox section.
 
-Recommended answer for all four:
+Confirmed defaults:
 
 ```text
 Bulk import: yes, but preview/commit only.
 Metadata fetch: no for first pass; use URL/title only.
-Smart groups: virtual tag-derived groups.
+Smart groups: persisted bookmark groups with rules and assignments.
 Note scan: Nexus-created notes only.
+Settings: add scoped Inbox settings for paperless, Obsidian, and bookmark behavior.
 ```
 
 ## Phase 1: Frontend UI Shell Redesign
@@ -124,8 +126,10 @@ cd backend && JAVA_HOME=/Users/manuelm/.local/share/mise/installs/java/21.0.2 PA
 **Files:**
 
 - Create: `backend/src/main/java/com/nexus/service/BookmarkAiService.java`
+- Create: `backend/src/main/java/com/nexus/service/BookmarkSmartGroupService.java`
 - Create: `backend/src/main/java/com/nexus/dto/request/BookmarkAnalyzeRequest.java`
 - Create: `backend/src/main/java/com/nexus/dto/response/BookmarkAnalyzeResponse.java`
+- Create: `backend/src/main/resources/db/migration/V1_8__init_bookmark_smart_groups.sql`
 - Modify: `backend/src/main/java/com/nexus/controller/InboxController.java`
 - Modify: `frontend/src/api/inbox.api.ts`
 - Modify: `frontend/src/types/domain.types.ts`
@@ -144,6 +148,7 @@ Behavior:
 - Detect exact duplicate by normalized URL.
 - Detect possible conflict when normalized URL matches but title differs.
 - If LLM configured, suggest title, description, tags, and group.
+- Evaluate persisted smart group rules and include matched/suggested groups in the response.
 - If LLM missing, return `aiAvailable=false` and deterministic fields only.
 
 Frontend:
@@ -152,6 +157,7 @@ Frontend:
 - Click "AI 整理".
 - Show review panel.
 - User edits final title/tags/description.
+- User confirms suggested smart group assignment.
 - Save uses existing create endpoint.
 
 Acceptance:
@@ -159,6 +165,7 @@ Acceptance:
 - Analyze does not create a bookmark.
 - Duplicate/conflict is visible before saving.
 - User can bypass AI and save manually.
+- New bookmarks can be assigned to persisted smart groups.
 
 ## Phase 4: Bookmark Bulk Import
 
@@ -168,9 +175,11 @@ Acceptance:
 - Create: `backend/src/main/java/com/nexus/dto/request/BookmarkImportPreviewRequest.java`
 - Create: `backend/src/main/java/com/nexus/dto/response/BookmarkImportPreviewResponse.java`
 - Create: `backend/src/main/java/com/nexus/dto/request/BookmarkImportCommitRequest.java`
+- Create: `backend/src/main/java/com/nexus/dto/response/BookmarkSmartGroupResponse.java`
 - Modify: `backend/src/main/java/com/nexus/controller/InboxController.java`
 - Create: `frontend/src/pages/Inbox/components/bookmarks/BookmarkImportDrawer.tsx`
 - Create: `frontend/src/pages/Inbox/components/bookmarks/BookmarkConflictReview.tsx`
+- Create: `frontend/src/pages/Inbox/components/bookmarks/BookmarkSmartGroupPanel.tsx`
 
 Endpoints:
 
@@ -185,11 +194,13 @@ Preview behavior:
 - Support simple YAML list with `url` and `title`.
 - Categorize items into create / skip / conflict / invalid.
 - Use AI only for advisory conflict confidence and tag suggestions.
+- Include deterministic smart group matches and AI group suggestions.
 - Never write data.
 
 Commit behavior:
 
 - Require explicit decisions for conflict items.
+- Require explicit confirmation before assigning imported bookmarks to AI-suggested groups.
 - Create/update/skip according to decisions.
 - Return success/failure summary.
 
@@ -197,22 +208,32 @@ Acceptance:
 
 - No import writes until commit.
 - Conflict decisions are explicit.
+- Smart group assignments are previewed before write.
 - Invalid rows are visible and not silently dropped.
 
-## Phase 5: Bookmark Tag Workbench
+## Phase 5: Bookmark Tag And Smart Group Workbench
 
 **Files:**
 
 - Create: `backend/src/main/java/com/nexus/dto/response/BookmarkTagSummaryResponse.java`
+- Create: `backend/src/main/java/com/nexus/dto/request/BookmarkSmartGroupRequest.java`
 - Modify: `backend/src/main/java/com/nexus/service/BookmarkService.java`
+- Modify: `backend/src/main/java/com/nexus/service/BookmarkSmartGroupService.java`
 - Modify: `backend/src/main/java/com/nexus/controller/InboxController.java`
 - Create: `frontend/src/pages/Inbox/components/bookmarks/BookmarkTagWorkbench.tsx`
+- Create: `frontend/src/pages/Inbox/components/bookmarks/BookmarkSmartGroupPanel.tsx`
 
 Endpoints:
 
 ```http
 GET  /api/v1/inbox/bookmarks/tags
 POST /api/v1/inbox/bookmarks/tags/suggest
+GET  /api/v1/inbox/bookmarks/groups
+POST /api/v1/inbox/bookmarks/groups
+PATCH /api/v1/inbox/bookmarks/groups/{id}
+DELETE /api/v1/inbox/bookmarks/groups/{id}
+POST /api/v1/inbox/bookmarks/groups/preview
+POST /api/v1/inbox/bookmarks/groups/apply
 ```
 
 Behavior:
@@ -220,14 +241,81 @@ Behavior:
 - Return tag counts.
 - Suggest possible merges with AI when configured.
 - Do not auto-merge tags in first pass.
+- CRUD persisted smart groups.
+- Preview group rule matches before applying.
+- Apply group assignments only after confirmation.
 
 Acceptance:
 
 - User can filter by tag.
 - User can see tag counts.
 - AI suggestions remain advisory.
+- User can create smart groups and use them for future classification.
 
-## Phase 6: Paperless Gateway
+## Phase 6: Settings Inbox Integration Panel
+
+**Files:**
+
+- Create: `backend/src/main/java/com/nexus/service/InboxSettingsService.java`
+- Create: `backend/src/main/java/com/nexus/dto/request/InboxSettingsUpdateRequest.java`
+- Create: `backend/src/main/java/com/nexus/dto/response/InboxSettingsResponse.java`
+- Modify: `backend/src/main/java/com/nexus/controller/SettingsController.java`
+- Modify: `frontend/src/pages/Settings/index.tsx`
+- Modify: `frontend/src/pages/Settings/SettingsDesktopView.tsx`
+- Modify: `frontend/src/pages/Settings/SettingsMobileView.tsx`
+- Create: `frontend/src/pages/Settings/components/InboxSettingsPanel.tsx`
+- Create: `frontend/src/pages/Settings/components/PaperlessSettingsCard.tsx`
+- Create: `frontend/src/pages/Settings/components/ObsidianSettingsCard.tsx`
+- Create: `frontend/src/pages/Settings/components/BookmarkSettingsCard.tsx`
+
+Endpoints:
+
+```http
+GET   /api/v1/settings/inbox
+PATCH /api/v1/settings/inbox
+POST  /api/v1/settings/inbox/paperless/test
+POST  /api/v1/settings/inbox/obsidian/test
+```
+
+Settings fields:
+
+```text
+inbox.paperless.enabled
+inbox.paperless.base_url
+inbox.paperless.api_token
+inbox.paperless.open_in_new_tab
+inbox.paperless.default_upload_tags
+
+inbox.obsidian.enabled
+inbox.obsidian.vault_path
+inbox.obsidian.inbox_dir
+inbox.obsidian.file_naming_pattern
+inbox.obsidian.consolidation_dir
+
+inbox.bookmarks.ai_assist_enabled
+inbox.bookmarks.bulk_import_enabled
+inbox.bookmarks.strip_tracking_params
+inbox.bookmarks.default_unread
+inbox.bookmarks.smart_groups_enabled
+```
+
+Behavior:
+
+- Store paperless API token encrypted.
+- Never return raw paperless token to frontend.
+- Return `paperlessTokenConfigured` metadata instead.
+- Token field supports replace and clear.
+- Paperless test connection returns connected/not configured/unauthorized/unreachable/unexpected response.
+- Obsidian test validates path and writability without leaving a permanent file.
+
+Acceptance:
+
+- Settings has a dedicated Inbox panel.
+- User can configure paperless without editing env files.
+- Inbox paperless empty state can link users to Settings.
+- Token is masked and never appears in API responses.
+
+## Phase 7: Paperless Gateway
 
 **Files:**
 
@@ -262,8 +350,9 @@ Acceptance:
 - Missing config state is scoped to paperless panel.
 - Entry cards open paperless pages through generated links.
 - Existing list/upload/detail remains available.
+- Gateway reads Settings first, with env/application properties as fallback.
 
-## Phase 7: Note AI Analyze
+## Phase 8: Note AI Analyze
 
 **Files:**
 
@@ -304,8 +393,9 @@ Acceptance:
 - Analyze does not write files.
 - Save still works without LLM.
 - User can edit all suggestions before saving.
+- Existing-note hints scan only Nexus-created notes under the configured Obsidian Inbox directory.
 
-## Phase 8: Note Consolidation Preview
+## Phase 9: Note Consolidation Preview
 
 **Files:**
 
@@ -335,7 +425,7 @@ Acceptance:
 - User can edit before write.
 - Files outside Obsidian inbox dir are not read.
 
-## Phase 9: Verification
+## Phase 10: Verification
 
 Backend:
 
@@ -358,6 +448,7 @@ Manual QA:
   - resolve conflict
   - upload document
   - open paperless entry link
+  - configure paperless in Settings and test connection
   - save raw note
   - apply note AI suggestion and save
 - Mobile `/inbox`:
@@ -384,7 +475,7 @@ Use this after the design scope is confirmed:
 目标：
 把当前 /inbox 从简单三 tab CRUD 重构为 AI 辅助收纳工作台：
 1. 书签：Nexus 原生，不依赖 Linkding。增加 URL 归一化、AI 标签/标题/描述建议、冲突检测、批量导入 preview/commit、标签工作台。
-2. paperless：只做接入层和功能入口层。Nexus 不保存 documents 表，提供 upload/list/detail/status 和 paperless 页面 deep links。
+2. paperless：只做接入层和功能入口层。Nexus 不保存 documents 表，提供 Settings 配置、upload/list/detail/status 和 paperless 页面 deep links。
 3. 笔记：Quick Note / Memo 仍写入 Obsidian Markdown。增加 AI 标题、分类、标签、folder、cleaned Markdown、action items 建议，以及后续 consolidation preview/write。
 
 强制约束：
@@ -394,6 +485,7 @@ Use this after the design scope is confirmed:
 - AI endpoint 都是 advisory，preview/analyze 不能写数据。
 - LLM 未配置时返回 aiAvailable=false，并保留非 AI 基础功能。
 - paperless 是事实源，不要创建本地 documents 表。
+- paperless base URL/token 必须可以在 Settings 的 Inbox 分区配置；token 加密保存且不回显。
 - Quick Note / Memo 不落 PostgreSQL 业务表。
 - UI 必须遵守 DESIGN.md：Compact Workbench、8px radius、无嵌套卡片、无营销 hero、无新 UI 库。
 - 同一路由 /inbox，业务逻辑在 index.tsx 共享，复杂桌面/移动视图拆组件。
@@ -401,11 +493,12 @@ Use this after the design scope is confirmed:
 执行顺序：
 1. 先完成 UI shell 重构，保证现有功能不回归。
 2. 实现 BookmarkUrlNormalizer 和测试。
-3. 实现 /bookmarks/analyze 和前端 AI review panel。
-4. 实现 /bookmarks/import/preview、/commit 和冲突 review UI。
-5. 实现 paperless status + entry grid。
-6. 实现 /notes/analyze 和 Note AI suggestion UI。
-7. 最后实现 note consolidation preview/write。
+3. 实现持久化 Bookmark Smart Groups、/bookmarks/analyze 和前端 AI review panel。
+4. 实现 /bookmarks/import/preview、/commit 和冲突 review UI，包含智能分组预览。
+5. 实现 Settings Inbox 配置区，覆盖 paperless/Obsidian/bookmark 行为配置。
+6. 实现 paperless status + entry grid，从 Settings 读取配置。
+7. 实现 /notes/analyze 和 Note AI suggestion UI。
+8. 最后实现 note consolidation preview/write，只扫描 Nexus 写入的 Obsidian Inbox。
 
 验证：
 - cd frontend && pnpm build
