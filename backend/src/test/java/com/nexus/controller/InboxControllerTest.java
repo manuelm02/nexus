@@ -5,8 +5,7 @@ import com.nexus.dto.request.BookmarkCreateRequest;
 import com.nexus.dto.request.QuickNoteRequest;
 import com.nexus.inbox.document.DocumentArchivePort;
 import com.nexus.inbox.note.NoteSinkPort;
-import com.nexus.service.BookmarkService;
-import com.nexus.service.InboxService;
+import com.nexus.service.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +28,18 @@ class InboxControllerTest {
     private InboxService inboxService;
     @Mock
     private BookmarkService bookmarkService;
+    @Mock
+    private BookmarkAiService bookmarkAiService;
+    @Mock
+    private BookmarkImportService bookmarkImportService;
+    @Mock
+    private BookmarkSmartGroupService bookmarkSmartGroupService;
+    @Mock
+    private PaperlessGatewayService paperlessGatewayService;
+    @Mock
+    private NoteAiService noteAiService;
+    @Mock
+    private NoteConsolidationService noteConsolidationService;
     @Mock
     private NoteSinkPort noteSinkPort;
     @Mock

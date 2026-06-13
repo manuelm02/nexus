@@ -29,7 +29,7 @@ export function ProviderForm({ form, mode, pending, error, onChange, onSubmit, o
       className="rounded-xl border-2 border-primary/15 bg-primary/[0.02] p-4"
     >
       <p className="mb-3 text-xs font-extrabold text-primary">
-        {mode === 'create' ? '添加 Provider' : `编辑 ${form.name || 'Provider'}`}
+        {mode === 'create' ? '添加模型' : `编辑 ${form.name || '模型'}`}
       </p>
       <div className="grid grid-cols-2 gap-3">
         <input

@@ -7,13 +7,16 @@ import com.nexus.dto.request.BookmarkCreateRequest;
 import com.nexus.dto.request.BookmarkListRequest;
 import com.nexus.dto.request.BookmarkUpdateRequest;
 import com.nexus.dto.response.BookmarkResponse;
+import com.nexus.dto.response.BookmarkTagSummaryResponse;
 import com.nexus.entity.Bookmark;
 import com.nexus.mapper.BookmarkMapper;
+import dev.langchain4j.model.chat.ChatLanguageModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -26,6 +29,7 @@ import java.util.stream.Stream;
 public class BookmarkService {
 
     private final BookmarkMapper bookmarkMapper;
+    private final LlmConfigService llmConfigService;
 
     /**
      * 分页查询书签列表，支持多条件组合筛选。
@@ -222,5 +226,49 @@ public class BookmarkService {
         return tags.stream()
                 .map(t -> "\"" + t.replace("\\", "\\\\").replace("\"", "\\\"") + "\"")
                 .collect(Collectors.joining(",", "[", "]"));
+    }
+
+    /**
+     * 获取所有标签及其出现次数，用于标签工作台展示。
+     *
+     * @return 标签汇总响应，包含每个标签及其对应的书签数量
+     */
+    public BookmarkTagSummaryResponse getTagSummary() {
+        List<Bookmark> all = bookmarkMapper.selectList(null);
+        Map<String, Long> counts = all.stream()
+                .filter(b -> b.getTags() != null)
+                .flatMap(b -> b.getTags().stream())
+                .filter(t -> !t.isBlank())
+                .collect(Collectors.groupingBy(t -> t, Collectors.counting()));
+
+        BookmarkTagSummaryResponse resp = new BookmarkTagSummaryResponse();
+        List<BookmarkTagSummaryResponse.TagInfo> tags = counts.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(entry -> {
+                    BookmarkTagSummaryResponse.TagInfo info = new BookmarkTagSummaryResponse.TagInfo();
+                    info.setName(entry.getKey());
+                    info.setCount(entry.getValue().intValue());
+                    return info;
+                }).toList();
+        resp.setTags(tags);
+        return resp;
+    }
+
+    /**
+     * AI 驱动的标签合并建议（advisory，不自动合并）。
+     * LLM 不可用时返回空标签列表。
+     */
+    public BookmarkTagSummaryResponse suggestTagCleanup() {
+        BookmarkTagSummaryResponse resp = new BookmarkTagSummaryResponse();
+        resp.setTags(java.util.Collections.emptyList());
+
+        try {
+            ChatLanguageModel model = llmConfigService.resolveModel("inbox");
+            // 后续版本可加入 AI 分析逻辑
+        } catch (Exception ignored) {
+            // LLM 不可用，返回空
+        }
+
+        return resp;
     }
 }

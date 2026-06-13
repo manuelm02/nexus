@@ -141,3 +141,280 @@ export interface WorkflowLlmConfig {
   temperature?: number
   updatedAt: string
 }
+
+// ==================== Inbox AI Workspace 新类型 ====================
+
+/** 书签 AI 分析请求 */
+export interface BookmarkAnalyzeRequest {
+  url: string
+  title?: string
+  existingTags?: string[]
+}
+
+/** 书签 AI 分析响应 */
+export interface BookmarkAnalyzeResponse {
+  originalUrl: string
+  normalizedUrl: string
+  trackingParamsRemoved: string[]
+  domain: string
+  suggestedTitle?: string
+  suggestedDescription?: string
+  suggestedTags?: string[]
+  suggestedGroupId?: string
+  suggestedGroupName?: string
+  duplicateStatus: 'none' | 'exact_duplicate' | 'possible_conflict'
+  conflictCandidate?: Bookmark
+  aiAvailable: boolean
+  confidence?: 'high' | 'medium' | 'low'
+  matchedGroups: GroupSuggestion[]
+}
+
+export interface GroupSuggestion {
+  groupId: string
+  groupName: string
+  matchReason: string
+}
+
+/** 批量导入 */
+export interface ImportItem {
+  url: string
+  title?: string
+}
+
+export interface BookmarkImportPreviewRequest {
+  items: ImportItem[]
+}
+
+export interface ImportSummary {
+  totalCount: number
+  createCount: number
+  skipCount: number
+  conflictCount: number
+  invalidCount: number
+}
+
+export interface ImportPreviewItem {
+  sourceIndex: number
+  url: string
+  title?: string
+  normalizedUrl: string
+  domain: string
+  suggestedTitle?: string
+  suggestedDescription?: string
+  suggestedTags?: string[]
+  suggestedGroupId?: string
+  suggestedGroupName?: string
+  aiAvailable: boolean
+}
+
+export interface ConflictPreviewItem {
+  sourceIndex: number
+  url: string
+  title?: string
+  normalizedUrl: string
+  existingBookmarkId: string
+  existingTitle?: string
+  existingUrl: string
+  aiAvailable: boolean
+  aiVerdict?: 'same' | 'different' | 'low_confidence'
+}
+
+export interface InvalidPreviewItem {
+  sourceIndex: number
+  url: string
+  title?: string
+  reason: string
+}
+
+export interface BookmarkImportPreviewResponse {
+  importSessionId: string
+  summary: ImportSummary
+  createItems: ImportPreviewItem[]
+  skipItems: ImportPreviewItem[]
+  conflictItems: ConflictPreviewItem[]
+  invalidItems: InvalidPreviewItem[]
+}
+
+export type ImportAction = 'create' | 'update' | 'skip'
+
+export interface ImportDecision {
+  sourceIndex: number
+  action: ImportAction
+  finalTitle?: string
+  finalTags?: string[]
+  finalDescription?: string
+  acceptSuggestedGroup?: boolean
+}
+
+export interface BookmarkImportCommitRequest {
+  importSessionId: string
+  decisions: ImportDecision[]
+}
+
+export interface BookmarkImportCommitResponse {
+  createdCount: number
+  updatedCount: number
+  skippedCount: number
+  createdBookmarkIds: string[]
+}
+
+/** 标签汇总 */
+export interface TagInfo {
+  name: string
+  count: number
+}
+
+export interface BookmarkTagSummaryResponse {
+  tags: TagInfo[]
+}
+
+/** 智能分组 */
+export interface BookmarkSmartGroup {
+  id: string
+  name: string
+  description?: string
+  matchMode: 'any_tag' | 'all_tags' | 'domain' | 'url_pattern'
+  matchValue: string
+  orderIndex: number
+  enabled: boolean
+  bookmarkCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface BookmarkSmartGroupRequest {
+  name: string
+  description?: string
+  matchMode: string
+  matchValue: string
+  orderIndex: number
+  enabled?: boolean
+}
+
+export interface BookmarkGroupPreviewRequest {
+  bookmarkIds?: string[]
+  groupIds?: string[]
+}
+
+export interface MatchedBookmark {
+  bookmarkId: string
+  title?: string
+  url: string
+  domain?: string
+  alreadyAssigned: boolean
+}
+
+export interface GroupPreview {
+  groupId: string
+  groupName: string
+  matchMode: string
+  matchedCount: number
+  matchedBookmarks: MatchedBookmark[]
+}
+
+export interface BookmarkGroupPreviewResponse {
+  groups: GroupPreview[]
+}
+
+export interface BookmarkGroupApplyRequest {
+  bookmarkIds: string[]
+  groupIds: string[]
+}
+
+/** paperless 网关 */
+export interface EntryLink {
+  key: string
+  label: string
+  description: string
+  url: string
+}
+
+export interface PaperlessGatewayStatusResponse {
+  configured: boolean
+  reachable: boolean
+  status: string
+  message: string
+  entryLinks: EntryLink[]
+}
+
+/** 笔记 AI */
+export interface NoteAnalyzeRequest {
+  title?: string
+  content: string
+  kind?: string
+  tags?: string[]
+}
+
+export interface ActionItem {
+  description: string
+  priority: 'high' | 'medium' | 'low'
+}
+
+export interface NoteAnalyzeResponse {
+  suggestedTitle?: string
+  suggestedKind?: string
+  suggestedTags?: string[]
+  suggestedCategory?: string
+  suggestedFolder?: string
+  cleanedMarkdown?: string
+  actionItems?: ActionItem[]
+  aiAvailable: boolean
+  confidence?: string
+}
+
+export interface NoteConsolidatePreviewRequest {
+  sourcePaths: string[]
+  mode: string
+  topic?: string
+}
+
+export interface NoteConsolidatePreviewResponse {
+  title: string
+  markdown: string
+  sourcePaths: string[]
+  suggestedPath: string
+}
+
+export interface NoteConsolidateWriteRequest {
+  title: string
+  markdown: string
+  sourcePaths: string[]
+  outputPath?: string
+}
+
+/** Inbox 设置 */
+export interface InboxSettings {
+  paperlessEnabled: boolean
+  paperlessBaseUrl?: string
+  paperlessTokenConfigured: boolean
+  paperlessOpenInNewTab: boolean
+  paperlessDefaultUploadTags?: string
+  obsidianEnabled: boolean
+  obsidianVaultPath?: string
+  obsidianInboxDir: string
+  obsidianMemoDir: string
+  obsidianFileNamingPattern?: string
+  obsidianConsolidationDir: string
+  bookmarksAiAssistEnabled: boolean
+  bookmarksBulkImportEnabled: boolean
+  bookmarksStripTrackingParams: boolean
+  bookmarksDefaultUnread: boolean
+  bookmarksSmartGroupsEnabled: boolean
+  inboxAiAvailable: boolean
+}
+
+export interface InboxSettingsUpdateRequest {
+  paperlessEnabled?: boolean
+  paperlessBaseUrl?: string
+  paperlessApiToken?: string | null
+  paperlessOpenInNewTab?: boolean
+  paperlessDefaultUploadTags?: string
+  obsidianEnabled?: boolean
+  obsidianVaultPath?: string
+  obsidianInboxDir?: string
+  bookmarksAiAssistEnabled?: boolean
+  bookmarksBulkImportEnabled?: boolean
+  bookmarksStripTrackingParams?: boolean
+  bookmarksDefaultUnread?: boolean
+  bookmarksSmartGroupsEnabled?: boolean
+}

@@ -3,6 +3,7 @@ package com.nexus.inbox.note;
 import com.nexus.config.InboxIntegrationProperties;
 import com.nexus.dto.request.QuickNoteRequest;
 import com.nexus.dto.response.QuickNoteResponse;
+import com.nexus.service.InboxSettingsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,22 +32,25 @@ public class ObsidianMarkdownWriter implements NoteSinkPort {
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
     private final InboxIntegrationProperties properties;
+    private final InboxSettingsService inboxSettingsService;
 
     @Override
     public QuickNoteResponse write(QuickNoteRequest req) {
-        if (!properties.getObsidian().isConfigured()) {
-            throw new IllegalStateException("Obsidian 未配置，请设置 OBSIDIAN_VAULT_PATH 环境变量");
-        }
         if (req.getContent() == null || req.getContent().isBlank()) {
             throw new IllegalArgumentException("笔记内容不能为空");
         }
 
-        String vaultPath = properties.getObsidian().getVaultPath();
-        String inboxDir = properties.getObsidian().getInboxDir();
+        String vaultPath = configuredValue(
+                inboxSettingsService.get("inbox.obsidian.vault_path"),
+                properties.getObsidian().getVaultPath());
+        if (vaultPath == null || vaultPath.isBlank()) {
+            throw new IllegalStateException("Obsidian 未配置，请先在设置中配置 Vault 路径");
+        }
+        String noteDir = resolveNoteDir(req);
 
         ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
 
-        // 文件路径：vaultPath / inboxDir / yyyy / MM / yyyy-MM-dd-HHmmss-slug.md
+        // 文件路径：vaultPath / noteDir / yyyy / MM / yyyy-MM-dd-HHmmss-slug.md
         String slug = slugify(req.getTitle() != null && !req.getTitle().isBlank() ? req.getTitle() : "note");
         String year = String.valueOf(now.getYear());
         String month = String.format("%02d", now.getMonthValue());
@@ -54,7 +58,7 @@ public class ObsidianMarkdownWriter implements NoteSinkPort {
 
         // 解析并验证路径，防路径穿越
         Path vaultRoot = Paths.get(vaultPath).normalize().toAbsolutePath();
-        Path targetDir = vaultRoot.resolve(inboxDir).resolve(year).resolve(month).normalize().toAbsolutePath();
+        Path targetDir = vaultRoot.resolve(noteDir).resolve(year).resolve(month).normalize().toAbsolutePath();
 
         // 验证 targetDir 在 vaultRoot 之下，防止 ../ 路径穿越
         if (!targetDir.startsWith(vaultRoot)) {
@@ -89,6 +93,26 @@ public class ObsidianMarkdownWriter implements NoteSinkPort {
         resp.setRelativePath(relativePath.toString());
         resp.setCreatedAt(now.format(ISO_FORMATTER));
         return resp;
+    }
+
+    /**
+     * 根据笔记类型选择目标目录。用户只配置 Inbox 根目录，子目录由系统固定派生，避免目录迁移歧义。
+     */
+    private String resolveNoteDir(QuickNoteRequest req) {
+        String kind = req.getKind() != null ? req.getKind() : "quick_note";
+        if ("memo".equals(kind)) {
+            return inboxSettingsService.getObsidianMemoDir();
+        }
+        return inboxSettingsService.getObsidianQuickNoteDir();
+    }
+
+    private String configuredValue(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     /**

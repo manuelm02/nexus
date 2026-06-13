@@ -14,6 +14,7 @@ export type BookmarkPanelProps = {
   onDelete: (id: string) => void
   isCreating: boolean
   createError?: string
+  hideCreate?: boolean
 }
 
 // 书签面板：快速保存表单 + 搜索筛选 + 卡片列表。桌面端和移动端共享此组件。
@@ -28,6 +29,7 @@ export function BookmarkPanel({
   onDelete,
   isCreating,
   createError,
+  hideCreate,
 }: BookmarkPanelProps) {
   const [url, setUrl] = useState('')
   const [title, setTitle] = useState('')
@@ -59,6 +61,7 @@ export function BookmarkPanel({
   return (
     <div className="space-y-3">
       {/* 快速创建表单 */}
+      {!hideCreate && (
       <div className="rounded-lg border bg-card p-3 shadow-[var(--shadow-xs)]">
         {!showCreateForm ? (
           <button
@@ -112,6 +115,7 @@ export function BookmarkPanel({
           </form>
         )}
       </div>
+      )}
 
       {/* 搜索和筛选栏 */}
       <div className="flex flex-wrap items-center gap-2">

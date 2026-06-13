@@ -7,6 +7,24 @@ import type {
   QuickNoteRequest,
   QuickNoteResponse,
   Paginated,
+  BookmarkAnalyzeRequest,
+  BookmarkAnalyzeResponse,
+  BookmarkImportPreviewRequest,
+  BookmarkImportPreviewResponse,
+  BookmarkImportCommitRequest,
+  BookmarkImportCommitResponse,
+  BookmarkTagSummaryResponse,
+  BookmarkSmartGroup,
+  BookmarkSmartGroupRequest,
+  BookmarkGroupPreviewRequest,
+  BookmarkGroupPreviewResponse,
+  BookmarkGroupApplyRequest,
+  PaperlessGatewayStatusResponse,
+  NoteAnalyzeRequest,
+  NoteAnalyzeResponse,
+  NoteConsolidatePreviewRequest,
+  NoteConsolidatePreviewResponse,
+  NoteConsolidateWriteRequest,
 } from '../types/domain.types'
 
 export const inboxApi = {
@@ -53,6 +71,50 @@ export const inboxApi = {
     /** 删除书签 */
     delete: (id: string) =>
       apiClient.delete(`/inbox/bookmarks/${id}`),
+
+    /** AI 分析书签 URL */
+    analyze: (data: BookmarkAnalyzeRequest) =>
+      apiClient.post<ApiResponse<BookmarkAnalyzeResponse>>('/inbox/bookmarks/analyze', data),
+
+    /** 批量导入预览 */
+    importPreview: (data: BookmarkImportPreviewRequest) =>
+      apiClient.post<ApiResponse<BookmarkImportPreviewResponse>>('/inbox/bookmarks/import/preview', data),
+
+    /** 批量导入提交 */
+    importCommit: (data: BookmarkImportCommitRequest) =>
+      apiClient.post<ApiResponse<BookmarkImportCommitResponse>>('/inbox/bookmarks/import/commit', data),
+
+    /** 获取标签汇总 */
+    tags: () =>
+      apiClient.get<ApiResponse<BookmarkTagSummaryResponse>>('/inbox/bookmarks/tags'),
+
+    /** AI 标签建议 */
+    suggestTags: () =>
+      apiClient.post<ApiResponse<BookmarkTagSummaryResponse>>('/inbox/bookmarks/tags/suggest'),
+
+    /** 获取智能分组列表 */
+    listGroups: () =>
+      apiClient.get<ApiResponse<BookmarkSmartGroup[]>>('/inbox/bookmarks/groups'),
+
+    /** 创建智能分组 */
+    createGroup: (data: BookmarkSmartGroupRequest) =>
+      apiClient.post<ApiResponse<BookmarkSmartGroup>>('/inbox/bookmarks/groups', data),
+
+    /** 更新智能分组 */
+    updateGroup: (id: string, data: BookmarkSmartGroupRequest) =>
+      apiClient.patch<ApiResponse<BookmarkSmartGroup>>(`/inbox/bookmarks/groups/${id}`, data),
+
+    /** 删除智能分组 */
+    deleteGroup: (id: string) =>
+      apiClient.delete(`/inbox/bookmarks/groups/${id}`),
+
+    /** 预览分组匹配 */
+    previewGroups: (data: BookmarkGroupPreviewRequest) =>
+      apiClient.post<ApiResponse<BookmarkGroupPreviewResponse>>('/inbox/bookmarks/groups/preview', data),
+
+    /** 应用分组分配 */
+    applyGroups: (data: BookmarkGroupApplyRequest) =>
+      apiClient.post<ApiResponse<void>>('/inbox/bookmarks/groups/apply', data),
   },
 
   // ==================== 文档（paperless-ngx） ====================
@@ -76,6 +138,10 @@ export const inboxApi = {
     /** 获取文档详情 */
     detail: (id: string) =>
       apiClient.get<ApiResponse<InboxDocument>>(`/inbox/documents/${id}`),
+
+    /** 获取 paperless 网关状态 */
+    status: () =>
+      apiClient.get<ApiResponse<PaperlessGatewayStatusResponse>>('/inbox/documents/status'),
   },
 
   // ==================== 笔记（Obsidian） ====================
@@ -84,5 +150,17 @@ export const inboxApi = {
     /** 写入 Quick Note / Memo 到 Obsidian Vault */
     create: (data: QuickNoteRequest) =>
       apiClient.post<ApiResponse<QuickNoteResponse>>('/inbox/notes', data),
+
+    /** AI 分析笔记 */
+    analyze: (data: NoteAnalyzeRequest) =>
+      apiClient.post<ApiResponse<NoteAnalyzeResponse>>('/inbox/notes/analyze', data),
+
+    /** 预览笔记合并 */
+    consolidatePreview: (data: NoteConsolidatePreviewRequest) =>
+      apiClient.post<ApiResponse<NoteConsolidatePreviewResponse>>('/inbox/notes/consolidate/preview', data),
+
+    /** 执行笔记合并写入 */
+    consolidateWrite: (data: NoteConsolidateWriteRequest) =>
+      apiClient.post<ApiResponse<QuickNoteResponse>>('/inbox/notes/consolidate/write', data),
   },
 }
