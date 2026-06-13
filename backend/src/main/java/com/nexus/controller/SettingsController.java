@@ -49,7 +49,9 @@ public class SettingsController {
         LlmProvider patch = new LlmProvider();
         patch.setName(req.getName());
         patch.setProvider(req.getProvider());
-        patch.setApiKey(req.getApiKey());
+        // 仅当 apiKey 非空时才覆盖，避免空串将已有 key 意外清空
+        String rawKey = req.getApiKey();
+        patch.setApiKey(rawKey != null && !rawKey.isBlank() ? rawKey : null);
         patch.setBaseUrl(req.getBaseUrl());
         patch.setModel(req.getModel());
         if (Boolean.TRUE.equals(req.getIsDefault())) patch.setDefaultProvider(true);

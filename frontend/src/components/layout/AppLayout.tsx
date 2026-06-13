@@ -11,7 +11,7 @@ export function AppLayout() {
   return (
     <div className="flex min-h-dvh bg-background text-foreground">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+      <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
         <Outlet />
       </main>
       <MobileNav />

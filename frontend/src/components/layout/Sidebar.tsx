@@ -43,50 +43,47 @@ export function Sidebar() {
           )
         })}
       </nav>
+      {/* 统一账户胶囊区：身份区进入 Profile，操作区仅保留 Settings 和退出登录 */}
       <div className="border-t border-white/10 p-2">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) => cn(
-            'flex min-h-10 items-center gap-3 rounded-[0.625rem] px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
-            isActive ? 'bg-white font-bold text-primary' : 'text-secondary-foreground/70 hover:bg-white/10 hover:text-white',
-          )}
-        >
-          <Settings className="h-4 w-4 shrink-0" />
-          Settings
-        </NavLink>
-        <NavLink
-          to="/profile"
-          className={({ isActive }) => cn(
-            'mt-1 flex min-h-12 items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
-            isActive ? 'bg-white font-bold text-primary' : 'bg-secondary/70 text-secondary-foreground hover:bg-white/10 hover:text-white',
-          )}
-        >
-          {({ isActive }) => (
-            <>
-              <span className={cn(
-                'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black',
-                isActive ? 'bg-primary text-primary-foreground' : 'bg-white text-primary',
-              )}>
-                {displayName.slice(0, 1).toUpperCase()}
-              </span>
-              <span className="min-w-0">
-                <span className="block truncate">{displayName}</span>
-                <span className={cn(
-                  'block text-[10px] font-medium',
-                  isActive ? 'text-primary/65' : 'text-secondary-foreground/60',
-                )}>Profile</span>
-              </span>
-            </>
-          )}
-        </NavLink>
-        <button
-          type="button"
-          onClick={() => void logout()}
-          className="mt-1 flex min-h-10 w-full items-center gap-3 rounded-[0.625rem] px-3 py-2.5 text-left text-sm text-secondary-foreground/70 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          退出登录
-        </button>
+        <div className="rounded-xl bg-secondary/50">
+          {/* 身份区：点击整行进入 /profile */}
+          <NavLink
+            to="/profile"
+            className={({ isActive }) => cn(
+              'flex min-h-12 items-center gap-3 rounded-t-xl px-3 py-2.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+              isActive ? 'bg-white font-bold text-primary' : 'text-secondary-foreground hover:bg-white/10 hover:text-white',
+            )}
+          >
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white text-[12px] font-black text-primary">
+              {displayName.slice(0, 1).toUpperCase()}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-bold">{displayName}</span>
+              <span className="block text-[10px] font-medium text-secondary-foreground/50">Personal workspace</span>
+            </span>
+          </NavLink>
+          {/* 操作区：Settings + 退出登录 */}
+          <div className="flex items-center gap-1 px-2 pb-2">
+            <NavLink
+              to="/settings"
+              className={({ isActive }) => cn(
+                'flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70',
+                isActive ? 'bg-white text-primary' : 'text-secondary-foreground/65 hover:bg-white/10 hover:text-white',
+              )}
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Settings
+            </NavLink>
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="flex min-h-9 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-bold text-secondary-foreground/55 transition-colors hover:bg-destructive/20 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              退出登录
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
   )

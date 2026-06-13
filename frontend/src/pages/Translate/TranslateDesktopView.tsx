@@ -23,7 +23,7 @@ type HistorySectionProps = {
 // TranslateDesktopView 改为单列堆叠工作台，让输入后视线自然向下进入结果区，而不是横向切换阅读焦点。
 export function TranslateDesktopView(props: TranslateViewProps & HistorySectionProps) {
   return (
-    <div className="hidden space-y-5 md:block">
+    <div className="hidden space-y-4 md:block">
       <TranslateHeader />
       <TranslateComposer
         sourceText={props.sourceText}

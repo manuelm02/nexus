@@ -54,9 +54,9 @@
     --destructive-soft-rgb: 255 247 247;
     --radius: 0.75rem;
     --shadow-xs: 0 1px 2px rgba(var(--primary-rgb), 0.04);
-    --shadow-sm: 0 8px 24px rgba(var(--primary-rgb), 0.04);
-    --shadow-soft: 0 18px 50px rgba(var(--primary-rgb), 0.08);
-    --shadow-lg: 0 28px 80px rgba(var(--primary-rgb), 0.14);
+    --shadow-sm: 0 4px 12px rgba(var(--primary-rgb), 0.04);
+    --shadow-md: 0 8px 24px rgba(var(--primary-rgb), 0.06);
+    --shadow-lg: 0 18px 50px rgba(var(--primary-rgb), 0.12);
   }
 
   .dark {
@@ -101,21 +101,25 @@
 }
 
 @layer components {
+  /* 响应式 surface：mobile 18px / desktop 12px 圆角，使用轻阴影 shadow-sm 替代原 shadow-soft */
   .nexus-surface {
-    @apply rounded-[1.125rem] border bg-card;
-    box-shadow: var(--shadow-soft);
+    @apply rounded-[1.125rem] md:rounded-[0.75rem] border bg-card;
+    box-shadow: var(--shadow-sm);
   }
 
+  /* 响应式 primary button：mobile min-h-11(44px) / desktop min-h-9(36px)，圆角 8px */
   .nexus-button-primary {
-    @apply inline-flex min-h-11 items-center justify-center rounded-full bg-primary font-extrabold text-primary-foreground transition-all hover:bg-secondary hover:shadow-[0_10px_24px_rgba(var(--primary-rgb),0.14)] active:translate-y-px active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none;
+    @apply inline-flex min-h-11 md:min-h-9 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground transition-all hover:bg-secondary hover:shadow-[0_4px_12px_rgba(var(--primary-rgb),0.1)] active:translate-y-px active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none;
   }
 
+  /* 响应式 utility button：mobile min-h-10(40px) / desktop min-h-8(32px)，圆角 8px */
   .nexus-button-utility {
-    @apply inline-flex min-h-10 items-center justify-center rounded-[0.625rem] border bg-card text-accent-foreground transition-colors hover:border-input hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex min-h-10 md:min-h-8 items-center justify-center rounded-lg border bg-card text-accent-foreground transition-colors hover:border-input hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50;
   }
 
+  /* 响应式 input：mobile min-h-11(44px) / desktop min-h-9(36px)，圆角 8px */
   .nexus-input {
-    @apply min-h-11 rounded-xl border border-input bg-card text-foreground outline-none transition-all placeholder:text-muted-foreground/70 hover:border-ring focus:border-ring focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60;
+    @apply min-h-11 md:min-h-9 rounded-lg border border-input bg-card text-foreground outline-none transition-all placeholder:text-muted-foreground/70 hover:border-ring focus:border-ring focus:ring-4 focus:ring-ring/15 disabled:cursor-not-allowed disabled:bg-muted disabled:opacity-60;
   }
 
   .nexus-page-enter {
@@ -132,6 +136,52 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes nexus-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 备选译文逐条渐显：配合 animation-delay 实现 stagger 效果 */
+@keyframes nexus-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* LLM 流式输出文本末尾闪烁光标 */
+@keyframes nexus-caret-blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.nexus-animate-fade-in-up {
+  animation: nexus-fade-in-up 350ms ease-out both;
+}
+
+.nexus-animate-stagger {
+  opacity: 0;
+  animation: nexus-stagger-in 320ms ease-out forwards;
+}
+
+.nexus-animate-caret {
+  animation: nexus-caret-blink 1s step-end infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

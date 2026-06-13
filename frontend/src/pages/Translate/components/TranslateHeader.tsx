@@ -3,7 +3,7 @@ export function TranslateHeader() {
   return (
     <header>
       <p className="text-[11px] font-extrabold uppercase tracking-[0.12em] text-muted-foreground">Translate</p>
-      <h1 className="mt-1 text-3xl font-black leading-tight text-foreground md:text-[32px]">轻量翻译工作台</h1>
+      <h1 className="mt-1 text-2xl font-black leading-tight text-foreground md:text-[28px]">轻量翻译工作台</h1>
       <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">同一个意思，换一种语言，你会看见它不同的棱角。</p>
     </header>
   )

@@ -67,3 +67,13 @@
 - 按“Web 端和移动端风格隔离”继续重构 ToDo：新增 `TodoDesktopView.tsx` 保留桌面端布局，新增 `TodoMobileView.tsx` 提供移动端专用信息架构；移动端顶部、指标、快速创建、Tab、列表行和待分配操作重新按小屏密度设计，不再复用桌面大卡片。
 - ToDo 详情 sheet 继续做移动端密度优化：手机端标题、字段高度、备注区、日期输入和底部操作区整体收紧；桌面端通过 `sm:` 保持原有 modal 尺寸。
 - 验证通过：`pnpm build`。`pnpm lint` 当前受项目 ESLint 9 配置缺失阻塞；Browser 插件仍返回 `Browser is not available: iab`，项目未安装 Playwright，未完成截图级 QA。
+
+## 2026-06-13
+
+- ToDo 日期控件纳入 `DESIGN.md` 产品规范：所有 ToDo 日期入口统一使用 Nexus 风格 `TodoDatePicker`，禁止裸露浏览器原生日期控件；清空动作内聚在组件内部。
+- 修复 ToDo 日期清空后未回到“任务”的根因：MyBatis-Plus `updateById` 默认忽略 null，`TodoService.update` 改为 `UpdateWrapper` 显式写入 `scheduled_date` / `due_date`，并规定 `pending` 不得携带日期。
+- 新增 ToDo 回归测试，覆盖清空计划日期、状态改为 `pending` 时清空日期、board 分组互斥等规则。
+- 验证通过：`JAVA_HOME=/Users/manuelm/.local/share/mise/installs/java/21.0.2 ... mvn test`，后端 27 tests / 0 failures；`pnpm build` 通过。
+- Phase 2 Translate 已完成：后端提供结构化翻译结果字段、`TranslationProviderPort`、LLM provider 和快速翻译 provider 预留；前端已拆为桌面/移动工作台、输入、结果、历史、ProviderEmptyState 等组件。
+- Phase 2 验证覆盖：`TranslateServiceTest`、`TranslateStreamingServiceTest`、`ConfiguredFastTranslationProviderTest` 已在全量后端测试中通过；前端 `pnpm build` 通过。
+- Phase 3 Inbox 准备启动：当前 Inbox 仍是本地 `inbox_items` 简单 CRUD，下一阶段要改为 Nexus 原生书签（复刻 Linkding 核心体验但不依赖 Linkding）、paperless-ngx 文档接入层和 Obsidian Quick Note / Memo。

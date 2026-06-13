@@ -82,6 +82,13 @@ nexus:
       secret-id: ${TENCENT_SECRET_ID:}
       secret-key: ${TENCENT_SECRET_KEY:}
       region: ${TENCENT_TMT_REGION:ap-guangzhou}
+  inbox:
+    paperless:
+      base-url: ${PAPERLESS_BASE_URL:}
+      token: ${PAPERLESS_TOKEN:}
+    obsidian:
+      vault-path: ${OBSIDIAN_VAULT_PATH:}
+      inbox-dir: ${OBSIDIAN_INBOX_DIR:Inbox}
 
 # Notion
 notion:

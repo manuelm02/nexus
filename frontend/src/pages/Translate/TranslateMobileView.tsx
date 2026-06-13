@@ -23,7 +23,7 @@ type HistorySectionProps = {
 // TranslateMobileView 改为手机优先的工作流：轻 header、紧凑输入卡、移动控制条、结果卡、搜索后的历史列表。
 export function TranslateMobileView(props: TranslateViewProps & HistorySectionProps) {
   return (
-    <div className="space-y-4 pb-20 md:hidden">
+    <div className="space-y-4 md:hidden">
       <TranslateHeader />
       <TranslateComposer
         sourceText={props.sourceText}

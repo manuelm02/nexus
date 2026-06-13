@@ -40,11 +40,11 @@ export default function TasksPage() {
   const items: TaskResponse[] = data?.data?.data ?? []
 
   return (
-    <div className="nexus-page-enter mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+    <div className="nexus-page-enter mx-auto max-w-3xl space-y-4 p-4 md:p-6">
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System jobs</p>
-          <h1 className="mt-1 text-3xl font-black md:text-4xl">Jobs</h1>
+          <h1 className="mt-1 text-2xl font-black md:text-[28px]">Jobs</h1>
           <p className="mt-2 text-sm text-muted-foreground">后台异步任务记录、保留状态和错误信息。</p>
         </div>
         <button onClick={() => refetch()} className="nexus-button-utility h-10 w-10 text-muted-foreground" aria-label="刷新任务">

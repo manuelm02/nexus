@@ -67,11 +67,11 @@ export function MobileNav() {
 
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-background/50 backdrop-blur-sm md:hidden" />
-        <Dialog.Content className="fixed inset-x-3 bottom-3 z-[60] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[1.125rem] border bg-card p-3 shadow-[var(--shadow-lg)] md:hidden">
+        <Dialog.Content className="fixed inset-x-3 bottom-3 z-[60] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border bg-card p-3 shadow-[var(--shadow-lg)] md:hidden">
           <div className="mb-2 flex items-center justify-between gap-3 px-1">
             <Dialog.Title className="text-sm font-semibold">更多入口</Dialog.Title>
             <Dialog.Close asChild>
-              <button type="button" className="flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="关闭">
+              <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="关闭">
                 <X className="h-4 w-4" />
               </button>
             </Dialog.Close>

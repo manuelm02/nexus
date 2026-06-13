@@ -12,14 +12,14 @@ type TranslatePayload = {
 }
 
 export type TranslationStreamEvent = {
-  type: 'draft' | 'token' | 'enhanced' | 'done'
+  type: 'draft' | 'token' | 'enhanced' | 'done' | 'error'
   payload: {
     translatedText: string
     explanation?: string
     keywords?: string[]
     alternatives?: string[]
     provider?: string
-  }
+  } | null
 }
 
 export interface HistoryPageResponse {
@@ -29,7 +29,7 @@ export interface HistoryPageResponse {
   size: number
 }
 
-// Phase 2 结果字段会由后端逐步补齐，因此前端先把 keywords/alternatives 视为可选字段，避免前后端必须同步上线。
+// 前端先把 keywords/alternatives 视为可选字段，避免前后端必须同步上线。
 export function normalizeTranslationResult(input: TranslationResult): TranslationResult {
   return {
     ...input,

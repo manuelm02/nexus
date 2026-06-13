@@ -12,6 +12,14 @@ export interface Todo {
   updatedAt: string
 }
 
+/** 看板分组响应，后端保证 today/future/overdue/tasks 四个分组互斥 */
+export interface TodoBoardResponse {
+  today: Todo[]
+  future: Todo[]
+  overdue: Todo[]
+  tasks: Todo[]
+}
+
 export interface InboxItem {
   id: string
   title?: string
@@ -21,6 +29,59 @@ export interface InboxItem {
   notionSynced: boolean
   createdAt: string
   updatedAt: string
+}
+
+/** Nexus 原生书签 */
+export interface Bookmark {
+  id: string
+  url: string
+  title?: string
+  description?: string
+  notes?: string
+  tagNames: string[]
+  unread: boolean
+  archived: boolean
+  domain?: string
+  createdAt: string
+  updatedAt: string
+}
+
+/** paperless-ngx 文档 */
+export interface InboxDocument {
+  id: string
+  title: string
+  originalFileName?: string
+  createdAt?: string
+  addedAt?: string
+  correspondent?: string
+  documentType?: string
+  tags: string[]
+  downloadUrl?: string
+  previewUrl?: string
+}
+
+/** Quick Note / Memo 请求 */
+export interface QuickNoteRequest {
+  title?: string
+  content: string
+  kind?: 'quick_note' | 'memo'
+  tags?: string[]
+}
+
+/** Quick Note / Memo 响应 */
+export interface QuickNoteResponse {
+  path: string
+  relativePath: string
+  createdAt: string
+}
+
+/** 分页响应 */
+export interface Paginated<T> {
+  records: T[]
+  total: number
+  size: number
+  current: number
+  pages: number
 }
 
 export interface TranslationResult {

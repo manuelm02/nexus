@@ -55,12 +55,20 @@ export default function TranslatePage() {
   // mutation 只在 page 层存在，避免桌面端和移动端复制两套翻译业务流。
   const translateMutation = useMutation({
     mutationFn: () => translateApi.stream({ sourceText, targetLang, style: style || undefined }, (event) => {
+      // 后端流式处理内部错误（如 LLM 调用失败），payload 为 null，提前退出
+      if (event.type === 'error') {
+        setResultStage('error')
+        return
+      }
+      if (!event.payload) return // 防御：非 error 事件理论上 payload 必存在
+
+      const payload = event.payload
+
       if (event.type === 'draft') {
         setResultStage('draft')
         setResult(normalizeTranslationResult({
           id: 'streaming', sourceText, targetLang, style,
-          translatedText: event.payload.translatedText,
-          provider: event.payload.provider,
+          translatedText: payload.translatedText,
           createdAt: new Date().toISOString(),
         }))
       } else if (event.type === 'token') {
@@ -68,18 +76,17 @@ export default function TranslatePage() {
         setResult((current) => normalizeTranslationResult({
           id: current?.id ?? 'streaming', sourceText, targetLang, style,
           createdAt: current?.createdAt ?? new Date().toISOString(),
-          translatedText: event.payload.translatedText,
-          provider: 'llm',
+          translatedText: payload.translatedText,
         }))
       } else if (event.type === 'enhanced') {
-        setResult(normalizeTranslationResult({
-          id: 'streaming', sourceText, targetLang, style,
-          createdAt: new Date().toISOString(),
-          translatedText: event.payload.translatedText,
-          explanation: event.payload.explanation,
-          keywords: event.payload.keywords,
-          alternatives: event.payload.alternatives,
-          provider: event.payload.provider,
+        setResultStage('enhancing')
+        setResult((current) => normalizeTranslationResult({
+          id: current?.id ?? 'streaming', sourceText, targetLang, style,
+          createdAt: current?.createdAt ?? new Date().toISOString(),
+          translatedText: payload.translatedText,
+          explanation: payload.explanation,
+          keywords: payload.keywords,
+          alternatives: payload.alternatives,
         }))
       } else if (event.type === 'done') {
         setResultStage('done')
@@ -159,7 +166,7 @@ export default function TranslatePage() {
   }
 
   return (
-    <main className="nexus-page-enter mx-auto w-full max-w-[1180px] p-4 sm:p-6 lg:p-8">
+    <main className="nexus-page-enter mx-auto w-full max-w-[1180px] p-4 sm:p-4 lg:p-6">
       <TranslateDesktopView {...viewProps} {...historyProps} />
       <TranslateMobileView {...viewProps} {...historyProps} />
     </main>

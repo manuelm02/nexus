@@ -5,6 +5,7 @@ import com.nexus.dto.request.TodoScheduleTodayRequest;
 import com.nexus.dto.request.TodoStatusRequest;
 import com.nexus.dto.request.TodoUpdateRequest;
 import com.nexus.dto.response.ApiResponse;
+import com.nexus.dto.response.TodoBoardResponse;
 import com.nexus.entity.Todo;
 import com.nexus.service.TodoService;
 import jakarta.validation.Valid;
@@ -29,6 +30,12 @@ public class TodoController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false, defaultValue = "false") boolean overdue) {
         return ApiResponse.ok(overdue ? todoService.listOverdue(LocalDate.now()) : todoService.list(status, date));
+    }
+
+    /** 返回看板分组：today / future / overdue / tasks，后端保证四个分组互斥 */
+    @GetMapping("/board")
+    public ApiResponse<TodoBoardResponse> board() {
+        return ApiResponse.ok(todoService.board(LocalDate.now()));
     }
 
     @PostMapping
