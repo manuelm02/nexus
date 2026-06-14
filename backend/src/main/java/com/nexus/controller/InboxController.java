@@ -36,7 +36,9 @@ public class InboxController {
     private final BookmarkSmartGroupService bookmarkSmartGroupService;
     private final PaperlessGatewayService paperlessGatewayService;
     private final NoteAiService noteAiService;
-    private final NoteConsolidationService noteConsolidationService;
+    private final NoteSummaryService noteSummaryService;
+    private final NoteTagIndexService noteTagIndexService;
+    private final NoteTagReorganizeService noteTagReorganizeService;
     private final NoteSinkPort noteSinkPort;
     private final DocumentArchivePort documentArchivePort;
 
@@ -69,7 +71,15 @@ public class InboxController {
     /** 创建书签，URL 必填且须 http:// 或 https:// 开头 */
     @PostMapping("/bookmarks")
     public ApiResponse<BookmarkResponse> createBookmark(@Valid @RequestBody BookmarkCreateRequest req) {
-        return ApiResponse.ok(bookmarkService.create(req));
+        try {
+            return ApiResponse.ok(bookmarkService.create(req));
+        } catch (IllegalArgumentException e) {
+            // URL 格式无效或书签已存在，返回可读错误信息给前端展示
+            return ApiResponse.error("BOOKMARK_CREATE_FAILED", e.getMessage());
+        } catch (Exception e) {
+            log.error("书签保存失败", e);
+            return ApiResponse.error("BOOKMARK_CREATE_FAILED", "书签保存失败");
+        }
     }
 
     /** 局部更新书签：标题、描述、备注、标签、未读、归档 */
@@ -290,35 +300,31 @@ public class InboxController {
         }
     }
 
-    /** 预览笔记合并结果（不写文件），只扫描 Nexus 写入的 Obsidian Inbox 目录 */
-    @PostMapping("/notes/consolidate/preview")
-    public ApiResponse<NoteConsolidatePreviewResponse> previewConsolidate(
-            @Valid @RequestBody NoteConsolidatePreviewRequest req) {
+    /** 获取笔记标签索引列表，供前端 TagPicker 拉取可选标签 */
+    @GetMapping("/notes/tags")
+    public ApiResponse<List<NoteTagEntryResponse>> listNoteTags(@RequestParam String kind) {
+        return ApiResponse.ok(noteTagIndexService.listTags(kind));
+    }
+
+    /** 按标题关键词 + 标签筛选笔记，AI 生成 Markdown 汇总（不写入文件） */
+    @PostMapping("/notes/summarize")
+    public ApiResponse<NoteSummarizeResponse> summarizeNotes(@Valid @RequestBody NoteSummarizeRequest req) {
         try {
-            return ApiResponse.ok(noteConsolidationService.preview(req));
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error("CONSOLIDATE_INVALID", e.getMessage());
+            return ApiResponse.ok(noteSummaryService.summarize(req));
         } catch (Exception e) {
-            log.error("合并预览失败", e);
-            return ApiResponse.error("CONSOLIDATE_FAILED", "合并预览失败");
+            log.error("笔记汇总失败", e);
+            return ApiResponse.error("NOTE_SUMMARIZE_FAILED", "笔记汇总失败");
         }
     }
 
-    /** 执行笔记合并写入，合并后的文件 front matter 列出所有源文件 */
-    @PostMapping("/notes/consolidate/write")
-    public ApiResponse<QuickNoteResponse> writeConsolidate(@Valid @RequestBody NoteConsolidateWriteRequest req) {
+    /** AI 重新评估并归位指定类型下所有笔记的标签（手动触发，立即执行） */
+    @PostMapping("/notes/reorganize-tags")
+    public ApiResponse<NoteReorganizeResponse> reorganizeNoteTags(@Valid @RequestBody NoteReorganizeRequest req) {
         try {
-            return ApiResponse.ok(noteConsolidationService.write(req));
-        } catch (IllegalStateException e) {
-            return ApiResponse.error("OBSIDIAN_NOT_CONFIGURED", e.getMessage());
-        } catch (IllegalArgumentException e) {
-            return ApiResponse.error("CONSOLIDATE_INVALID", e.getMessage());
-        } catch (SecurityException e) {
-            log.warn("合并写入路径穿越检测: {}", e.getMessage());
-            return ApiResponse.error("OBSIDIAN_WRITE_FAILED", "文件路径不安全");
+            return ApiResponse.ok(noteTagReorganizeService.reorganize(req));
         } catch (Exception e) {
-            log.error("合并写入失败", e);
-            return ApiResponse.error("CONSOLIDATE_FAILED", "合并写入失败");
+            log.error("笔记标签整理失败", e);
+            return ApiResponse.error("NOTE_REORGANIZE_FAILED", "标签整理失败");
         }
     }
 }

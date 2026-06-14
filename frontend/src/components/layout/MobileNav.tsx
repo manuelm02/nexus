@@ -8,6 +8,7 @@ import {
 import { cn } from '../../lib/utils'
 import { NAV_ITEMS } from '../../lib/constants'
 import { useAuth } from '../../hooks/useAuth'
+import { BrandMark } from '../brand/BrandMark'
 
 const icons: Record<string, React.ComponentType<{ className?: string }>> = {
   Target, Feather, Layers, Brain, Radio, CreditCard, Hammer, Sparkles, Languages,
@@ -69,7 +70,10 @@ export function MobileNav() {
         <Dialog.Overlay className="fixed inset-0 z-[60] bg-background/50 backdrop-blur-sm md:hidden" />
         <Dialog.Content className="fixed inset-x-3 bottom-3 z-[60] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border bg-card p-3 shadow-[var(--shadow-lg)] md:hidden">
           <div className="mb-2 flex items-center justify-between gap-3 px-1">
-            <Dialog.Title className="text-sm font-semibold">更多入口</Dialog.Title>
+            <Dialog.Title className="flex items-center gap-2 text-sm font-semibold">
+              <BrandMark className="h-8 w-8 rounded-lg bg-white shadow-[var(--shadow-xs)]" imageClassName="p-0.5" />
+              Nexus
+            </Dialog.Title>
             <Dialog.Close asChild>
               <button type="button" className="flex min-h-11 min-w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-accent hover:text-foreground" aria-label="关闭">
                 <X className="h-4 w-4" />

@@ -11,4 +11,6 @@ public class QuickNoteResponse {
     private String relativePath;
     /** 创建时间，ISO 8601 格式 */
     private String createdAt;
+    /** 最终写入的标签（恰好 1 个），供前端展示"已保存到「{tag}」分类"等反馈 */
+    private String tag;
 }

@@ -25,8 +25,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -50,6 +53,10 @@ public class BookmarkImportService {
 
     /** 预览结果缓存，key 为 importSessionId，commit 时用于关联原始导入数据 */
     private final Map<String, PreviewSnapshot> previewCache = new ConcurrentHashMap<>();
+    /** 导入时自动生成的智能分组数量上限，避免把标签体系膨胀复制成分组体系 */
+    private static final int AUTO_GROUP_LIMIT = 3;
+    /** 标签至少覆盖两个新导入书签才会升级为智能分组，避免为偶发细标签建组 */
+    private static final int AUTO_GROUP_MIN_BOOKMARKS = 2;
 
     /**
      * 预览批量导入：校验 URL、归一化、查重、分类为 create/skip/conflict/invalid。
@@ -70,6 +77,8 @@ public class BookmarkImportService {
         Map<Integer, String> existingBookmarkIds = new ConcurrentHashMap<>();
         // 缓存 AI 建议的分组 ID（sourceIndex -> groupId）
         Map<Integer, String> aiSuggestedGroupIds = new ConcurrentHashMap<>();
+        // 缓存 AI 建议的主分组名，即使当前还没有同名分组也会在 commit 阶段用于自动建组
+        Map<Integer, String> aiSuggestedGroupNames = new ConcurrentHashMap<>();
 
         boolean aiAvailable = false;
 
@@ -141,7 +150,7 @@ public class BookmarkImportService {
                 create.setNormalizedUrl(normalized.normalizedUrl());
                 create.setDomain(normalized.domain());
                 // AI 分析（可选，不阻塞预览）
-                tryEnrichWithAi(create, item.getTitle(), aiSuggestedGroupIds, sourceIndex);
+                tryEnrichWithAi(create, item.getTitle(), aiSuggestedGroupIds, aiSuggestedGroupNames, sourceIndex);
                 if (!aiAvailable && create.isAiAvailable()) {
                     aiAvailable = true;
                 }
@@ -164,7 +173,7 @@ public class BookmarkImportService {
 
         // 生成预览会话 ID 并缓存
         String sessionId = UUID.randomUUID().toString();
-        previewCache.put(sessionId, new PreviewSnapshot(items, existingBookmarkIds, aiSuggestedGroupIds));
+        previewCache.put(sessionId, new PreviewSnapshot(items, existingBookmarkIds, aiSuggestedGroupIds, aiSuggestedGroupNames));
 
         var resp = new BookmarkImportPreviewResponse();
         resp.setImportSessionId(sessionId);
@@ -197,6 +206,10 @@ public class BookmarkImportService {
 
         // 收集新创建书签 ID 以便后续分组分配
         List<String> newBookmarkIdsForGroup = new ArrayList<>();
+        // 收集本次导入最终标签，用于创建少量高覆盖智能分组，而不是一标签一组
+        Map<String, List<String>> importedTagBookmarkIds = new LinkedHashMap<>();
+        // 收集 AI 主分组建议，用主分组控制数量，再用标签集合作为后续匹配规则
+        List<ImportedBookmarkGrouping> importedGroupings = new ArrayList<>();
         // 收集 AI 建议的分组分配（bookmarkId -> groupId，assignSource=ai）
         List<AiGroupPair> aiAssignments = new ArrayList<>();
 
@@ -221,6 +234,11 @@ public class BookmarkImportService {
                 createdBookmarkIds.add(created.getId());
                 createdCount++;
                 newBookmarkIdsForGroup.add(created.getId());
+                collectImportedTags(importedTagBookmarkIds, created.getId(), decision.getFinalTags());
+                importedGroupings.add(new ImportedBookmarkGrouping(
+                        created.getId(),
+                        decision.getFinalTags(),
+                        snapshot.getAiSuggestedGroupName(sourceIndex)));
 
                 // 如果用户接受 AI 建议分组，记录待分配
                 if (decision.isAcceptSuggestedGroup()) {
@@ -257,6 +275,10 @@ public class BookmarkImportService {
         // 对新创建的书签应用确定性规则分组匹配
         if (!newBookmarkIdsForGroup.isEmpty()) {
             applyRuleBasedGroups(newBookmarkIdsForGroup);
+            boolean createdAiGroups = createCompactGroupsFromAiSuggestions(importedGroupings);
+            if (!createdAiGroups) {
+                createCompactGroupsFromImportedTags(importedTagBookmarkIds);
+            }
         }
 
         // 对接受 AI 建议分组的新书签插入 ai 来源的分配记录
@@ -281,6 +303,171 @@ public class BookmarkImportService {
         resp.setSkippedCount(skippedCount);
         resp.setCreatedBookmarkIds(createdBookmarkIds);
         return resp;
+    }
+
+    /**
+     * 优先使用 AI 给出的主分组名创建少量分组。
+     * 分组名负责收敛数量，matchValue 使用组内标签集合，避免把不可匹配的抽象名称写成规则值。
+     */
+    private boolean createCompactGroupsFromAiSuggestions(List<ImportedBookmarkGrouping> importedGroupings) {
+        if (importedGroupings.isEmpty()) {
+            return false;
+        }
+
+        List<BookmarkSmartGroup> existingGroups = groupMapper.selectList(
+                new LambdaQueryWrapper<BookmarkSmartGroup>()
+                        .eq(BookmarkSmartGroup::getEnabled, true));
+        Set<String> existingNames = existingGroups.stream()
+                .map(BookmarkSmartGroup::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .map(name -> name.trim().toLowerCase())
+                .collect(Collectors.toSet());
+
+        Map<String, AiImportGroupCandidate> candidatesByName = new LinkedHashMap<>();
+        for (ImportedBookmarkGrouping grouping : importedGroupings) {
+            String groupName = normalizeText(grouping.groupName());
+            if (groupName == null) {
+                continue;
+            }
+            String key = groupName.toLowerCase();
+            AiImportGroupCandidate candidate = candidatesByName.computeIfAbsent(
+                    key,
+                    ignored -> new AiImportGroupCandidate(groupName, candidatesByName.size()));
+            candidate.bookmarkIds.add(grouping.bookmarkId());
+            addTags(candidate.matchTags, grouping.tags());
+        }
+
+        List<AiImportGroupCandidate> candidates = candidatesByName.entrySet().stream()
+                .filter(entry -> !existingNames.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .filter(candidate -> !candidate.bookmarkIds.isEmpty() && !candidate.matchTags.isEmpty())
+                .sorted((a, b) -> {
+                    int coverage = Integer.compare(b.bookmarkIds.size(), a.bookmarkIds.size());
+                    return coverage != 0 ? coverage : Integer.compare(a.firstOrder, b.firstOrder);
+                })
+                .limit(AUTO_GROUP_LIMIT)
+                .toList();
+
+        int nextOrderIndex = existingGroups.size();
+        for (AiImportGroupCandidate candidate : candidates) {
+            BookmarkSmartGroup group = new BookmarkSmartGroup();
+            group.setId(UUID.randomUUID().toString());
+            group.setName(candidate.name);
+            group.setDescription("导入时根据 AI 主分组自动创建，覆盖 " + candidate.bookmarkIds.size() + " 个新书签");
+            group.setMatchMode("any_tag");
+            group.setMatchValue(candidate.matchTags.stream().limit(8).collect(Collectors.joining(",")));
+            group.setOrderIndex(nextOrderIndex++);
+            group.setEnabled(true);
+            groupMapper.insert(group);
+
+            for (String bookmarkId : candidate.bookmarkIds) {
+                BookmarkSmartGroupAssignment assignment = new BookmarkSmartGroupAssignment();
+                assignment.setGroupId(group.getId());
+                assignment.setBookmarkId(bookmarkId);
+                assignment.setAssignSource("ai_import");
+                assignmentMapper.insert(assignment);
+            }
+        }
+        return !candidates.isEmpty();
+    }
+
+    /**
+     * 收集单个导入书签最终保存的标签，单个书签内标签去重后再计数。
+     */
+    private void collectImportedTags(Map<String, List<String>> tagBookmarkIds, String bookmarkId, List<String> tags) {
+        if (bookmarkId == null || tags == null || tags.isEmpty()) {
+            return;
+        }
+        Set<String> seenInBookmark = new java.util.LinkedHashSet<>();
+        for (String tag : tags) {
+            String normalized = tag == null ? "" : tag.trim();
+            if (normalized.isEmpty() || !seenInBookmark.add(normalized)) {
+                continue;
+            }
+            tagBookmarkIds.computeIfAbsent(normalized, key -> new ArrayList<>()).add(bookmarkId);
+        }
+    }
+
+    /**
+     * 把一组标签清洗后加入目标集合，用 LinkedHashSet 保留 AI 输出的优先顺序。
+     */
+    private void addTags(LinkedHashSet<String> target, List<String> tags) {
+        if (tags == null) {
+            return;
+        }
+        for (String tag : tags) {
+            String normalized = normalizeText(tag);
+            if (normalized != null) {
+                target.add(normalized);
+            }
+        }
+    }
+
+    /**
+     * 统一清洗 AI 输出和用户提交文本，空字符串返回 null 便于调用方跳过。
+     */
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    /**
+     * 从本次导入的 AI 标签中自动创建少量智能分组。
+     * 只取覆盖新书签数最高的标签，且至少覆盖 2 个新书签，避免分组数量退化成标签数量。
+     */
+    private void createCompactGroupsFromImportedTags(Map<String, List<String>> tagBookmarkIds) {
+        if (tagBookmarkIds.isEmpty()) {
+            return;
+        }
+
+        List<BookmarkSmartGroup> existingGroups = groupMapper.selectList(
+                new LambdaQueryWrapper<BookmarkSmartGroup>()
+                        .eq(BookmarkSmartGroup::getEnabled, true));
+        Set<String> existingNames = existingGroups.stream()
+                .map(BookmarkSmartGroup::getName)
+                .filter(name -> name != null && !name.isBlank())
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+        Set<String> existingAnyTagValues = existingGroups.stream()
+                .filter(group -> "any_tag".equals(group.getMatchMode()))
+                .map(BookmarkSmartGroup::getMatchValue)
+                .filter(value -> value != null && !value.isBlank())
+                .map(String::trim)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+
+        List<Map.Entry<String, List<String>>> candidates = tagBookmarkIds.entrySet().stream()
+                .filter(entry -> entry.getValue().size() >= AUTO_GROUP_MIN_BOOKMARKS)
+                .filter(entry -> !existingNames.contains(entry.getKey().toLowerCase()))
+                .filter(entry -> !existingAnyTagValues.contains(entry.getKey().toLowerCase()))
+                .sorted((a, b) -> Integer.compare(b.getValue().size(), a.getValue().size()))
+                .limit(AUTO_GROUP_LIMIT)
+                .toList();
+
+        int nextOrderIndex = existingGroups.size();
+        for (Map.Entry<String, List<String>> candidate : candidates) {
+            BookmarkSmartGroup group = new BookmarkSmartGroup();
+            group.setId(UUID.randomUUID().toString());
+            group.setName(candidate.getKey());
+            group.setDescription("导入时根据 AI 标签自动创建，覆盖 " + candidate.getValue().size() + " 个新书签");
+            group.setMatchMode("any_tag");
+            group.setMatchValue(candidate.getKey());
+            group.setOrderIndex(nextOrderIndex++);
+            group.setEnabled(true);
+            groupMapper.insert(group);
+
+            for (String bookmarkId : candidate.getValue()) {
+                BookmarkSmartGroupAssignment assignment = new BookmarkSmartGroupAssignment();
+                assignment.setGroupId(group.getId());
+                assignment.setBookmarkId(bookmarkId);
+                assignment.setAssignSource("ai_import");
+                assignmentMapper.insert(assignment);
+            }
+        }
     }
 
     /**
@@ -317,7 +504,9 @@ public class BookmarkImportService {
      * 失败时静默降级，不影响预览流程。
      */
     private void tryEnrichWithAi(BookmarkImportPreviewResponse.ImportPreviewItem item, String originalTitle,
-                                  Map<Integer, String> aiSuggestedGroupIds, int sourceIndex) {
+                                  Map<Integer, String> aiSuggestedGroupIds,
+                                  Map<Integer, String> aiSuggestedGroupNames,
+                                  int sourceIndex) {
         try {
             var analyzeReq = new com.nexus.dto.request.BookmarkAnalyzeRequest();
             analyzeReq.setUrl(item.getUrl());
@@ -331,8 +520,10 @@ public class BookmarkImportService {
                 item.setSuggestedTags(analyzeResp.getSuggestedTags());
                 item.setSuggestedGroupName(analyzeResp.getSuggestedGroupName());
                 // 尝试将 AI 建议的分组名匹配到已有分组 ID
-                if (analyzeResp.getSuggestedGroupName() != null) {
-                    String matchedId = findGroupIdByName(analyzeResp.getSuggestedGroupName());
+                String suggestedGroupName = normalizeText(analyzeResp.getSuggestedGroupName());
+                if (suggestedGroupName != null) {
+                    aiSuggestedGroupNames.put(sourceIndex, suggestedGroupName);
+                    String matchedId = findGroupIdByName(suggestedGroupName);
                     item.setSuggestedGroupId(matchedId);
                     if (matchedId != null) {
                         aiSuggestedGroupIds.put(sourceIndex, matchedId);
@@ -408,12 +599,15 @@ public class BookmarkImportService {
         private final List<ImportItem> items;
         private final Map<Integer, String> existingBookmarkIds;
         private final Map<Integer, String> aiSuggestedGroupIds;
+        private final Map<Integer, String> aiSuggestedGroupNames;
 
         PreviewSnapshot(List<ImportItem> items, Map<Integer, String> existingBookmarkIds,
-                        Map<Integer, String> aiSuggestedGroupIds) {
+                        Map<Integer, String> aiSuggestedGroupIds,
+                        Map<Integer, String> aiSuggestedGroupNames) {
             this.items = Collections.unmodifiableList(new ArrayList<>(items));
             this.existingBookmarkIds = Collections.unmodifiableMap(existingBookmarkIds);
             this.aiSuggestedGroupIds = Collections.unmodifiableMap(aiSuggestedGroupIds);
+            this.aiSuggestedGroupNames = Collections.unmodifiableMap(aiSuggestedGroupNames);
         }
 
         ImportItem getItems(int sourceIndex) {
@@ -430,9 +624,30 @@ public class BookmarkImportService {
         String getAiSuggestedGroupId(int sourceIndex) {
             return aiSuggestedGroupIds.get(sourceIndex);
         }
+
+        String getAiSuggestedGroupName(int sourceIndex) {
+            return aiSuggestedGroupNames.get(sourceIndex);
+        }
     }
 
     /** AI 建议分组分配的临时数据结构 */
     private record AiGroupPair(String bookmarkId, String groupId) {
+    }
+
+    /** 导入书签用于自动建组的轻量快照 */
+    private record ImportedBookmarkGrouping(String bookmarkId, List<String> tags, String groupName) {
+    }
+
+    /** AI 主分组聚合候选，使用可变集合减少中间对象创建 */
+    private static class AiImportGroupCandidate {
+        private final String name;
+        private final int firstOrder;
+        private final List<String> bookmarkIds = new ArrayList<>();
+        private final LinkedHashSet<String> matchTags = new LinkedHashSet<>();
+
+        private AiImportGroupCandidate(String name, int firstOrder) {
+            this.name = name;
+            this.firstOrder = firstOrder;
+        }
     }
 }

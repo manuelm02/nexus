@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
-import { Upload, FileText, Wifi, WifiOff, AlertCircle, Clock, ExternalLink, Loader2, Tag } from 'lucide-react'
+import { Upload, FileText, Wifi, WifiOff, AlertCircle, Clock, ExternalLink, Loader2, Tag, File as FileIcon } from 'lucide-react'
 import { cn, formatRelative } from '../../../../lib/utils'
 import { IntegrationEmptyState } from '../IntegrationEmptyState'
+import { PaperlessEntryGrid } from './PaperlessEntryGrid'
 import type { EntryLink, InboxDocument } from '../../../../types/domain.types'
 
 export type PaperlessGatewayProps = {
@@ -104,12 +105,28 @@ export function PaperlessGateway({
           </button>
         ) : (
           <form onSubmit={handleUploadSubmit} className="space-y-2">
+            {/* 文件选择区：隐藏原生 input，用 Nexus 风格按钮触发选择 */}
             <input
               ref={fileRef}
               type="file"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="nexus-input w-full px-3 py-1.5 text-sm"
+              disabled={status !== 'connected'}
+              className="hidden"
             />
+            <div className="flex items-center gap-2 rounded-lg border border-dashed border-input bg-card px-3 py-2">
+              <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                {file ? file.name : '未选择文件'}
+              </span>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={status !== 'connected'}
+                className="nexus-button-utility shrink-0 px-3 py-1 text-xs"
+              >
+                选择文件
+              </button>
+            </div>
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -147,7 +164,12 @@ export function PaperlessGateway({
       </div>
 
       {/* 入口卡片网格 */}
-      {entryLinks.length > 0 && <PaperlessEntryGrid entryLinks={entryLinks} />}
+      {entryLinks.length > 0 && (
+        <PaperlessEntryGrid
+          entryLinks={entryLinks}
+          onOpen={(url) => window.open(url, '_blank', 'noopener,noreferrer')}
+        />
+      )}
 
       {/* 最近文档列表 */}
       <div className="space-y-1.5">
@@ -199,36 +221,6 @@ export function PaperlessGateway({
           </div>
         )}
       </div>
-    </div>
-  )
-}
-
-/** paperless 入口网格：8 个入口卡片 2x4 或响应式 4x2 */
-export function PaperlessEntryGrid({ entryLinks }: { entryLinks: EntryLink[] }) {
-  const handleOpen = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
-  return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-      {entryLinks.map((link) => (
-        <button
-          key={link.key}
-          type="button"
-          onClick={() => handleOpen(link.url)}
-          className="flex flex-col items-center gap-1.5 rounded-lg border bg-card p-3 shadow-[var(--shadow-xs)] text-center transition-colors hover:border-primary/30 hover:bg-accent"
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded bg-primary/10">
-            <FileText className="h-4 w-4 text-primary" />
-          </div>
-          <span className="text-xs font-bold text-foreground truncate w-full">{link.label}</span>
-          {link.description && (
-            <span className="text-[10px] text-muted-foreground leading-tight line-clamp-2">
-              {link.description}
-            </span>
-          )}
-        </button>
-      ))}
     </div>
   )
 }

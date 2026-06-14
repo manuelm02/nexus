@@ -137,7 +137,7 @@ export function NoteAiSuggestionPanel({
           className="nexus-button-primary flex items-center gap-1.5 px-3 py-1.5 text-xs"
         >
           <Sparkles className="h-3.5 w-3.5" />
-          应用建议
+          合并到当前笔记
         </button>
       </div>
     </div>

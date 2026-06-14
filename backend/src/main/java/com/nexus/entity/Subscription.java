@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/** 订阅实体映射数据库完整列，包含后续 API 余额拉取阶段保留的休眠字段。 */
 @Data
 @TableName(value = "subscriptions", autoResultMap = true)
 public class Subscription {
@@ -35,9 +36,6 @@ public class Subscription {
     private String url;
     private String notes;
     private String status;
-    private String notionPageUrl;
-    private boolean notionSynced;
-    private String taskId;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(fill = FieldFill.INSERT_UPDATE)

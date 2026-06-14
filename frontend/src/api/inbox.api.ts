@@ -22,9 +22,11 @@ import type {
   PaperlessGatewayStatusResponse,
   NoteAnalyzeRequest,
   NoteAnalyzeResponse,
-  NoteConsolidatePreviewRequest,
-  NoteConsolidatePreviewResponse,
-  NoteConsolidateWriteRequest,
+  NoteTagEntry,
+  NoteSummarizeRequest,
+  NoteSummarizeResponse,
+  NoteReorganizeRequest,
+  NoteReorganizeResponse,
 } from '../types/domain.types'
 
 export const inboxApi = {
@@ -155,12 +157,16 @@ export const inboxApi = {
     analyze: (data: NoteAnalyzeRequest) =>
       apiClient.post<ApiResponse<NoteAnalyzeResponse>>('/inbox/notes/analyze', data),
 
-    /** 预览笔记合并 */
-    consolidatePreview: (data: NoteConsolidatePreviewRequest) =>
-      apiClient.post<ApiResponse<NoteConsolidatePreviewResponse>>('/inbox/notes/consolidate/preview', data),
+    /** 获取指定类型（quick_note/memo）的标签索引列表 */
+    tags: (kind: 'quick_note' | 'memo') =>
+      apiClient.get<ApiResponse<NoteTagEntry[]>>('/inbox/notes/tags', { params: { kind } }),
 
-    /** 执行笔记合并写入 */
-    consolidateWrite: (data: NoteConsolidateWriteRequest) =>
-      apiClient.post<ApiResponse<QuickNoteResponse>>('/inbox/notes/consolidate/write', data),
+    /** 按标题关键词 + 标签筛选笔记，生成 AI 汇总 Markdown */
+    summarize: (data: NoteSummarizeRequest) =>
+      apiClient.post<ApiResponse<NoteSummarizeResponse>>('/inbox/notes/summarize', data),
+
+    /** 手动触发：AI 重新评估并归位指定类型下所有笔记的标签 */
+    reorganizeTags: (data: NoteReorganizeRequest) =>
+      apiClient.post<ApiResponse<NoteReorganizeResponse>>('/inbox/notes/reorganize-tags', data),
   },
 }

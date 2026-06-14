@@ -39,7 +39,11 @@ class InboxControllerTest {
     @Mock
     private NoteAiService noteAiService;
     @Mock
-    private NoteConsolidationService noteConsolidationService;
+    private NoteSummaryService noteSummaryService;
+    @Mock
+    private NoteTagIndexService noteTagIndexService;
+    @Mock
+    private NoteTagReorganizeService noteTagReorganizeService;
     @Mock
     private NoteSinkPort noteSinkPort;
     @Mock
@@ -85,12 +89,26 @@ class InboxControllerTest {
         var req = new BookmarkCreateRequest();
         req.setUrl("ftp://invalid.com");
 
-        // 由于没有全局异常处理器，异常会传播；这里只验证 service 调用
-        try {
-            inboxController.createBookmark(req);
-        } catch (IllegalArgumentException e) {
-            assertThat(e.getMessage()).contains("URL 必须以 http://");
-        }
+        var resp = inboxController.createBookmark(req);
+
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo("BOOKMARK_CREATE_FAILED");
+        assertThat(resp.getMessage()).contains("URL 必须以 http://");
+    }
+
+    @Test
+    void createBookmarkWithDuplicateUrlShouldReturnError() {
+        when(bookmarkService.create(any()))
+                .thenThrow(new IllegalArgumentException("该书签已存在"));
+
+        var req = new BookmarkCreateRequest();
+        req.setUrl("https://example.com");
+
+        var resp = inboxController.createBookmark(req);
+
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo("BOOKMARK_CREATE_FAILED");
+        assertThat(resp.getMessage()).isEqualTo("该书签已存在");
     }
 
     // ======================== 文档 ========================
@@ -144,5 +162,93 @@ class InboxControllerTest {
 
         assertThat(resp.isSuccess()).isFalse();
         assertThat(resp.getErrorCode()).isEqualTo("NOTE_CONTENT_REQUIRED");
+    }
+
+    // ======================== 笔记标签索引 ========================
+
+    @Test
+    void listNoteTagsShouldReturnTagEntries() {
+        var tag = new com.nexus.dto.response.NoteTagEntryResponse();
+        tag.setName("技术");
+        tag.setDescription("编程、工具链、技术学习相关内容");
+        when(noteTagIndexService.listTags("quick_note")).thenReturn(java.util.List.of(tag));
+
+        var resp = inboxController.listNoteTags("quick_note");
+
+        assertThat(resp.isSuccess()).isTrue();
+        assertThat(resp.getData()).hasSize(1);
+        assertThat(resp.getData().get(0).getName()).isEqualTo("技术");
+    }
+
+    // ======================== 笔记汇总 ========================
+
+    @Test
+    void summarizeNotesShouldReturnEmptyResultWhenNoFilter() {
+        var serviceResp = new com.nexus.dto.response.NoteSummarizeResponse();
+        serviceResp.setMatchedCount(0);
+        serviceResp.setMarkdown(null);
+        when(noteSummaryService.summarize(any())).thenReturn(serviceResp);
+
+        var req = new com.nexus.dto.request.NoteSummarizeRequest();
+        req.setKind("quick_note");
+
+        var resp = inboxController.summarizeNotes(req);
+
+        assertThat(resp.isSuccess()).isTrue();
+        assertThat(resp.getData().getMatchedCount()).isEqualTo(0);
+        assertThat(resp.getData().getMarkdown()).isNull();
+    }
+
+    @Test
+    void summarizeNotesShouldReturnErrorWhenServiceThrows() {
+        when(noteSummaryService.summarize(any())).thenThrow(new RuntimeException("扫描失败"));
+
+        var req = new com.nexus.dto.request.NoteSummarizeRequest();
+        req.setKind("memo");
+        req.setTitleQuery("关键词");
+
+        var resp = inboxController.summarizeNotes(req);
+
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo("NOTE_SUMMARIZE_FAILED");
+    }
+
+    // ======================== 笔记标签整理 ========================
+
+    @Test
+    void reorganizeNoteTagsShouldReturnResult() {
+        var change = new com.nexus.dto.response.NoteReorganizeResponse.NoteReorganizeChange();
+        change.setTitle("测试笔记");
+        change.setOldTag("旧标签");
+        change.setNewTag("新标签");
+        change.setOldPath("Inbox/Quick Note/旧标签/测试笔记.md");
+        change.setNewPath("Inbox/Quick Note/新标签/测试笔记.md");
+
+        var serviceResp = new com.nexus.dto.response.NoteReorganizeResponse();
+        serviceResp.setScannedCount(2);
+        serviceResp.setChanges(java.util.List.of(change));
+        serviceResp.setAiUnavailable(false);
+        when(noteTagReorganizeService.reorganize(any())).thenReturn(serviceResp);
+
+        var req = new com.nexus.dto.request.NoteReorganizeRequest();
+        req.setKind("quick_note");
+
+        var resp = inboxController.reorganizeNoteTags(req);
+
+        assertThat(resp.isSuccess()).isTrue();
+        assertThat(resp.getData().getScannedCount()).isEqualTo(2);
+    }
+
+    @Test
+    void reorganizeNoteTagsShouldHandleException() {
+        when(noteTagReorganizeService.reorganize(any())).thenThrow(new RuntimeException("整理失败"));
+
+        var req = new com.nexus.dto.request.NoteReorganizeRequest();
+        req.setKind("memo");
+
+        var resp = inboxController.reorganizeNoteTags(req);
+
+        assertThat(resp.isSuccess()).isFalse();
+        assertThat(resp.getErrorCode()).isEqualTo("NOTE_REORGANIZE_FAILED");
     }
 }

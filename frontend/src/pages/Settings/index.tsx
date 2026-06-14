@@ -231,7 +231,6 @@ export default function SettingsPage() {
         obsidianEnabled: false,
         obsidianInboxDir: 'Inbox',
         obsidianMemoDir: 'Inbox/Memo',
-        obsidianConsolidationDir: 'Inbox/Consolidated',
         bookmarksAiAssistEnabled: false,
         bookmarksBulkImportEnabled: false,
         bookmarksStripTrackingParams: false,

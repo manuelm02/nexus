@@ -12,6 +12,8 @@ export type BookmarkSmartGroupPanelProps = {
   onApply: (bookmarkIds: string[], groupIds: string[]) => void
   isAiAvailable: boolean
   isCreating?: boolean
+  isApplying?: boolean
+  applyError?: string
   previewResult?: { groupId: string; matchedBookmarks: MatchedBookmark[] } | null
   isPreviewing?: boolean
 }
@@ -23,7 +25,10 @@ export function BookmarkSmartGroupPanel({
   onUpdate,
   onDelete,
   onPreview,
+  onApply,
   isCreating,
+  isApplying,
+  applyError,
   previewResult,
   isPreviewing,
 }: BookmarkSmartGroupPanelProps) {
@@ -54,7 +59,12 @@ export function BookmarkSmartGroupPanel({
     <div className="space-y-3">
       {/* 分组列表 */}
       {groups.length === 0 ? (
-        <p className="text-sm text-muted-foreground text-center py-8">暂无智能分组</p>
+        <div className="space-y-3 py-6 text-center">
+          <p className="text-sm text-muted-foreground">暂无分组规则</p>
+          <p className="mx-auto max-w-[260px] text-[11px] leading-5 text-muted-foreground">
+            批量导入提交后会根据 AI 主分组自动生成少量高覆盖分组，不会按每个标签建组。
+          </p>
+        </div>
       ) : (
         <div className="space-y-2">
           {groups.map((g) => (
@@ -137,9 +147,28 @@ export function BookmarkSmartGroupPanel({
               {/* 预览结果 */}
               {previewResult && previewResult.groupId === g.id && (
                 <div className="mt-2 space-y-1 border-t border-border pt-2">
-                  <p className="text-[11px] font-semibold text-muted-foreground">
-                    匹配到 {previewResult.matchedBookmarks.length} 个书签
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-[11px] font-semibold text-muted-foreground">
+                      匹配到 {previewResult.matchedBookmarks.length} 个书签
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => onApply(
+                        previewResult.matchedBookmarks
+                          .filter((b) => !b.alreadyAssigned)
+                          .map((b) => b.bookmarkId),
+                        [g.id],
+                      )}
+                      disabled={isApplying || previewResult.matchedBookmarks.every((b) => b.alreadyAssigned)}
+                      className="nexus-button-primary flex items-center gap-1 px-2 py-1 text-[10px] disabled:opacity-50"
+                    >
+                      {isApplying ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                      应用分配
+                    </button>
+                  </div>
+                  {applyError && (
+                    <p className="text-[11px] text-destructive">{applyError}</p>
+                  )}
                   {previewResult.matchedBookmarks.slice(0, 10).map((b) => (
                     <div key={b.bookmarkId} className="flex items-center gap-1.5 text-xs">
                       <CheckCircle2 className={cn(
@@ -220,14 +249,16 @@ export function BookmarkSmartGroupPanel({
           </div>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed bg-card/50 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-input transition-colors"
-        >
-          <Plus className="h-4 w-4" />
-          创建新分组
-        </button>
+        <div className="grid gap-2">
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed bg-card/50 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:border-input transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            创建新分组
+          </button>
+        </div>
       )}
     </div>
   )

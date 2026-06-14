@@ -28,7 +28,7 @@ public class InboxSettingsService {
     private static final String DEFAULT_INBOX_DIR = "Inbox";
     private static final String QUICK_NOTE_DIR = "Quick Note";
     private static final String MEMO_DIR = "Memo";
-    private static final String CONSOLIDATED_DIR = "Consolidated";
+    private static final String TAGS_DIR = "tags";
 
     /**
      * 获取所有 Inbox 设置。token 字段仅返回是否已配置的标记，不暴露实际值。
@@ -57,7 +57,6 @@ public class InboxSettingsService {
         resp.setObsidianInboxDir(inboxDir);
         resp.setObsidianMemoDir(resolveChildDir(inboxDir, MEMO_DIR));
         resp.setObsidianFileNamingPattern(null);
-        resp.setObsidianConsolidationDir(resolveChildDir(inboxDir, CONSOLIDATED_DIR));
 
         // === Bookmark 配置 ===
         resp.setBookmarksAiAssistEnabled(Boolean.parseBoolean(
@@ -192,9 +191,9 @@ public class InboxSettingsService {
         return resolveChildDir(getObsidianInboxRootDir(), MEMO_DIR);
     }
 
-    /** AI 整理后的固定输出目录。 */
-    public String getObsidianConsolidationDir() {
-        return resolveChildDir(getObsidianInboxRootDir(), CONSOLIDATED_DIR);
+    /** 标签索引文件固定存放目录。 */
+    public String getObsidianTagsDir() {
+        return resolveChildDir(getObsidianInboxRootDir(), TAGS_DIR);
     }
 
     /**

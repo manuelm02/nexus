@@ -488,7 +488,7 @@ function ObsidianSettingsCard({ draft, onDraftChange, onTest, isTesting }: Obsid
   const derivedDirs = [
     `${inboxRoot}/Quick Note`,
     `${inboxRoot}/Memo`,
-    `${inboxRoot}/Consolidated`,
+    `${inboxRoot}/tags`,
   ]
 
   return (

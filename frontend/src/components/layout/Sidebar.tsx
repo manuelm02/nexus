@@ -6,6 +6,7 @@ import {
 import { cn } from '../../lib/utils'
 import { NAV_ITEMS } from '../../lib/constants'
 import { useAuth } from '../../hooks/useAuth'
+import { BrandMark } from '../brand/BrandMark'
 
 const icons: Record<string, React.ComponentType<{ className?: string }>> = {
   Target, Feather, Layers, Brain, Radio,
@@ -20,8 +21,15 @@ export function Sidebar() {
   return (
     <aside className="hidden h-screen w-64 shrink-0 flex-col border-r border-secondary/80 bg-primary text-primary-foreground md:sticky md:top-0 md:flex">
       <div className="border-b border-white/10 px-5 py-5">
-        <span className="text-xl font-black tracking-normal">Nexus</span>
-        <p className="mt-1 text-[11px] font-medium text-secondary-foreground/65">Personal Knowledge OS</p>
+        <div className="flex items-center gap-3">
+          <BrandMark className="h-11 w-11 shrink-0 rounded-xl bg-white/95 shadow-[0_10px_24px_rgba(0,0,0,0.16)]" imageClassName="p-1" />
+          <span className="min-w-0">
+            <span className="block text-xl font-black leading-none tracking-normal">Nexus</span>
+            <span className="mt-1 block text-[11px] font-medium leading-tight text-secondary-foreground/65">
+              Personal Knowledge OS
+            </span>
+          </span>
+        </div>
       </div>
       <nav className="flex-1 overflow-y-auto p-2">
         {NAV_ITEMS.map(({ path, label, icon }) => {

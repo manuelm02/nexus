@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Upload, Folder, FileText, Sparkles } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { INBOX_TABS, type InboxTab } from './inbox.shared'
@@ -9,11 +10,19 @@ import { BookmarkSmartGroupPanel } from './components/bookmarks/BookmarkSmartGro
 import { PaperlessGateway } from './components/documents/PaperlessGateway'
 import { NoteComposer } from './components/notes/NoteComposer'
 import { NoteAiSuggestionPanel } from './components/notes/NoteAiSuggestionPanel'
+import { NoteSummaryPanel } from './components/notes/NoteSummaryPanel'
+import type { NoteSectionState } from './hooks/useNoteSection'
 import type {
   BookmarkAnalyzeResponse, BookmarkSmartGroup, BookmarkSmartGroupRequest,
-  BookmarkImportPreviewResponse, NoteAnalyzeResponse, ImportAction, MatchedBookmark,
+  BookmarkImportPreviewResponse, ImportAction, MatchedBookmark,
   Paginated, Bookmark, InboxDocument,
 } from '../../types/domain.types'
+
+/** 笔记二级 Tab：速记 / 备忘录，结构完全对称，仅 kind 不同。导出供 InboxMobileView 复用 */
+export const NOTE_SECTIONS: { key: 'quick_note' | 'memo'; label: string }[] = [
+  { key: 'quick_note', label: '速记' },
+  { key: 'memo', label: '备忘录' },
+]
 
 // Phase 3.1 扩展的 booklet props：包含 capture bar / AI 审查 / 导入 / 分组 / 列表所需全部字段
 export type InboxDesktopBookmarkProps = {
@@ -42,11 +51,16 @@ export type InboxDesktopBookmarkProps = {
   onCloseImport: () => void
   onImportPasteSubmit: (text: string) => void
   onImportCommit: () => void
+  previewError?: string
+  commitError?: string
   smartGroups: BookmarkSmartGroup[]
   onGroupCreate: (data: BookmarkSmartGroupRequest) => void
   onGroupUpdate: (id: string, data: Partial<BookmarkSmartGroupRequest>) => void
   onGroupDelete: (id: string) => void
   onGroupPreview: (groupId: string) => void
+  onGroupApply: (bookmarkIds: string[], groupIds: string[]) => void
+  isApplyingGroup: boolean
+  groupApplyError?: string
   groupPreviewResult: { groupId: string; matchedBookmarks: MatchedBookmark[] } | null
   isPreviewingGroup: boolean
   // 原有 BookmarkPanel 字段
@@ -72,35 +86,16 @@ export type InboxDesktopDocumentProps = {
   uploadError?: string
 }
 
-export type InboxDesktopNoteProps = {
-  noteContent: string
-  noteTitle: string
-  noteTags: string[]
-  noteKind: 'quick_note' | 'memo'
-  onContentChange: (v: string) => void
-  onTitleChange: (v: string) => void
-  onTagsChange: (v: string[]) => void
-  onKindChange: (v: 'quick_note' | 'memo') => void
-  aiAvailable: boolean
-  onAnalyze: (data: { title?: string; content: string; kind?: string; tags?: string[] }) => void
-  noteAiResult: NoteAnalyzeResponse | null
-  isAnalyzing: boolean
-  onApplySuggestion: (suggestion: NoteAnalyzeResponse) => void
-  resetAnalyze: () => void
-  obsidianConfigured: boolean
-  onSave: () => void
-  isSaving: boolean
-  saveError?: string
-  lastResult: { relativePath: string } | null
-  onClearResult: () => void
-}
+/** 速记 / 备忘录单个分区的全部 props，来自 useNoteSection 的返回值 */
+export type NoteSectionProps = NoteSectionState
 
 export type InboxDesktopViewProps = {
   activeTab: InboxTab
   onTabChange: (tab: InboxTab) => void
   bookmarkProps: InboxDesktopBookmarkProps
   documentProps: InboxDesktopDocumentProps
-  noteProps: InboxDesktopNoteProps
+  quickNoteProps: NoteSectionProps
+  memoProps: NoteSectionProps
 }
 
 // InboxDesktopView 承载 Inbox 桌面端三栏 tab 面板布局，集成新 Phase 3.1 组件。
@@ -109,10 +104,15 @@ export function InboxDesktopView({
   onTabChange,
   bookmarkProps: bp,
   documentProps: dp,
-  noteProps: np,
+  quickNoteProps,
+  memoProps,
 }: InboxDesktopViewProps) {
+  // 笔记 Tab 内的二级 Tab：速记 / 备忘录，默认显示速记
+  const [activeNoteSection, setActiveNoteSection] = useState<'quick_note' | 'memo'>('quick_note')
+  const ns = activeNoteSection === 'quick_note' ? quickNoteProps : memoProps
+
   return (
-    <div className="nexus-page-enter mx-auto hidden max-w-[1280px] space-y-4 p-4 md:block lg:p-6">
+    <div className="nexus-page-enter mx-auto hidden max-w-[1180px] space-y-4 p-4 md:block lg:p-6">
       {/* 页面标题区 */}
       <div className="flex items-end justify-between gap-6">
         <div>
@@ -148,7 +148,7 @@ export function InboxDesktopView({
         'grid items-start gap-5',
         activeTab === 'notes'
           ? 'grid-cols-1'
-          : 'grid-cols-[minmax(0,760px)_320px]',
+          : 'grid-cols-[minmax(0,1fr)_320px]',
       )}>
         <main className="min-w-0 space-y-3">
         {activeTab === 'bookmarks' && (
@@ -213,9 +213,11 @@ export function InboxDesktopView({
               onClose={bp.onCloseImport}
               preview={bp.importPreview}
               isPreviewing={bp.isPreViewImporting}
+              previewError={bp.previewError}
               onPasteSubmit={bp.onImportPasteSubmit}
               onCommit={bp.onImportCommit}
               isCommitting={bp.isImportCommitting}
+              commitError={bp.commitError}
               decisions={bp.importDecisions}
               onDecisionChange={bp.onImportDecisionChange}
             />
@@ -235,57 +237,84 @@ export function InboxDesktopView({
         )}
 
         {activeTab === 'notes' && (
-          <div className="grid grid-cols-[minmax(0,1fr)_320px] items-start gap-4">
-            <div className="min-w-0">
-            <NoteComposer
-              kind={np.noteKind}
-              title={np.noteTitle}
-              content={np.noteContent}
-              tags={np.noteTags}
-              onKindChange={np.onKindChange}
-              onTitleChange={np.onTitleChange}
-              onContentChange={np.onContentChange}
-              onAddTag={(tag) => np.onTagsChange([...np.noteTags, tag])}
-              onRemoveTag={(tag) => np.onTagsChange(np.noteTags.filter((t) => t !== tag))}
-              onSave={np.onSave}
-              onAnalyze={() => np.onAnalyze({
-                content: np.noteContent,
-                title: np.noteTitle || undefined,
-                kind: np.noteKind,
-                tags: np.noteTags.length > 0 ? np.noteTags : undefined,
-              })}
-              aiSuggestion={np.noteAiResult}
-              onApplySuggestion={() => {
-                if (np.noteAiResult) np.onApplySuggestion(np.noteAiResult!)
-              }}
-              isSaving={np.isSaving}
-              isAnalyzing={np.isAnalyzing}
-              aiAvailable={np.aiAvailable}
-            />
+          <div className="space-y-3">
+            {/* 速记 / 备忘录 二级 Tab：结构完全对称，仅 kind 不同 */}
+            <div className="grid max-w-xs grid-cols-2 gap-2 rounded-lg border bg-muted/40 p-1">
+              {NOTE_SECTIONS.map((section) => (
+                <button
+                  key={section.key}
+                  type="button"
+                  onClick={() => setActiveNoteSection(section.key)}
+                  className={cn(
+                    'rounded-md px-3 py-1.5 text-sm font-bold transition-colors',
+                    activeNoteSection === section.key
+                      ? 'bg-card text-foreground shadow-[var(--shadow-xs)]'
+                      : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  {section.label}
+                </button>
+              ))}
             </div>
 
-            <aside className="space-y-3">
-              <div className="rounded-lg border bg-card p-3 shadow-[var(--shadow-xs)]">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-primary" />
-                  <p className="text-sm font-extrabold text-foreground">AI 建议</p>
+            <div className="grid grid-cols-[minmax(0,1fr)_320px] items-start gap-4">
+              <div className="min-w-0 space-y-3">
+                <NoteComposer
+                  title={ns.title}
+                  content={ns.content}
+                  selectedTags={ns.selectedTags}
+                  onTagsChange={ns.onTagsChange}
+                  availableTags={ns.availableTags}
+                  onTitleChange={ns.onTitleChange}
+                  onContentChange={ns.onContentChange}
+                  onSave={ns.onSave}
+                  onAnalyze={ns.onAnalyze}
+                  aiSuggestion={ns.aiResult}
+                  onApplySuggestion={ns.onApplySuggestion}
+                  isSaving={ns.isSaving}
+                  isAnalyzing={ns.isAnalyzing}
+                  aiAvailable={ns.aiAvailable}
+                  onClearDraft={ns.onClearDraft}
+                />
+
+                <NoteSummaryPanel
+                  titleQuery={ns.summaryTitleQuery}
+                  onTitleQueryChange={ns.onSummaryTitleQueryChange}
+                  availableTags={ns.availableTags}
+                  selectedTags={ns.summaryTags}
+                  onTagsChange={ns.onSummaryTagsChange}
+                  onSummarize={ns.onSummarize}
+                  isSummarizing={ns.isSummarizing}
+                  result={ns.summaryResult}
+                  onReorganize={ns.onReorganize}
+                  isReorganizing={ns.isReorganizing}
+                  reorganizeResult={ns.reorganizeResult}
+                />
+              </div>
+
+              <aside className="space-y-3">
+                <div className="rounded-lg border bg-card p-3 shadow-[var(--shadow-xs)]">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <p className="text-sm font-extrabold text-foreground">AI 建议</p>
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-muted-foreground">
+                    先写原文，再让 AI 生成标题、标签和整理后的 Markdown。建议只会在你确认后应用。
+                  </p>
                 </div>
-                <p className="mt-1 text-xs leading-5 text-muted-foreground">
-                  先写原文，再让 AI 生成标题、标签、目录和整理后的 Markdown。建议只会在你确认后应用。
-                </p>
-              </div>
-            {np.noteAiResult ? (
-              <NoteAiSuggestionPanel
-                suggestion={np.noteAiResult}
-                onApply={() => np.onApplySuggestion(np.noteAiResult!)}
-                onDismiss={np.resetAnalyze}
-              />
-            ) : (
-              <div className="rounded-lg border border-dashed bg-card/60 p-4 text-center text-xs text-muted-foreground">
-                暂无建议
-              </div>
-            )}
-            </aside>
+                {ns.aiResult ? (
+                  <NoteAiSuggestionPanel
+                    suggestion={ns.aiResult}
+                    onApply={ns.onApplySuggestion}
+                    onDismiss={ns.resetAnalyze}
+                  />
+                ) : (
+                  <div className="rounded-lg border border-dashed bg-card/60 p-4 text-center text-xs text-muted-foreground">
+                    暂无建议
+                  </div>
+                )}
+              </aside>
+            </div>
           </div>
         )}
         </main>
@@ -326,9 +355,11 @@ export function InboxDesktopView({
                   onUpdate={(id, req) => bp.onGroupUpdate(id, req)}
                   onDelete={bp.onGroupDelete}
                   onPreview={bp.onGroupPreview}
-                  onApply={() => {}}
+                  onApply={bp.onGroupApply}
                   isAiAvailable={bp.aiAvailable}
                   isCreating={false}
+                  isApplying={bp.isApplyingGroup}
+                  applyError={bp.groupApplyError}
                   previewResult={bp.groupPreviewResult}
                   isPreviewing={bp.isPreviewingGroup}
                 />

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Upload } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { INBOX_TABS, type InboxTab } from './inbox.shared'
@@ -9,8 +10,10 @@ import { BookmarkSmartGroupPanel } from './components/bookmarks/BookmarkSmartGro
 import { PaperlessGateway } from './components/documents/PaperlessGateway'
 import { NoteComposer } from './components/notes/NoteComposer'
 import { NoteAiSuggestionPanel } from './components/notes/NoteAiSuggestionPanel'
-import type {
-  InboxDesktopBookmarkProps, InboxDesktopDocumentProps, InboxDesktopNoteProps,
+import { NoteSummaryPanel } from './components/notes/NoteSummaryPanel'
+import {
+  NOTE_SECTIONS,
+  type InboxDesktopBookmarkProps, type InboxDesktopDocumentProps, type NoteSectionProps,
 } from './InboxDesktopView'
 
 export type InboxMobileViewProps = {
@@ -18,7 +21,8 @@ export type InboxMobileViewProps = {
   onTabChange: (tab: InboxTab) => void
   bookmarkProps: InboxDesktopBookmarkProps
   documentProps: InboxDesktopDocumentProps
-  noteProps: InboxDesktopNoteProps
+  quickNoteProps: NoteSectionProps
+  memoProps: NoteSectionProps
 }
 
 // InboxMobileView 承载 Inbox 移动端紧凑布局，集成新 Phase 3.1 组件。
@@ -27,8 +31,13 @@ export function InboxMobileView({
   onTabChange,
   bookmarkProps: bp,
   documentProps: dp,
-  noteProps: np,
+  quickNoteProps,
+  memoProps,
 }: InboxMobileViewProps) {
+  // 笔记 Tab 内的二级 Tab：速记 / 备忘录，默认显示速记
+  const [activeNoteSection, setActiveNoteSection] = useState<'quick_note' | 'memo'>('quick_note')
+  const ns = activeNoteSection === 'quick_note' ? quickNoteProps : memoProps
+
   return (
     <div className="nexus-page-enter mx-auto max-w-full space-y-3 p-4 pb-20 md:hidden">
       {/* 页面标题区 — 紧凑 */}
@@ -111,9 +120,11 @@ export function InboxMobileView({
             onUpdate={(id, req) => bp.onGroupUpdate(id, req)}
             onDelete={bp.onGroupDelete}
             onPreview={bp.onGroupPreview}
-            onApply={() => {}}
+            onApply={bp.onGroupApply}
             isAiAvailable={bp.aiAvailable}
             isCreating={false}
+            isApplying={bp.isApplyingGroup}
+            applyError={bp.groupApplyError}
             previewResult={bp.groupPreviewResult}
             isPreviewing={bp.isPreviewingGroup}
           />
@@ -137,9 +148,11 @@ export function InboxMobileView({
             onClose={bp.onCloseImport}
             preview={bp.importPreview}
             isPreviewing={bp.isPreViewImporting}
+            previewError={bp.previewError}
             onPasteSubmit={bp.onImportPasteSubmit}
             onCommit={bp.onImportCommit}
             isCommitting={bp.isImportCommitting}
+            commitError={bp.commitError}
             decisions={bp.importDecisions}
             onDecisionChange={bp.onImportDecisionChange}
           />
@@ -160,39 +173,64 @@ export function InboxMobileView({
 
       {activeTab === 'notes' && (
         <div className="space-y-3">
+          {/* 速记 / 备忘录 二级 Tab：结构完全对称，仅 kind 不同 */}
+          <div className="grid grid-cols-2 gap-2 rounded-lg border bg-muted/40 p-1">
+            {NOTE_SECTIONS.map((section) => (
+              <button
+                key={section.key}
+                type="button"
+                onClick={() => setActiveNoteSection(section.key)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-sm font-bold transition-colors',
+                  activeNoteSection === section.key
+                    ? 'bg-card text-foreground shadow-[var(--shadow-xs)]'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+
           <NoteComposer
-            kind={np.noteKind}
-            title={np.noteTitle}
-            content={np.noteContent}
-            tags={np.noteTags}
-            onKindChange={np.onKindChange}
-            onTitleChange={np.onTitleChange}
-            onContentChange={np.onContentChange}
-            onAddTag={(tag) => np.onTagsChange([...np.noteTags, tag])}
-            onRemoveTag={(tag) => np.onTagsChange(np.noteTags.filter((t) => t !== tag))}
-            onSave={np.onSave}
-            onAnalyze={() => np.onAnalyze({
-              content: np.noteContent,
-              title: np.noteTitle || undefined,
-              kind: np.noteKind,
-              tags: np.noteTags.length > 0 ? np.noteTags : undefined,
-            })}
-            aiSuggestion={np.noteAiResult}
-            onApplySuggestion={() => {
-                if (np.noteAiResult) np.onApplySuggestion(np.noteAiResult!)
-              }}
-            isSaving={np.isSaving}
-            isAnalyzing={np.isAnalyzing}
-            aiAvailable={np.aiAvailable}
+            title={ns.title}
+            content={ns.content}
+            selectedTags={ns.selectedTags}
+            onTagsChange={ns.onTagsChange}
+            availableTags={ns.availableTags}
+            onTitleChange={ns.onTitleChange}
+            onContentChange={ns.onContentChange}
+            onSave={ns.onSave}
+            onAnalyze={ns.onAnalyze}
+            aiSuggestion={ns.aiResult}
+            onApplySuggestion={ns.onApplySuggestion}
+            isSaving={ns.isSaving}
+            isAnalyzing={ns.isAnalyzing}
+            aiAvailable={ns.aiAvailable}
+            onClearDraft={ns.onClearDraft}
           />
 
-          {np.noteAiResult && (
+          {ns.aiResult && (
             <NoteAiSuggestionPanel
-              suggestion={np.noteAiResult}
-              onApply={() => np.onApplySuggestion(np.noteAiResult!)}
-              onDismiss={np.resetAnalyze}
+              suggestion={ns.aiResult}
+              onApply={ns.onApplySuggestion}
+              onDismiss={ns.resetAnalyze}
             />
           )}
+
+          <NoteSummaryPanel
+            titleQuery={ns.summaryTitleQuery}
+            onTitleQueryChange={ns.onSummaryTitleQueryChange}
+            availableTags={ns.availableTags}
+            selectedTags={ns.summaryTags}
+            onTagsChange={ns.onSummaryTagsChange}
+            onSummarize={ns.onSummarize}
+            isSummarizing={ns.isSummarizing}
+            result={ns.summaryResult}
+            onReorganize={ns.onReorganize}
+            isReorganizing={ns.isReorganizing}
+            reorganizeResult={ns.reorganizeResult}
+          />
         </div>
       )}
     </div>

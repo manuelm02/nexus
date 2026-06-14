@@ -3,6 +3,7 @@ package com.nexus.dto.response;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /** 笔记 AI 分析响应，包含 AI 生成的标题、分类、标签、清洗后 Markdown 及待办项。 */
 @Data
@@ -25,6 +26,8 @@ public class NoteAnalyzeResponse {
     private boolean aiAvailable;
     /** 置信度：high / medium / low */
     private String confidence;
+    /** AI 本次新建标签的范围说明，key 为标签名；仅包含索引中尚不存在的标签 */
+    private Map<String, String> newTagDescriptions;
 
     /** AI 提取的待办项 */
     @Data

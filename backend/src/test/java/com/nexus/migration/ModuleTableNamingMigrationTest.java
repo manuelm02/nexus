@@ -48,6 +48,32 @@ class ModuleTableNamingMigrationTest {
         );
     }
 
+    @Test
+    void subscriptionsPhase4MigrationDropsNotionColumnsAndKeepsDormantApiColumns() throws Exception {
+        String coreSql = Files.readString(Path.of("src/main/resources/db/migration/V1_2__init_core_modules.sql"));
+        String cleanupSql = Files.readString(Path.of("src/main/resources/db/migration/V1_9__subscriptions_phase4_cleanup.sql"));
+
+        assertThat(coreSql).contains(
+                "api_provider",
+                "api_key_masked",
+                "api_fetch_enabled",
+                "api_last_fetched_at",
+                "api_balance_json"
+        );
+        assertThat(cleanupSql).contains(
+                "DROP COLUMN IF EXISTS notion_page_url",
+                "DROP COLUMN IF EXISTS notion_synced",
+                "DROP COLUMN IF EXISTS task_id"
+        );
+        assertThat(cleanupSql).doesNotContain(
+                "DROP COLUMN IF EXISTS api_provider",
+                "DROP COLUMN IF EXISTS api_key_masked",
+                "DROP COLUMN IF EXISTS api_fetch_enabled",
+                "DROP COLUMN IF EXISTS api_last_fetched_at",
+                "DROP COLUMN IF EXISTS api_balance_json"
+        );
+    }
+
     private String readAll(List<Path> paths) throws Exception {
         StringBuilder result = new StringBuilder();
         for (Path path : paths) {

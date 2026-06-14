@@ -20,7 +20,6 @@ public class InboxSettingsResponse {
     private String obsidianInboxDir;
     private String obsidianMemoDir;
     private String obsidianFileNamingPattern;
-    private String obsidianConsolidationDir;
 
     // ===== Bookmark 配置 =====
     private boolean bookmarksAiAssistEnabled;

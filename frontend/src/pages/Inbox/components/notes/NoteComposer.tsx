@@ -1,18 +1,17 @@
 import { useState } from 'react'
-import { Save, Loader2, Sparkles, Tag, Plus, X, EyeOff } from 'lucide-react'
-import { cn } from '../../../../lib/utils'
-import type { NoteAnalyzeResponse } from '../../../../types/domain.types'
+import { Save, Loader2, Sparkles, EyeOff, Trash2, FileText, ChevronDown } from 'lucide-react'
+import { cn, formatLocalDateTimeForTitle } from '../../../../lib/utils'
+import { TagPicker } from './TagPicker'
+import type { NoteAnalyzeResponse, NoteTagEntry } from '../../../../types/domain.types'
 
 export type NoteComposerProps = {
-  kind: 'quick_note' | 'memo'
   title: string
   content: string
-  tags: string[]
-  onKindChange: (kind: 'quick_note' | 'memo') => void
+  selectedTags: string[]
+  onTagsChange: (tags: string[]) => void
+  availableTags: NoteTagEntry[]
   onTitleChange: (title: string) => void
   onContentChange: (content: string) => void
-  onAddTag: (tag: string) => void
-  onRemoveTag: (tag: string) => void
   onSave: () => void
   onAnalyze: () => void
   aiSuggestion: NoteAnalyzeResponse | null
@@ -20,19 +19,22 @@ export type NoteComposerProps = {
   isSaving: boolean
   isAnalyzing: boolean
   aiAvailable: boolean
+  onClearDraft: () => void
 }
 
-// 笔记编辑器：类型分段控件 + 标题/内容 + 标签 + AI 建议按钮 + 保存操作。
+/** 标题模板：应用后只覆盖标题，不影响内容/标签 */
+const TITLE_TEMPLATES = ['Quick Note', 'Memo', 'Meeting Notes', 'Idea'] as const
+
+// 笔记编辑器：标题（含模板）+ 内容 + 标签选择（TagPicker，上限 1 个）+ AI 整理 + 保存。
+// kind 已由外层二级 Tab 固定，不再提供类型切换控件。
 export function NoteComposer({
-  kind,
   title,
   content,
-  tags,
-  onKindChange,
+  selectedTags,
+  onTagsChange,
+  availableTags,
   onTitleChange,
   onContentChange,
-  onAddTag,
-  onRemoveTag,
   onSave,
   onAnalyze,
   aiSuggestion,
@@ -40,15 +42,20 @@ export function NoteComposer({
   isSaving,
   isAnalyzing,
   aiAvailable,
+  onClearDraft,
 }: NoteComposerProps) {
-  const [tagInput, setTagInput] = useState('')
+  const [showTemplates, setShowTemplates] = useState(false)
 
-  const handleAddTag = () => {
-    const t = tagInput.trim()
-    if (t && !tags.includes(t)) {
-      onAddTag(t)
+  const handleApplyTemplate = (label: string) => {
+    onTitleChange(`${label} - ${formatLocalDateTimeForTitle()}`)
+    setShowTemplates(false)
+  }
+
+  const handleClear = () => {
+    if (title.trim() || content.trim() || selectedTags.length > 0) {
+      if (!window.confirm('清空当前草稿？')) return
     }
-    setTagInput('')
+    onClearDraft()
   }
 
   return (
@@ -56,89 +63,74 @@ export function NoteComposer({
       onSubmit={(e) => { e.preventDefault(); onSave() }}
       className="space-y-3"
     >
-      {/* 类型切换分段控件 */}
-      <div className="rounded-lg border bg-card p-3 shadow-[var(--shadow-xs)]">
-        <div className="grid h-9 grid-cols-2 rounded-md bg-muted p-0.5">
-          {([
-            ['quick_note', 'Quick Note'],
-            ['memo', 'Memo'],
-          ] as const).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => onKindChange(key)}
-              className={cn(
-                'rounded-sm text-xs font-medium transition-colors',
-                kind === key
-                  ? 'bg-card text-foreground shadow-[var(--shadow-xs)]'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* 编辑区 */}
       <div className="rounded-lg border bg-card p-3 shadow-[var(--shadow-xs)] space-y-2">
-        <input
-          value={title}
-          onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="标题（可选）"
-          className="nexus-input w-full px-3 py-1.5 text-sm"
-        />
+        <div className="flex items-center gap-1.5">
+          <input
+            value={title}
+            onChange={(e) => onTitleChange(e.target.value)}
+            placeholder="标题（可选）"
+            className="nexus-input w-full px-3 py-1.5 text-sm"
+          />
+          {/* 标题模板：应用后用「模板名 - 可读日期时间」覆盖标题，不影响正文/标签 */}
+          <div className="relative shrink-0">
+            <button
+              type="button"
+              onClick={() => setShowTemplates((v) => !v)}
+              className="nexus-button-utility flex items-center gap-1 px-2.5 py-1.5 text-xs"
+              title="使用标题模板"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              模板
+              <ChevronDown className="h-3 w-3" />
+            </button>
+            {showTemplates && (
+              <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-lg border bg-card p-1 shadow-[var(--shadow-xs)]">
+                {TITLE_TEMPLATES.map((label) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => handleApplyTemplate(label)}
+                    className="block w-full rounded-md px-2 py-1.5 text-left text-xs text-foreground hover:bg-accent"
+                  >
+                    {label} - {formatLocalDateTimeForTitle()}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         <textarea
           value={content}
           onChange={(e) => onContentChange(e.target.value)}
-          placeholder="记下你的想法…"
+          placeholder="记下你的想法..."
           rows={6}
           className="nexus-input w-full px-3 py-2 text-sm resize-none"
         />
 
-        {/* 标签区 */}
-        <div className="space-y-1.5">
-          <div className="flex flex-wrap gap-1">
-            {tags.map((t) => (
-              <span key={t} className="inline-flex items-center gap-1 rounded-full bg-accent px-2 py-0.5 text-[11px] font-medium text-accent-foreground">
-                <Tag className="h-2.5 w-2.5" />
-                {t}
-                <button
-                  type="button"
-                  onClick={() => onRemoveTag(t)}
-                  className="ml-0.5 hover:text-destructive"
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="flex items-center gap-1.5">
-            <input
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag() } }}
-              placeholder="添加标签…"
-              className="nexus-input flex-1 px-2.5 py-1 text-xs"
-            />
-            <button
-              type="button"
-              onClick={handleAddTag}
-              disabled={!tagInput.trim()}
-              className="flex h-8 w-8 items-center justify-center rounded-lg border text-muted-foreground hover:text-foreground disabled:opacity-50"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          </div>
+        {/* 标签区：从标签索引中选择，最多 1 个；留空时保存时由后端 AI 自动打标签；新标签只能通过 AI 建议引入 */}
+        <div className="space-y-1">
+          <p className="text-[11px] text-muted-foreground">标签（最多 1 个，留空时 AI 自动打标签）</p>
+          <TagPicker availableTags={availableTags} selectedTags={selectedTags} onChange={onTagsChange} maxTags={1} />
         </div>
 
         {/* 操作按钮 */}
         <div className="flex items-center justify-end gap-2 pt-1">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="nexus-button-utility flex items-center gap-1.5 px-2.5 text-xs mr-auto"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            清空
+          </button>
+
           {aiAvailable && (
             <button
               type="button"
               onClick={onAnalyze}
               disabled={!content.trim() || isAnalyzing}
+              title="根据当前内容生成标题、标签和整理后的 Markdown"
               className={cn(
                 'flex items-center gap-1.5 h-9 md:h-8 rounded-lg border px-2.5 text-xs font-medium transition-colors',
                 'text-muted-foreground hover:text-primary hover:border-primary/30 disabled:opacity-50',
@@ -149,12 +141,12 @@ export function NoteComposer({
               ) : (
                 <Sparkles className="h-3.5 w-3.5" />
               )}
-              AI 建议
+              AI 整理
             </button>
           )}
 
           {!aiAvailable && (
-            <span className="flex items-center gap-1 text-[11px] text-muted-foreground mr-auto">
+            <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
               <EyeOff className="h-3 w-3" />
               AI 未启用
             </span>
@@ -167,7 +159,7 @@ export function NoteComposer({
               className="nexus-button-primary flex items-center gap-1.5 px-3 py-1.5 text-xs"
             >
               <Sparkles className="h-3.5 w-3.5" />
-              应用建议并保存
+              合并到当前笔记
             </button>
           )}
 

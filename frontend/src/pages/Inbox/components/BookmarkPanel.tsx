@@ -58,6 +58,21 @@ export function BookmarkPanel({
     setDeleteTarget(null)
   }
 
+  // 筛选按钮可取消：再次点击已激活的筛选项时清空对应条件，回到“全部”未筛选状态
+  const handleFilterClick = (mode: 'all' | 'unread' | 'archived') => {
+    if (mode === 'all') {
+      onQueryChange({ archived: undefined, unread: undefined, page: 1 })
+      return
+    }
+    if (mode === 'unread') {
+      const next = queryParams.unread === true ? undefined : true
+      onQueryChange({ unread: next, archived: undefined, page: 1 })
+      return
+    }
+    const next = queryParams.archived === true ? undefined : true
+    onQueryChange({ archived: next, unread: undefined, page: 1 })
+  }
+
   return (
     <div className="space-y-3">
       {/* 快速创建表单 */}
@@ -129,20 +144,20 @@ export function BookmarkPanel({
           />
         </div>
         <FilterButton
-          active={queryParams.archived === false && queryParams.unread === undefined}
-          onClick={() => onQueryChange({ archived: false, unread: undefined, page: 1 })}
+          active={queryParams.archived === undefined && queryParams.unread === undefined}
+          onClick={() => handleFilterClick('all')}
         >
           全部
         </FilterButton>
         <FilterButton
           active={queryParams.unread === true}
-          onClick={() => onQueryChange({ unread: true, archived: false, page: 1 })}
+          onClick={() => handleFilterClick('unread')}
         >
           未读
         </FilterButton>
         <FilterButton
           active={queryParams.archived === true}
-          onClick={() => onQueryChange({ archived: true, unread: undefined, page: 1 })}
+          onClick={() => handleFilterClick('archived')}
         >
           归档
         </FilterButton>

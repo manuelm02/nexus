@@ -15,6 +15,20 @@ export function formatDateTime(dateStr?: string): string {
   return new Date(dateStr).toLocaleString('zh-CN')
 }
 
+/**
+ * 生成人类可读的本地日期时间，用于笔记标题模板（如 "2026-06-14 00:09"）。
+ * 不使用 `yyyy-MM-dd-HHmmss` 这类紧凑格式，避免标题中的时间难以阅读。
+ */
+export function formatLocalDateTimeForTitle(date: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const year = date.getFullYear()
+  const month = pad(date.getMonth() + 1)
+  const day = pad(date.getDate())
+  const hours = pad(date.getHours())
+  const minutes = pad(date.getMinutes())
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
 export function formatRelative(dateStr?: string): string {
   if (!dateStr) return ''
   const now = Date.now()

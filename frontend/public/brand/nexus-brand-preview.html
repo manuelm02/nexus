@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nexus Brand Assets</title>
+    <style>
+      body {
+        margin: 0;
+        background: #f6f8fb;
+        color: #07121f;
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main {
+        max-width: 1180px;
+        margin: 0 auto;
+        padding: 32px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 34px;
+        line-height: 1.1;
+      }
+
+      p {
+        color: #53657b;
+        line-height: 1.7;
+      }
+
+      .intro {
+        margin-bottom: 22px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      .card {
+        overflow: hidden;
+        border: 1px solid #dce3ee;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 10px 32px rgba(11, 29, 51, 0.055);
+      }
+
+      .meta {
+        border-bottom: 1px solid #dce3ee;
+        padding: 14px 16px;
+      }
+
+      .stage {
+        display: grid;
+        min-height: 250px;
+        place-items: center;
+        padding: 18px;
+      }
+
+      .span-3 {
+        grid-column: span 3;
+      }
+
+      .span-4 {
+        grid-column: span 4;
+      }
+
+      .span-8 {
+        grid-column: span 8;
+      }
+
+      .span-12 {
+        grid-column: span 12;
+      }
+
+      .light {
+        background: #f8fbff;
+      }
+
+      .dark {
+        background: #0b1d33;
+      }
+
+      .checker {
+        background-color: #f8fbff;
+        background-image:
+          linear-gradient(45deg, #dce3ee 25%, transparent 25%),
+          linear-gradient(-45deg, #dce3ee 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, #dce3ee 75%),
+          linear-gradient(-45deg, transparent 75%, #dce3ee 75%);
+        background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+        background-size: 24px 24px;
+      }
+
+      img {
+        display: block;
+        max-width: 100%;
+      }
+
+      .master {
+        width: min(520px, 100%);
+        border-radius: 14px;
+      }
+
+      .mark {
+        width: 190px;
+      }
+
+      .icon-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+      }
+
+      .icon-row img {
+        border-radius: 20px;
+        box-shadow: 0 8px 22px rgba(11, 29, 51, 0.12);
+      }
+
+      @media (max-width: 900px) {
+        main {
+          padding: 18px;
+        }
+
+        .span-3,
+        .span-4,
+        .span-8,
+        .span-12 {
+          grid-column: span 12;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section class="intro">
+        <h1>Nexus Brand Assets</h1>
+        <p>当前项目使用的品牌资产：完整母版用于大尺寸展示；小尺寸和 UI 壳层统一使用无字纯 mark。</p>
+      </section>
+
+      <section class="grid">
+        <article class="card span-8">
+          <div class="meta">
+            <h2>完整母版</h2>
+            <p>仅用于品牌预览或大尺寸展示，不用于 favicon / sidebar 小图标。</p>
+          </div>
+          <div class="stage light">
+            <img class="master" src="./nexus-logo-master.png" alt="Nexus logo master" />
+          </div>
+        </article>
+
+        <article class="card span-4">
+          <div class="meta">
+            <h2>Favicon / App Icon</h2>
+            <p>使用无字纯 mark，避免小尺寸文字糊掉。</p>
+          </div>
+          <div class="stage light">
+            <div class="icon-row">
+              <img src="../icons/icon-192.png" width="64" height="64" alt="Nexus 192 icon" />
+              <img src="../icons/icon-512.png" width="112" height="112" alt="Nexus 512 icon" />
+            </div>
+          </div>
+        </article>
+
+        <article class="card span-4">
+          <div class="meta">
+            <h2>透明背景</h2>
+            <p>用于任意容器背景，真实 PNG alpha。</p>
+          </div>
+          <div class="stage checker">
+            <img class="mark" src="./nexus-mark-transparent.png" alt="Nexus transparent mark" />
+          </div>
+        </article>
+
+        <article class="card span-4">
+          <div class="meta">
+            <h2>浅色背景</h2>
+            <p>用于白底卡片、登录页移动端顶部。</p>
+          </div>
+          <div class="stage light">
+            <img class="mark" src="./nexus-mark-light.png" alt="Nexus light mark" />
+          </div>
+        </article>
+
+        <article class="card span-4">
+          <div class="meta">
+            <h2>深色背景</h2>
+            <p>用于深色品牌区、深色封面或深底图标。</p>
+          </div>
+          <div class="stage dark">
+            <img class="mark" src="./nexus-mark-dark.png" alt="Nexus dark mark" />
+          </div>
+        </article>
+
+        <article class="card span-12">
+          <div class="meta">
+            <h2>产品应用预览</h2>
+            <p>已确认方向的应用预览图，后续可作为设计参考。</p>
+          </div>
+          <div class="stage light">
+            <img class="master" src="./nexus-brand-preview.png" alt="Nexus brand application preview" />
+          </div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>

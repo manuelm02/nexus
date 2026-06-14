@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
+import { BrandMark } from '../../components/brand/BrandMark'
 
 // LoginPage 提供 Nexus 前台的账号登录入口。
 export default function LoginPage() {
@@ -27,12 +28,19 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-      <div className="grid w-full max-w-4xl overflow-hidden rounded-[1.5rem] border bg-card shadow-[var(--shadow-lg)] md:grid-cols-[1fr_0.9fr]">
-        <div className="hidden bg-primary p-8 text-primary-foreground md:flex md:flex-col md:justify-between">
+      <div className="grid w-full max-w-4xl overflow-hidden rounded-[1.5rem] border bg-card shadow-[var(--shadow-lg)] md:min-h-[520px] md:grid-cols-[1fr_0.92fr]">
+        <div className="relative hidden overflow-hidden bg-primary p-8 text-primary-foreground md:flex md:flex-col md:justify-between">
           <div>
-            <p className="text-[11px] font-black uppercase tracking-[0.12em] text-secondary-foreground/70">Personal Knowledge OS</p>
-            <h1 className="mt-3 text-4xl font-black">Nexus</h1>
-            <p className="mt-4 max-w-sm text-sm leading-7 text-secondary-foreground/75">
+            <div className="flex items-center gap-4">
+              <BrandMark className="h-16 w-16 rounded-2xl bg-white/95 shadow-[0_18px_42px_rgba(0,0,0,0.22)]" imageClassName="p-1" />
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.12em] text-secondary-foreground/70">
+                  Personal Knowledge OS
+                </p>
+                <h1 className="mt-1 text-4xl font-black leading-none">Nexus</h1>
+              </div>
+            </div>
+            <p className="mt-8 max-w-sm text-sm leading-7 text-secondary-foreground/75">
               统一管理个人输入、AI 处理、知识沉淀与多端输出。
             </p>
           </div>
@@ -41,8 +49,9 @@ export default function LoginPage() {
             <span>Subscriptions · Chat · Mindbank</span>
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8">
+        <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8 md:p-10">
           <div className="space-y-1">
+            <BrandMark className="mb-4 h-14 w-14 rounded-2xl bg-white shadow-[var(--shadow-sm)] md:hidden" imageClassName="p-1" />
             <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Sign in</p>
             <h2 className="text-3xl font-black">Nexus</h2>
             <p className="text-sm text-muted-foreground">个人 AI 工作台</p>
