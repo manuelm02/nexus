@@ -1,15 +1,26 @@
 import { AlertCircle } from 'lucide-react'
+import type { SettingsTab } from './SettingsDesktopView'
 import { ProviderCard } from './components/ProviderCard'
 import { ProviderForm, type ProviderFormData } from './components/ProviderForm'
-import { WorkflowOverrideSection } from './components/WorkflowOverrideSection'
+import { TranslateSettingsPanel } from './components/TranslateSettingsPanel'
 import { SystemConfigSection, type SystemConfigSectionProps } from './components/SystemConfigSection'
-import type { LlmProvider, WorkflowLlmConfig } from '../../types/domain.types'
+import { InboxSettingsPanel } from './components/InboxSettingsPanel'
+import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest } from '../../types/domain.types'
 
 type SettingsMobileViewProps = {
+  activeSettingsTab: SettingsTab
+  onSettingsTabChange: (tab: SettingsTab) => void
   providers: LlmProvider[]
   defaultProvider: LlmProvider | undefined
-  translateProviderId: string
-  translateWorkflow: WorkflowLlmConfig | undefined
+  translateSettings: {
+    providerId: string
+    dirty: boolean
+    savePending: boolean
+    saveError: boolean
+    onProviderChange: (providerId: string) => void
+    onSave: () => void
+    onCancel: () => void
+  }
 
   providersLoading: boolean
   providersError: boolean
@@ -34,36 +45,69 @@ type SettingsMobileViewProps = {
   onSetDefault: (id: string) => void
   onDelete: (id: string) => void
 
-  workflowPending: boolean
-  onWorkflowChange: (providerId: string) => void
-
   systemConfig: SystemConfigSectionProps
+
+  inboxSettings: {
+    settings: InboxSettings
+    isLoading: boolean
+    isUpdating: boolean
+    updateError: boolean
+    workflowProviderId: string
+    isWorkflowUpdating: boolean
+    workflowUpdateError: boolean
+    onUpdate: (update: InboxSettingsUpdateRequest) => void
+    onWorkflowProviderSave: (providerId: string) => void
+  }
 }
 
 // SettingsMobileView 移动端单列堆叠面板，避免硬压成两栏，保持信息层级与桌面端一致。
 export function SettingsMobileView(props: SettingsMobileViewProps) {
   const {
-    providers, defaultProvider, translateProviderId, translateWorkflow,
+    activeSettingsTab, onSettingsTabChange,
+    providers, defaultProvider,
     providersLoading, providersError, workflowsLoading, workflowsError,
     editingId, editForm,
     onStartCreate, onStartEdit, onCancelEdit, onEditFormChange,
     createPending, createError, updatePending, updateError,
     setDefaultPendingId, deletePendingId,
     onCreateSubmit, onUpdateSubmit, onSetDefault, onDelete,
-    workflowPending, onWorkflowChange,
-    systemConfig,
+    systemConfig, inboxSettings,
+    translateSettings,
   } = props
 
   const isEditing = editingId !== null
+  const tabs: { key: SettingsTab; label: string }[] = [
+    { key: 'models', label: '模型' },
+    { key: 'translate', label: 'Translate' },
+    { key: 'inbox', label: 'Inbox' },
+    { key: 'system', label: '系统' },
+  ]
 
   return (
     <div className="space-y-4 md:hidden">
       {/* 页面头部 */}
       <section className="nexus-surface p-4">
-        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System control</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System</p>
         <h1 className="mt-1 text-[24px] font-black leading-tight text-foreground">Settings</h1>
+        <div className="mt-4 grid grid-cols-4 rounded-lg border bg-muted/40 p-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => onSettingsTabChange(tab.key)}
+              className={activeSettingsTab === tab.key
+                ? 'h-9 rounded-md bg-card text-xs font-extrabold text-foreground shadow-[var(--shadow-xs)]'
+                : 'h-9 rounded-md text-xs font-bold text-muted-foreground'
+              }
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </section>
 
+      {activeSettingsTab === 'models' && (
+      <>
       {/* 默认模型面板 */}
       <section className="nexus-surface space-y-3 p-4">
         <h2 className="text-lg font-extrabold text-foreground">默认模型</h2>
@@ -84,17 +128,17 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
         )}
       </section>
 
-      {/* Provider 列表 */}
+      {/* 模型列表 */}
       <section className="nexus-surface space-y-3 p-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-foreground">Provider 列表</h2>
+          <h2 className="text-lg font-extrabold text-foreground">模型列表</h2>
           {!isEditing && (
             <button
               type="button"
               onClick={onStartCreate}
               className="nexus-button-primary inline-flex items-center gap-1 px-3 py-1.5 text-xs"
             >
-              添加
+              添加模型
             </button>
           )}
         </div>
@@ -131,25 +175,48 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
               </li>
             ))}
             {providers.length === 0 && !isEditing && (
-              <p className="py-6 text-center text-sm text-muted-foreground">尚未配置 Provider</p>
+              <p className="py-6 text-center text-sm text-muted-foreground">尚未配置模型</p>
             )}
           </ul>
         )}
       </section>
+      </>
+      )}
 
-      {/* 工作流覆盖 */}
-      <WorkflowOverrideSection
-        providers={providers}
-        translateWorkflow={translateWorkflow}
-        translateProviderId={translateProviderId}
-        workflowsLoading={workflowsLoading}
-        workflowsError={workflowsError}
-        workflowPending={workflowPending}
-        onWorkflowChange={onWorkflowChange}
-      />
+      {activeSettingsTab === 'translate' && (
+        <TranslateSettingsPanel
+          providers={providers}
+          providerId={translateSettings.providerId}
+          dirty={translateSettings.dirty}
+          workflowsLoading={workflowsLoading}
+          workflowsError={workflowsError}
+          savePending={translateSettings.savePending}
+          saveError={translateSettings.saveError}
+          onProviderChange={translateSettings.onProviderChange}
+          onSave={translateSettings.onSave}
+          onCancel={translateSettings.onCancel}
+        />
+      )}
 
-      {/* 系统参数 */}
-      <SystemConfigSection {...systemConfig} />
+      {activeSettingsTab === 'system' && (
+        <SystemConfigSection {...systemConfig} />
+      )}
+
+      {activeSettingsTab === 'inbox' && !inboxSettings.isLoading && (
+        <section className="nexus-surface space-y-3 p-4">
+          <InboxSettingsPanel
+            settings={inboxSettings.settings}
+            providers={providers}
+            workflowProviderId={inboxSettings.workflowProviderId}
+            onUpdate={inboxSettings.onUpdate}
+            onWorkflowProviderSave={inboxSettings.onWorkflowProviderSave}
+            isUpdating={inboxSettings.isUpdating}
+            isWorkflowUpdating={inboxSettings.isWorkflowUpdating}
+            updateError={inboxSettings.updateError}
+            workflowUpdateError={inboxSettings.workflowUpdateError}
+          />
+        </section>
+      )}
     </div>
   )
 }

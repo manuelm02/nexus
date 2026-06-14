@@ -35,6 +35,8 @@ public class InboxIntegrationProperties {
         private String vaultPath;
         /** 笔记写入子目录，默认 Inbox */
         private String inboxDir = "Inbox";
+        /** Memo 写入子目录，默认 Memo */
+        private String memoDir = "Memo";
 
         public boolean isConfigured() {
             return vaultPath != null && !vaultPath.isBlank();

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /** Quick Note / Memo 写入请求。content 必填，kind 允许 quick_note 或 memo。 */
 @Data
@@ -17,4 +18,6 @@ public class QuickNoteRequest {
     private String kind = "quick_note";
     /** 可选标签列表 */
     private List<String> tags;
+    /** AI 本次分析新建的标签说明（仅在 tags 含新标签时提供），保存时写回标签索引 */
+    private Map<String, String> newTagDescriptions;
 }

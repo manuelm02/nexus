@@ -40,10 +40,28 @@
 
 ## Phase 4: Subscriptions
 
-- [ ] 基础 CRUD
-- [ ] 手动维护用量
-- [ ] 到期提醒
-- [ ] API 用量拉取和余额同步后置
+详细计划见 `docs/superpowers/plans/2026-06-14-subscriptions-phase-4.md`，提示词见 `docs/superpowers/prompts/2026-06-14-subscriptions-phase-4-deepseek.md`。
+
+- [ ] 新增 V1_9 迁移，删除 `notion_page_url` / `notion_synced` / `task_id` 三列及对应实体字段
+- [ ] 新增 `SubscriptionResponse`，屏蔽 `api_*` 五个字段，列保留供后续阶段
+- [ ] 基础 CRUD（实体/DTO/Controller 改为返回 `SubscriptionResponse`）
+- [ ] 手动维护用量（`usageUsed` 编辑 + 进度条 + 前端 +1 快捷操作）
+- [ ] 到期提醒：每日自动把过期 `active` 置为 `expired`（`autoExpireOverdue`）+ 沿用现有 `NotificationService`
+- [ ] 站内可见的“即将到期 / 已到期”汇总和 chip，不依赖通知渠道配置
+- [ ] 前端按 AGENTS.md 拆 `SubscriptionsDesktopView` / `SubscriptionsMobileView`，提取通用 `DatePicker`
+- [ ] API 用量拉取和余额同步后置（不在本阶段实现）
+
+### Phase 4 扩展：订阅类型 UI 重构
+
+详细计划见 `docs/superpowers/plans/2026-06-14-subscriptions-ui-redesign.md`，提示词见 `docs/superpowers/prompts/2026-06-14-subscriptions-ui-redesign-deepseek.md`。
+
+- [ ] 新增 V1_10 迁移：auto_renew/archived/remaining_balance/monthly_spend/recharge_records/low_balance_notify/low_balance_threshold + subscription_categories 表
+- [ ] 表单按 billingType（月度/年度/一次性/买断/按量）渲染不同字段集合
+- [ ] 按量类型充值/记录消费/欠费通知，月初自动清零当月消费
+- [ ] 月度/年度自动续费：到期自动滚动到下一周期，不标记 expired
+- [ ] 归档（archived）独立开关，默认从列表和统计排除
+- [ ] Settings 新增订阅分类管理 + AI 分类识别/复用/生成
+- [ ] 统计面板：订阅中数量 / 月度订阅费 / 年度订阅费 / 本月待支付订阅费
 
 ## Phase 5: Chat
 
@@ -64,6 +82,9 @@
 - Quick Note / Memo 计划写入 Obsidian，路径后续确认。
 - Forge / Code Wiki 暂不做。
 - 旧文档删除，避免与当前设计理念冲突。
+- Subscriptions 删除 Notion 同步遗留字段（notion_page_url/notion_synced/task_id）；API 余额相关字段（api_*）保留列但 Phase 4 不暴露，等后续 API 用量拉取阶段再开放。
+- Subscriptions 到期提醒新增每日自动 expired 状态扫描，并要求站内可见的到期汇总，不依赖通知渠道是否配置；微信/短信等渠道只保留 NotificationService 可插拔扩展点，不在 Phase 4 实现。
+- ToDo 的通用日期组件（TodoDatePicker）在 Phase 4 中提升为 components/ui/DatePicker 供 Subscriptions 复用。
 
 ## Errors Encountered
 

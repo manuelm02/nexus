@@ -1,7 +1,7 @@
 package com.nexus.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.nexus.handler.JsonbTypeHandler;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -18,8 +18,8 @@ public class Bookmark {
     private String title;
     private String description;
     private String notes;
-    /** 标签列表，以 JSONB 存储 */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    /** 标签列表以 JSONB 存储，插入时必须使用 PostgreSQL OTHER 类型避免被当成 VARCHAR。 */
+    @TableField(typeHandler = JsonbTypeHandler.class)
     private List<String> tags;
     private boolean unread;
     private boolean archived;
