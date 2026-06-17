@@ -1,13 +1,16 @@
-import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest } from '../../types/domain.types'
+import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest, SubscriptionCategory } from '../../types/domain.types'
 import { ProviderCard } from './components/ProviderCard'
 import { ProviderForm, type ProviderFormData } from './components/ProviderForm'
 import { TranslateSettingsPanel } from './components/TranslateSettingsPanel'
+import { ChatModelPanel } from './components/ChatModelPanel'
+import { SubscriptionModelPanel } from './components/SubscriptionModelPanel'
 import { SystemConfigSection, type SystemConfigSectionProps } from './components/SystemConfigSection'
 import { InboxSettingsPanel } from './components/InboxSettingsPanel'
+import { SubscriptionCategoriesPanel } from './components/SubscriptionCategoriesPanel'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-export type SettingsTab = 'models' | 'translate' | 'inbox' | 'system'
+export type SettingsTab = 'models' | 'translate' | 'inbox' | 'subscriptions' | 'chat' | 'system'
 
 export type SettingsViewProps = {
   activeSettingsTab: SettingsTab
@@ -15,6 +18,24 @@ export type SettingsViewProps = {
   providers: LlmProvider[]
   defaultProvider: LlmProvider | undefined
   translateSettings: {
+    providerId: string
+    dirty: boolean
+    savePending: boolean
+    saveError: boolean
+    onProviderChange: (providerId: string) => void
+    onSave: () => void
+    onCancel: () => void
+  }
+  subscriptionsSettings: {
+    providerId: string
+    dirty: boolean
+    savePending: boolean
+    saveError: boolean
+    onProviderChange: (providerId: string) => void
+    onSave: () => void
+    onCancel: () => void
+  }
+  chatSettings: {
     providerId: string
     dirty: boolean
     savePending: boolean
@@ -64,6 +85,15 @@ export type SettingsViewProps = {
     onUpdate: (update: InboxSettingsUpdateRequest) => void
     onWorkflowProviderSave: (providerId: string) => void
   }
+
+  subscriptionCategories: {
+    categories: SubscriptionCategory[]
+    isLoading: boolean
+    isCreating: boolean
+    isDeleting: string | null
+    onCreate: (name: string) => void
+    onDelete: (id: string) => void
+  }
 }
 
 // SettingsDesktopView 按连续面板结构组织模型工作台，桌面端使用更宽松的分区间距。
@@ -77,8 +107,8 @@ export function SettingsDesktopView(props: SettingsViewProps) {
     createPending, createError, updatePending, updateError,
     setDefaultPendingId, deletePendingId,
     onCreateSubmit, onUpdateSubmit, onSetDefault, onDelete,
-    systemConfig, inboxSettings,
-    translateSettings,
+    systemConfig, inboxSettings, subscriptionCategories,
+    translateSettings, subscriptionsSettings, chatSettings,
   } = props
 
   const isEditing = editingId !== null
@@ -86,7 +116,9 @@ export function SettingsDesktopView(props: SettingsViewProps) {
     { key: 'models', label: '模型' },
     { key: 'translate', label: 'Translate' },
     { key: 'inbox', label: 'Inbox' },
-    { key: 'system', label: '系统' },
+    { key: 'subscriptions', label: 'Subscriptions' },
+    { key: 'chat', label: 'Chat' },
+    { key: 'system', label: 'System' },
   ]
 
   return (
@@ -245,6 +277,48 @@ export function SettingsDesktopView(props: SettingsViewProps) {
                 workflowUpdateError={inboxSettings.workflowUpdateError}
               />
             </section>
+          )}
+
+          {activeSettingsTab === 'subscriptions' && (
+            <section className="space-y-4">
+              <SubscriptionModelPanel
+                providers={providers}
+                providerId={subscriptionsSettings.providerId}
+                dirty={subscriptionsSettings.dirty}
+                workflowsLoading={workflowsLoading}
+                workflowsError={workflowsError}
+                savePending={subscriptionsSettings.savePending}
+                saveError={subscriptionsSettings.saveError}
+                onProviderChange={subscriptionsSettings.onProviderChange}
+                onSave={subscriptionsSettings.onSave}
+                onCancel={subscriptionsSettings.onCancel}
+              />
+              <section className="nexus-surface space-y-4 p-4">
+                <SubscriptionCategoriesPanel
+                  categories={subscriptionCategories.categories}
+                  isLoading={subscriptionCategories.isLoading}
+                  onCreate={subscriptionCategories.onCreate}
+                  onDelete={subscriptionCategories.onDelete}
+                  isCreating={subscriptionCategories.isCreating}
+                  isDeleting={subscriptionCategories.isDeleting}
+                />
+              </section>
+            </section>
+          )}
+
+          {activeSettingsTab === 'chat' && (
+            <ChatModelPanel
+              providers={providers}
+              providerId={chatSettings.providerId}
+              dirty={chatSettings.dirty}
+              workflowsLoading={workflowsLoading}
+              workflowsError={workflowsError}
+              savePending={chatSettings.savePending}
+              saveError={chatSettings.saveError}
+              onProviderChange={chatSettings.onProviderChange}
+              onSave={chatSettings.onSave}
+              onCancel={chatSettings.onCancel}
+            />
           )}
         </div>
       </div>

@@ -5,7 +5,15 @@ import type { ReactNode } from 'react'
 import type { Subscription } from '../../../types/domain.types'
 import { DatePicker } from '../../../components/ui/DatePicker'
 import { cn } from '../../../lib/utils'
-import { BILLING_TYPE_LABELS, STATUS_LABELS, SUBSCRIPTION_STATUSES, type SubscriptionStatus } from '../subscriptions.shared'
+import { BILLING_TYPE_LABELS, isFieldVisible } from '../subscriptions.shared'
+import { CategoryInput } from './CategoryInput'
+
+function addBillingPeriod(dateStr: string, unit: 'month' | 'year'): string {
+  const d = new Date(`${dateStr}T00:00:00`)
+  if (unit === 'month') d.setMonth(d.getMonth() + 1)
+  else d.setFullYear(d.getFullYear() + 1)
+  return d.toISOString().slice(0, 10)
+}
 
 export type SubscriptionFormValues = {
   name: string
@@ -16,13 +24,15 @@ export type SubscriptionFormValues = {
   startDate: string
   expireDate: string
   nextBillingDate: string
-  usageLimit: string
-  usageUnit: string
   url: string
   notes: string
   notifyEnabled: boolean
   notifyDaysBefore: string
-  status: SubscriptionStatus
+  autoRenew: boolean
+  archived: boolean
+  remainingBalance: string
+  lowBalanceNotify: boolean
+  lowBalanceThreshold: string
 }
 
 export type SubscriptionPayload = Partial<Subscription> & {
@@ -40,17 +50,19 @@ export const emptySubscriptionForm: SubscriptionFormValues = {
   startDate: '',
   expireDate: '',
   nextBillingDate: '',
-  usageLimit: '',
-  usageUnit: '',
   url: '',
   notes: '',
   notifyEnabled: true,
   notifyDaysBefore: '7',
-  status: 'active',
+  autoRenew: true,
+  archived: false,
+  remainingBalance: '',
+  lowBalanceNotify: false,
+  lowBalanceThreshold: '',
 }
 
-export function subscriptionToFormValues(item?: Subscription | null): SubscriptionFormValues {
-  if (!item) return { ...emptySubscriptionForm }
+export function subscriptionToFormValues(item?: Subscription | null, initialBillingType?: string): SubscriptionFormValues {
+  if (!item) return { ...emptySubscriptionForm, billingType: initialBillingType ?? emptySubscriptionForm.billingType }
   return {
     name: item.name,
     category: item.category ?? '',
@@ -60,50 +72,85 @@ export function subscriptionToFormValues(item?: Subscription | null): Subscripti
     startDate: item.startDate ?? '',
     expireDate: item.expireDate ?? '',
     nextBillingDate: item.nextBillingDate ?? '',
-    usageLimit: item.usageLimit?.toString() ?? '',
-    usageUnit: item.usageUnit ?? '',
     url: item.url ?? '',
     notes: item.notes ?? '',
     notifyEnabled: item.notifyEnabled,
     notifyDaysBefore: item.notifyDaysBefore.toString(),
-    status: item.status,
+    autoRenew: item.autoRenew,
+    archived: item.archived,
+    remainingBalance: item.remainingBalance?.toString() ?? '',
+    lowBalanceNotify: item.lowBalanceNotify,
+    lowBalanceThreshold: item.lowBalanceThreshold?.toString() ?? '',
   }
 }
 
 export function formValuesToPayload(values: SubscriptionFormValues, existing?: Subscription | null): SubscriptionPayload {
+  const bt = values.billingType
   const payload: SubscriptionPayload = {
     name: values.name.trim(),
     category: values.category.trim() || undefined,
-    price: values.price ? Number(values.price) : undefined,
-    currency: values.currency,
-    billingType: values.billingType,
-    startDate: values.startDate || undefined,
-    expireDate: values.expireDate || undefined,
-    nextBillingDate: values.nextBillingDate || undefined,
-    usageLimit: values.usageLimit ? Number(values.usageLimit) : undefined,
-    usageUnit: values.usageUnit.trim() || undefined,
-    url: values.url.trim() || undefined,
+    billingType: bt,
     notes: values.notes.trim() || undefined,
-    notifyEnabled: values.notifyEnabled,
-    notifyDaysBefore: values.notifyEnabled ? Number(values.notifyDaysBefore || 0) : 0,
   }
+
+  if (isFieldVisible(bt, 'price')) {
+    payload.price = values.price ? Number(values.price) : undefined
+    payload.currency = values.currency
+  }
+  if (isFieldVisible(bt, 'startDate')) {
+    payload.startDate = values.startDate || undefined
+  }
+  if (isFieldVisible(bt, 'expireDate')) {
+    payload.expireDate = values.expireDate || undefined
+  }
+  if (isFieldVisible(bt, 'nextBillingDate')) {
+    payload.nextBillingDate = values.nextBillingDate || undefined
+  }
+  if (isFieldVisible(bt, 'autoRenew')) {
+    payload.autoRenew = values.autoRenew
+  }
+  if (isFieldVisible(bt, 'notifyEnabled')) {
+    payload.notifyEnabled = values.notifyEnabled
+    payload.notifyDaysBefore = values.notifyEnabled ? Number(values.notifyDaysBefore || 0) : 0
+  }
+  if (isFieldVisible(bt, 'url')) {
+    payload.url = values.url.trim() || undefined
+  }
+  if (isFieldVisible(bt, 'remainingBalance') && !existing) {
+    payload.remainingBalance = values.remainingBalance ? Number(values.remainingBalance) : undefined
+  }
+  if (isFieldVisible(bt, 'lowBalanceNotify')) {
+    payload.lowBalanceNotify = values.lowBalanceNotify
+    payload.lowBalanceThreshold = values.lowBalanceThreshold ? Number(values.lowBalanceThreshold) : undefined
+  }
+
   if (existing) {
-    payload.status = values.status
+    payload.archived = values.archived
     payload.clearStartDate = !values.startDate && !!existing.startDate
     payload.clearExpireDate = !values.expireDate && !!existing.expireDate
     payload.clearNextBillingDate = !values.nextBillingDate && !!existing.nextBillingDate
   }
+
   return payload
 }
 
 type SubscriptionFormFieldsProps = {
   values: SubscriptionFormValues
   editing: boolean
+  item?: Subscription | null
   onChange: (values: SubscriptionFormValues) => void
+  categories?: string[]
+  onAiSuggestCategory?: (name: string, notes?: string) => Promise<string | undefined>
+  isAiSuggesting?: boolean
 }
 
 const BILLING_TYPES = Object.keys(BILLING_TYPE_LABELS)
 const CURRENCIES = ['CNY', 'USD', 'EUR', 'HKD', 'JPY']
+
+// 计费类型下拉：新建场景不出现"按量"；仅当正在编辑的项本身就是按量账户时才保留该选项，避免 Select 出现无匹配值。
+function billingTypeOptions(currentType: string): string[] {
+  return currentType === 'per_token' ? BILLING_TYPES : BILLING_TYPES.filter((t) => t !== 'per_token')
+}
 
 function FieldLabel({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -146,84 +193,186 @@ function SelectField({ value, options, labels, onChange }: {
   )
 }
 
-// SubscriptionFormFields 承载订阅创建/编辑的共享字段，桌面 Dialog 和移动 Sheet 共用同一套校验入口。
-export function SubscriptionFormFields({ values, editing, onChange }: SubscriptionFormFieldsProps) {
+// SubscriptionFormFields 根据计费类型动态渲染订阅创建/编辑表单字段，桌面 Dialog 和移动 Sheet 共用。
+export function SubscriptionFormFields({ values, editing, item, onChange, categories, onAiSuggestCategory, isAiSuggesting }: SubscriptionFormFieldsProps) {
+  const bt = values.billingType
   const setField = <K extends keyof SubscriptionFormValues>(key: K, value: SubscriptionFormValues[K]) => {
     onChange({ ...values, [key]: value })
   }
+  const visible = (field: Parameters<typeof isFieldVisible>[1]) => isFieldVisible(bt, field)
 
   return (
     <div className="space-y-3">
       <FieldLabel label="名称 *">
-        <input value={values.name} onChange={(event) => setField('name', event.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="ChatGPT Plus" />
+        <input value={values.name} onChange={(e) => setField('name', e.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="输入订阅名称" />
       </FieldLabel>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <FieldLabel label="分类">
-          <input value={values.category} onChange={(event) => setField('category', event.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="AI 工具" />
+          <CategoryInput
+            value={values.category}
+            onChange={(v) => setField('category', v)}
+            subscriptionName={values.name}
+            notes={values.notes}
+            categories={categories ?? []}
+            onAiSuggest={() => {
+              if (!onAiSuggestCategory) return
+              void onAiSuggestCategory(values.name, values.notes || undefined).then((result) => {
+                if (result) setField('category', result)
+              })
+            }}
+            isAiLoading={isAiSuggesting ?? false}
+          />
         </FieldLabel>
         <FieldLabel label="计费类型">
-          <SelectField value={values.billingType} options={BILLING_TYPES} labels={BILLING_TYPE_LABELS} onChange={(value) => setField('billingType', value)} />
+          <SelectField value={values.billingType} options={billingTypeOptions(bt)} labels={BILLING_TYPE_LABELS} onChange={(v) => setField('billingType', v)} />
         </FieldLabel>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-        <FieldLabel label="金额">
-          <input type="number" min="0" step="0.01" value={values.price} onChange={(event) => setField('price', event.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="20.00" />
-        </FieldLabel>
-        <FieldLabel label="币种">
-          <SelectField value={values.currency} options={CURRENCIES} onChange={(value) => setField('currency', value)} />
-        </FieldLabel>
-      </div>
+      {visible('price') && (
+        <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
+          <FieldLabel label="金额">
+            <input type="number" min="0" step="0.01" value={values.price} onChange={(e) => setField('price', e.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="0.00" />
+          </FieldLabel>
+          <FieldLabel label="币种">
+            <SelectField value={values.currency} options={CURRENCIES} onChange={(v) => setField('currency', v)} />
+          </FieldLabel>
+        </div>
+      )}
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <FieldLabel label="开始日期">
-          <DatePicker value={values.startDate} onChange={(value) => setField('startDate', value)} allowClear placeholder="未设置" />
-        </FieldLabel>
-        <FieldLabel label="到期日期">
-          <DatePicker value={values.expireDate} onChange={(value) => setField('expireDate', value)} allowClear placeholder="未设置" />
-        </FieldLabel>
-        <FieldLabel label="下次扣费">
-          <DatePicker value={values.nextBillingDate} onChange={(value) => setField('nextBillingDate', value)} allowClear placeholder="未设置" />
-        </FieldLabel>
-      </div>
+      {visible('remainingBalance') && (
+        item?.apiFetchEnabled ? (
+          <div className="space-y-1.5">
+            <span className="text-xs font-medium text-muted-foreground">当前余额</span>
+            <p className="nexus-input flex h-10 items-center rounded-md border bg-muted px-3 text-sm text-muted-foreground">
+              {item.remainingBalance?.toFixed(2) ?? '—'}（由 DeepSeek 自动同步，不可手动编辑）
+            </p>
+          </div>
+        ) : (
+          <FieldLabel label={editing ? '当前余额（只读）' : '初始余额'}>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.remainingBalance}
+              onChange={(e) => setField('remainingBalance', e.target.value)}
+              disabled={editing}
+              className="nexus-input h-10 w-full px-3 text-sm disabled:bg-muted"
+              placeholder="100.00"
+            />
+          </FieldLabel>
+        )
+      )}
 
-      <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-        <FieldLabel label="用量上限">
-          <input type="number" min="0" step="0.0001" value={values.usageLimit} onChange={(event) => setField('usageLimit', event.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="1000" />
-        </FieldLabel>
-        <FieldLabel label="单位">
-          <input value={values.usageUnit} onChange={(event) => setField('usageUnit', event.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="次" />
-        </FieldLabel>
-      </div>
+      {visible('lowBalanceNotify') && (
+        <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
+          <div className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2 shadow-[var(--shadow-xs)]">
+            <div>
+              <p className="text-sm font-semibold">余额预警</p>
+              <p className="text-xs text-muted-foreground">余额低于阈值时提醒</p>
+            </div>
+            <Switch.Root checked={values.lowBalanceNotify} onCheckedChange={(c) => setField('lowBalanceNotify', c)} className={cn('relative h-6 w-11 rounded-full transition-colors', values.lowBalanceNotify ? 'bg-primary' : 'bg-muted')}>
+              <Switch.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-card shadow transition-transform data-[state=checked]:translate-x-5" />
+            </Switch.Root>
+          </div>
+          <FieldLabel label="预警阈值">
+            <input type="number" min="0" step="0.01" value={values.lowBalanceThreshold} onChange={(e) => setField('lowBalanceThreshold', e.target.value)} disabled={!values.lowBalanceNotify} className="nexus-input h-10 w-full px-3 text-sm disabled:bg-muted" placeholder="10.00" />
+          </FieldLabel>
+        </div>
+      )}
 
-      <FieldLabel label="网址">
-        <input value={values.url} onChange={(event) => setField('url', event.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="https://" />
-      </FieldLabel>
+      {(visible('startDate') || visible('expireDate') || visible('nextBillingDate')) && (
+        <div className="grid gap-3 sm:grid-cols-3">
+          {visible('startDate') && (
+            <FieldLabel label={bt === 'lifetime' ? '购买日期' : '开始日期'}>
+              <DatePicker
+                value={values.startDate}
+                onChange={(v) => {
+                  const next = { ...values, startDate: v }
+                  if ((bt === 'monthly' || bt === 'yearly') && v && !values.expireDate) {
+                    const computed = addBillingPeriod(v, bt === 'monthly' ? 'month' : 'year')
+                    next.expireDate = computed
+                    if (!values.nextBillingDate) next.nextBillingDate = computed
+                  }
+                  onChange(next)
+                }}
+                allowClear
+                placeholder="未设置"
+              />
+            </FieldLabel>
+          )}
+          {visible('expireDate') && (
+            <FieldLabel label={bt === 'one_time' ? '结束日期' : '到期日期'}>
+              <DatePicker value={values.expireDate} onChange={(v) => setField('expireDate', v)} allowClear placeholder="未设置" />
+            </FieldLabel>
+          )}
+          {visible('nextBillingDate') && (
+            <FieldLabel label="下次扣费日期">
+              <DatePicker value={values.nextBillingDate} onChange={(v) => setField('nextBillingDate', v)} allowClear placeholder="未设置" />
+            </FieldLabel>
+          )}
+        </div>
+      )}
 
-      <FieldLabel label="备注">
-        <textarea value={values.notes} onChange={(event) => setField('notes', event.target.value)} rows={3} className="nexus-input min-h-20 w-full resize-y px-3 py-2 text-sm" />
-      </FieldLabel>
-
-      <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
+      {visible('autoRenew') && (
         <div className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2 shadow-[var(--shadow-xs)]">
           <div>
-            <p className="text-sm font-semibold">到期提醒</p>
-            <p className="text-xs text-muted-foreground">用于每日 SUBSCRIPTION_EXPIRING 通知</p>
+            <p className="text-sm font-semibold">自动续费</p>
+            <p className="text-xs text-muted-foreground">到期后自动扣款续订</p>
           </div>
-          <Switch.Root checked={values.notifyEnabled} onCheckedChange={(checked) => setField('notifyEnabled', checked)} className={cn('relative h-6 w-11 rounded-full transition-colors', values.notifyEnabled ? 'bg-primary' : 'bg-muted')}>
+          <Switch.Root checked={values.autoRenew} onCheckedChange={(c) => setField('autoRenew', c)} className={cn('relative h-6 w-11 rounded-full transition-colors', values.autoRenew ? 'bg-primary' : 'bg-muted')}>
             <Switch.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-card shadow transition-transform data-[state=checked]:translate-x-5" />
           </Switch.Root>
         </div>
-        <FieldLabel label="提前天数">
-          <input type="number" min="0" value={values.notifyDaysBefore} onChange={(event) => setField('notifyDaysBefore', event.target.value)} disabled={!values.notifyEnabled} className="nexus-input h-10 w-full px-3 text-sm disabled:bg-muted" />
-        </FieldLabel>
-      </div>
+      )}
 
-      {editing && (
-        <FieldLabel label="状态">
-          <SelectField value={values.status} options={SUBSCRIPTION_STATUSES} labels={STATUS_LABELS} onChange={(value) => setField('status', value as SubscriptionStatus)} />
+      {visible('url') && (
+        <FieldLabel label="订阅地址">
+          <input value={values.url} onChange={(e) => setField('url', e.target.value)} className="nexus-input h-10 w-full px-3 text-sm" placeholder="https://" />
         </FieldLabel>
+      )}
+
+      <FieldLabel label="备注">
+        <textarea value={values.notes} onChange={(e) => setField('notes', e.target.value)} rows={3} className="nexus-input min-h-20 w-full resize-y px-3 py-2 text-sm" />
+      </FieldLabel>
+
+      {visible('notifyEnabled') && (
+        <div className="rounded-lg border bg-card px-3 py-2 shadow-[var(--shadow-xs)]">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold">{bt === 'one_time' ? '结束提醒' : '到期提醒'}</p>
+              <p className="text-xs text-muted-foreground">{bt === 'one_time' ? '结束前提前提醒我' : '到期前提前提醒我续费'}</p>
+            </div>
+            <Switch.Root checked={values.notifyEnabled} onCheckedChange={(c) => setField('notifyEnabled', c)} className={cn('relative h-6 w-11 rounded-full transition-colors', values.notifyEnabled ? 'bg-primary' : 'bg-muted')}>
+              <Switch.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-card shadow transition-transform data-[state=checked]:translate-x-5" />
+            </Switch.Root>
+          </div>
+          {values.notifyEnabled && (
+            <div className="mt-3 flex items-center gap-2 border-t pt-3">
+              <span className="text-xs font-medium text-muted-foreground">提前</span>
+              <input
+                type="number"
+                min="0"
+                value={values.notifyDaysBefore}
+                onChange={(e) => setField('notifyDaysBefore', e.target.value)}
+                className="nexus-input h-9 w-20 px-2 text-center text-sm"
+              />
+              <span className="text-xs font-medium text-muted-foreground">天提醒</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {editing && visible('archived') && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border bg-card px-3 py-2 shadow-[var(--shadow-xs)]">
+          <div>
+            <p className="text-sm font-semibold">归档</p>
+            <p className="text-xs text-muted-foreground">归档后不在列表默认显示</p>
+          </div>
+          <Switch.Root checked={values.archived} onCheckedChange={(c) => setField('archived', c)} className={cn('relative h-6 w-11 rounded-full transition-colors', values.archived ? 'bg-primary' : 'bg-muted')}>
+            <Switch.Thumb className="block h-5 w-5 translate-x-0.5 rounded-full bg-card shadow transition-transform data-[state=checked]:translate-x-5" />
+          </Switch.Root>
+        </div>
       )}
     </div>
   )

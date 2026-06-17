@@ -1,14 +1,14 @@
 package com.nexus.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.nexus.handler.JsonbTypeHandler;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/** 订阅实体映射数据库完整列，包含后续 API 余额拉取阶段保留的休眠字段。 */
+/** 订阅实体映射数据库完整列，包含自动续费、归档、按量余额/消费/充值记录等 UI 重构字段。 */
 @Data
 @TableName(value = "subscriptions", autoResultMap = true)
 public class Subscription {
@@ -29,13 +29,19 @@ public class Subscription {
     private String apiKeyMasked;
     private boolean apiFetchEnabled;
     private LocalDateTime apiLastFetchedAt;
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = JsonbTypeHandler.class)
     private Object apiBalanceJson;
     private boolean notifyEnabled;
     private int notifyDaysBefore;
     private String url;
     private String notes;
     private String status;
+    private boolean autoRenew;
+    private boolean archived;
+    private BigDecimal remainingBalance;
+    private BigDecimal monthlySpend;
+    private boolean lowBalanceNotify;
+    private BigDecimal lowBalanceThreshold;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(fill = FieldFill.INSERT_UPDATE)
