@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus Chat — Design Prototype v2 (Light)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=IBM+Plex+Mono:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  /* Nexus design tokens (light theme) */
+  --background:    #F6F8FB;
+  --card:          #FFFFFF;
+  --foreground:    #07111A;
+  --primary:       #0B1D33;
+  --primary-fg:    #FFFFFF;
+  --muted:         #EEF3F9;
+  --muted-fg:      #536577;
+  --accent:        #EEF3F9;
+  --border:        #DCE3EE;
+  --border-hi:     #C3D1E4;
+  --ring:          #3F6EA5;
+  --success:       #166262;
+  --destructive:   #B4232F;
+  --shadow-xs:     0 1px 2px rgba(11,29,51,0.04);
+  --shadow-sm:     0 4px 12px rgba(11,29,51,0.04);
+  --shadow-md:     0 8px 24px rgba(11,29,51,0.06);
+  --radius:        0.75rem;
+
+  /* Chat-specific */
+  --user-bubble:   #0B1D33;
+  --user-fg:       #FFFFFF;
+  --ai-bubble:     #FFFFFF;
+  --code-bg:       #F0F4F8;
+  --sidebar-w:     252px;
+
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  color: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Fake app chrome ──────────────────────── */
+.app-shell {
+  display: flex;
+  height: 100vh;
+}
+
+/* ── Left nav (fake Nexus sidebar) ───────── */
+.app-nav {
+  width: 56px;
+  background: var(--primary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.nav-logo {
+  width: 32px; height: 32px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 900; color: white;
+  margin-bottom: 8px;
+}
+.nav-item {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.45);
+  cursor: pointer; transition: all 0.15s;
+}
+.nav-item:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+.nav-item.active { background: rgba(255,255,255,0.15); color: white; }
+.nav-item svg { width: 17px; height: 17px; }
+
+/* ── Chat sidebar ────────────────────────── */
+.chat-sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-sidebar-header {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.chat-sidebar-title-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.chat-sidebar-title {
+  font-size: 11px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.1em; color: var(--muted-fg);
+}
+.btn-new {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 10px;
+  background: var(--primary);
+  color: white; border: none; border-radius: 7px;
+  font-size: 11.5px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: all 0.15s;
+}
+.btn-new:hover { background: #152D45; }
+.btn-new svg { width: 11px; height: 11px; }
+
+.search-input {
+  width: 100%; padding: 7px 10px;
+  background: var(--muted);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: var(--foreground);
+  font-size: 12.5px; font-family: inherit;
+  outline: none; transition: all 0.15s;
+}
+.search-input::placeholder { color: var(--muted-fg); }
+.search-input:focus { border-color: var(--ring); background: white; }
+
+.conv-list { flex: 1; overflow-y: auto; padding: 6px 8px; }
+.conv-list::-webkit-scrollbar { width: 4px; }
+.conv-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.conv-group-label {
+  padding: 8px 6px 3px;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: var(--muted-fg);
+}
+.conv-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  cursor: pointer; transition: background 0.12s;
+}
+.conv-item:hover { background: var(--muted); }
+.conv-item.active { background: var(--muted); }
+.conv-icon {
+  width: 16px; height: 16px; flex-shrink: 0;
+  color: var(--muted-fg);
+}
+.conv-content { min-width: 0; }
+.conv-name {
+  font-size: 12.5px; font-weight: 500; color: var(--foreground);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.conv-item.active .conv-name { color: var(--primary); font-weight: 600; }
+.conv-meta { font-size: 11px; color: var(--muted-fg); margin-top: 1px; }
+
+/* ── Main area ───────────────────────────── */
+.chat-main {
+  flex: 1; overflow: hidden;
+  display: flex; flex-direction: column;
+  position: relative;
+  background: var(--background);
+}
+
+.state {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  transition: opacity 0.2s;
+}
+.state.hidden { opacity: 0; pointer-events: none; }
+
+/* ── Welcome state ───────────────────────── */
+.welcome {
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 32px;
+  gap: 0;
+}
+
+.welcome-eyebrow {
+  font-size: 10.5px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.12em; color: var(--muted-fg);
+  margin-bottom: 12px;
+}
+
+.welcome-heading {
+  font-size: 32px; font-weight: 900;
+  color: var(--primary);
+  letter-spacing: -0.025em;
+  text-align: center;
+  line-height: 1.1;
+  margin-bottom: 8px;
+}
+
+.welcome-sub {
+  font-size: 13.5px; color: var(--muted-fg);
+  text-align: center;
+  margin-bottom: 32px;
+  line-height: 1.6;
+}
+
+.welcome-input-wrap {
+  width: 100%; max-width: 580px;
+  position: relative;
+}
+.welcome-input-wrap textarea {
+  width: 100%;
+  min-height: 52px; max-height: 160px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  color: var(--foreground);
+  font-size: 14px; font-family: inherit;
+  padding: 14px 52px 14px 16px;
+  resize: none; outline: none;
+  line-height: 1.5;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.welcome-input-wrap textarea::placeholder { color: var(--muted-fg); }
+.welcome-input-wrap textarea:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px rgba(63,110,165,0.12), var(--shadow-sm);
+}
+.send-btn {
+  position: absolute; right: 10px; bottom: 10px;
+  width: 34px; height: 34px;
+  background: var(--primary);
+  border: none; border-radius: 9px;
+  color: white; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.send-btn:hover { background: #152D45; transform: scale(1.04); }
+.send-btn svg { width: 15px; height: 15px; }
+
+.suggestions-wrap {
+  margin-top: 14px;
+  width: 100%; max-width: 580px;
+}
+.suggestions-label {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--muted-fg);
+  margin-bottom: 8px;
+  display: flex; align-items: center; gap: 5px;
+}
+.suggestions-label .dot {
+  width: 5px; height: 5px;
+  background: var(--ring); border-radius: 50%;
+  animation: pulse 2.5s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:.8;transform:scale(1)} 50%{opacity:.35;transform:scale(.8)} }
+
+.chips {
+  display: flex; flex-wrap: wrap; gap: 7px;
+}
+.chip {
+  padding: 6px 13px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 12px; font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer; transition: all 0.15s;
+  box-shadow: var(--shadow-xs);
+}
+.chip:hover {
+  border-color: var(--ring);
+  color: var(--ring);
+  background: #F0F6FF;
+  box-shadow: var(--shadow-sm);
+}
+
+.model-row {
+  margin-top: 24px;
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11.5px; color: var(--muted-fg);
+}
+.model-badge {
+  padding: 3px 9px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 11px; font-weight: 600; color: var(--primary);
+  cursor: pointer;
+}
+.model-badge:hover { border-color: var(--border-hi); }
+
+/* ── Chat state ──────────────────────────── */
+.chat-state { }
+
+.chat-topbar {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0;
+  box-shadow: var(--shadow-xs);
+}
+.topbar-title-group { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.topbar-title {
+  font-size: 13.5px; font-weight: 700; color: var(--primary);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 360px;
+  cursor: pointer;
+}
+.topbar-title:hover { text-decoration: underline; text-underline-offset: 3px; }
+.topbar-title-edit {
+  /* shown on hover/click */
+  width: 18px; height: 18px; color: var(--muted-fg);
+  cursor: pointer; flex-shrink: 0;
+}
+.topbar-title-edit:hover { color: var(--ring); }
+.topbar-meta { font-size: 11px; color: var(--muted-fg); margin-top: 1px; }
+
+.topbar-actions { display: flex; gap: 5px; }
+.icon-btn {
+  width: 30px; height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted-fg);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+.icon-btn:hover { background: var(--muted); color: var(--foreground); border-color: var(--border-hi); }
+.icon-btn svg { width: 14px; height: 14px; }
+
+/* Messages */
+.messages {
+  flex: 1; overflow-y: auto;
+  padding: 20px 24px 8px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.messages::-webkit-scrollbar { width: 5px; }
+.messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.msg { display: flex; gap: 10px; }
+
+.msg-ai { align-items: flex-start; }
+.ai-avatar {
+  width: 26px; height: 26px; flex-shrink: 0; margin-top: 2px;
+  background: var(--primary);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 900; color: white;
+}
+.msg-body { flex: 1; min-width: 0; }
+.msg-sender {
+  font-size: 11px; font-weight: 600; color: var(--muted-fg);
+  margin-bottom: 5px; display: flex; align-items: center; gap: 5px;
+}
+.msg-sender .model-tag {
+  font-size: 10px; font-weight: 500;
+  background: var(--muted); border-radius: 4px;
+  padding: 1px 5px; color: var(--muted-fg);
+}
+.ai-content {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 4px 12px 12px 12px;
+  padding: 12px 14px;
+  font-size: 13.5px; line-height: 1.7; color: var(--foreground);
+  box-shadow: var(--shadow-xs);
+}
+.ai-content p { margin-bottom: 10px; }
+.ai-content p:last-child { margin-bottom: 0; }
+.ai-content strong { font-weight: 700; color: var(--primary); }
+.ai-content ul { padding-left: 18px; margin-bottom: 10px; }
+.ai-content li { margin-bottom: 4px; }
+
+.code-block {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 10px 0;
+  overflow: hidden;
+}
+.code-header {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(0,0,0,0.02);
+}
+.code-lang {
+  font-size: 10.5px; font-weight: 600; color: var(--muted-fg);
+  font-family: 'IBM Plex Mono', monospace; text-transform: lowercase;
+}
+.code-copy {
+  font-size: 11px; color: var(--muted-fg); background: transparent;
+  border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px;
+  font-family: inherit; transition: all 0.12s;
+}
+.code-copy:hover { background: var(--border); color: var(--primary); }
+.code-block pre {
+  padding: 12px 14px; overflow-x: auto;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; line-height: 1.65; color: #1E3A5F;
+}
+.kw { color: #7B2B9A; } /* keyword */
+.st { color: #1A6E2E; } /* string */
+.cm { color: #8A9BB0; font-style: italic; } /* comment */
+.fn { color: #0B4F8A; } /* function */
+.nm { color: #B5541A; } /* number */
+
+/* User message */
+.msg-user { justify-content: flex-end; }
+.msg-user .msg-body { max-width: 62%; }
+.user-content {
+  background: var(--user-bubble);
+  color: var(--user-fg);
+  border-radius: 12px 4px 12px 12px;
+  padding: 10px 14px;
+  font-size: 13.5px; line-height: 1.6;
+}
+
+/* Streaming cursor */
+.cursor {
+  display: inline-block; width: 2px; height: 13px;
+  background: var(--ring); margin-left: 2px; vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+/* Action bar below AI message */
+.msg-actions {
+  display: flex; gap: 3px; margin-top: 6px;
+}
+.msg-action-btn {
+  padding: 3px 8px;
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 11px; color: var(--muted-fg);
+  cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 4px; transition: all 0.12s;
+}
+.msg-action-btn:hover { background: var(--muted); color: var(--foreground); }
+.msg-action-btn svg { width: 12px; height: 12px; }
+
+/* Input bar */
+.chat-input-bar {
+  padding: 12px 20px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--card);
+  flex-shrink: 0;
+}
+.input-wrap { position: relative; }
+.input-wrap textarea {
+  width: 100%; min-height: 44px; max-height: 180px;
+  background: var(--background);
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  color: var(--foreground); font-family: inherit; font-size: 13.5px;
+  padding: 11px 50px 11px 14px;
+  resize: none; outline: none; line-height: 1.5; transition: all 0.15s;
+}
+.input-wrap textarea::placeholder { color: var(--muted-fg); }
+.input-wrap textarea:focus {
+  border-color: var(--ring);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(63,110,165,0.1);
+}
+.input-wrap .send-btn { right: 9px; bottom: 9px; width: 30px; height: 30px; border-radius: 8px; }
+
+.input-meta {
+  margin-top: 6px; display: flex; align-items: center; gap: 10px;
+  font-size: 11px; color: var(--muted-fg);
+}
+kbd {
+  background: var(--muted); border: 1px solid var(--border);
+  border-radius: 4px; padding: 1px 5px;
+  font-size: 10px; font-family: 'IBM Plex Mono', monospace; color: var(--primary);
+}
+
+/* ── Rename modal ────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(11,29,51,0.35);
+  backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  opacity: 0; pointer-events: none; transition: opacity 0.15s;
+}
+.modal-overlay.open { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: 420px;
+  padding: 22px 22px 18px;
+  box-shadow: var(--shadow-md);
+  transform: translateY(8px); transition: transform 0.15s;
+}
+.modal-overlay.open .modal { transform: translateY(0); }
+.modal-title {
+  font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 4px;
+}
+.modal-sub { font-size: 12px; color: var(--muted-fg); margin-bottom: 16px; }
+
+.modal-input-wrap { position: relative; margin-bottom: 6px; }
+.modal-input {
+  width: 100%; padding: 9px 40px 9px 12px;
+  background: var(--background);
+  border: 1.5px solid var(--border);
+  border-radius: 9px; font-size: 13.5px; font-family: inherit;
+  color: var(--foreground); outline: none; transition: all 0.15s;
+}
+.modal-input:focus { border-color: var(--ring); background: white; box-shadow: 0 0 0 3px rgba(63,110,165,0.1); }
+.modal-ai-btn {
+  position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+  padding: 3px 8px;
+  background: var(--muted); border: 1px solid var(--border);
+  border-radius: 6px; font-size: 10.5px; font-weight: 600; color: var(--muted-fg);
+  cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 3px;
+  transition: all 0.15s; white-space: nowrap;
+}
+.modal-ai-btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+.modal-ai-btn svg { width: 10px; height: 10px; }
+
+.modal-hint { font-size: 11px; color: var(--muted-fg); margin-bottom: 18px; }
+
+.modal-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.btn { padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: inherit; cursor: pointer; transition: all 0.15s; border: none; }
+.btn-ghost { background: transparent; color: var(--muted-fg); border: 1px solid var(--border); }
+.btn-ghost:hover { background: var(--muted); color: var(--foreground); }
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #152D45; }
+
+/* ── Demo controls ───────────────────────── */
+.demo-controls {
+  position: fixed; bottom: 16px; right: 16px;
+  display: flex; flex-direction: column; gap: 6px; z-index: 100;
+}
+.demo-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--card);
+  font-size: 12px; font-weight: 600; color: var(--primary);
+  cursor: pointer; font-family: inherit; transition: all 0.15s;
+  box-shadow: var(--shadow-sm);
+}
+.demo-btn:hover { background: var(--muted); border-color: var(--border-hi); }
+.demo-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+.demo-label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--muted-fg); text-align: right;
+  margin-bottom: 4px;
+}
+</style>
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- Fake Nexus left nav -->
+  <nav class="app-nav">
+    <div class="nav-logo">N</div>
+    <div class="nav-item" title="ToDo">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="2" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/>
+        <path d="M9 4h5M9 7h3M9 11h5M9 14h3"/>
+      </svg>
+    </div>
+    <div class="nav-item" title="Translate">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M2 4h7M5.5 2v2M2 4c0 3 2.5 5 5.5 5M7 4c-.5 2-2 4-4 5"/><path d="M9 10l2-6 2 6M9.8 8h2.4"/>
+      </svg>
+    </div>
+    <div class="nav-item" title="Subscriptions">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+        <rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 6h14M5 10h2M9 10h2"/>
+      </svg>
+    </div>
+    <div class="nav-item active" title="Chat">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+        <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 2V3z"/>
+      </svg>
+    </div>
+  </nav>
+
+  <!-- Chat sidebar -->
+  <aside class="chat-sidebar">
+    <div class="chat-sidebar-header">
+      <div class="chat-sidebar-title-row">
+        <span class="chat-sidebar-title">Chat</span>
+        <button class="btn-new" onclick="showWelcome()">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 1v10M1 6h10"/>
+          </svg>
+          新对话
+        </button>
+      </div>
+      <input class="search-input" type="text" placeholder="搜索对话…">
+    </div>
+
+    <div class="conv-list">
+      <div class="conv-group-label">今天</div>
+      <div class="conv-item active" onclick="showChat()">
+        <svg class="conv-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 2V3z"/>
+        </svg>
+        <div class="conv-content">
+          <div class="conv-name">TCP 三次握手原理</div>
+          <div class="conv-meta">14:32 · 4 条消息</div>
+        </div>
+      </div>
+      <div class="conv-item" onclick="showChat()">
+        <svg class="conv-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 2V3z"/>
+        </svg>
+        <div class="conv-content">
+          <div class="conv-name">React 渲染优化策略</div>
+          <div class="conv-meta">11:05 · 7 条消息</div>
+        </div>
+      </div>
+
+      <div class="conv-group-label">昨天</div>
+      <div class="conv-item">
+        <svg class="conv-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 2V3z"/>
+        </svg>
+        <div class="conv-content">
+          <div class="conv-name">PostgreSQL 索引设计</div>
+          <div class="conv-meta">昨天 · 12 条消息</div>
+        </div>
+      </div>
+      <div class="conv-item">
+        <svg class="conv-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 2V3z"/>
+        </svg>
+        <div class="conv-content">
+          <div class="conv-name">Java 线程池参数配置</div>
+          <div class="conv-meta">昨天 · 3 条消息</div>
+        </div>
+      </div>
+      <div class="conv-item">
+        <svg class="conv-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 2V3z"/>
+        </svg>
+        <div class="conv-content">
+          <div class="conv-name">Spring Boot 异常处理</div>
+          <div class="conv-meta">昨天 · 6 条消息</div>
+        </div>
+      </div>
+
+      <div class="conv-group-label">本周</div>
+      <div class="conv-item">
+        <svg class="conv-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H6l-3 2V3z"/>
+        </svg>
+        <div class="conv-content">
+          <div class="conv-name">Flyway 迁移脚本命名规范</div>
+          <div class="conv-meta">周二 · 2 条消息</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="chat-main">
+
+    <!-- ① Welcome / Empty state -->
+    <div class="state welcome" id="welcomeState">
+      <p class="welcome-eyebrow">Daily Assistant</p>
+      <h1 class="welcome-heading">今天有什么问题？</h1>
+      <p class="welcome-sub">轻量日常问答。Markdown、代码高亮、多轮对话。</p>
+
+      <div class="welcome-input-wrap">
+        <textarea placeholder="随手一问…" rows="2" id="welcomeInput"></textarea>
+        <button class="send-btn" onclick="showChat()">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <path d="M14 8H3M8 3l6 5-6 5"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="suggestions-wrap">
+        <div class="suggestions-label">
+          <span class="dot"></span>
+          基于你最近的对话推荐
+        </div>
+        <div class="chips">
+          <div class="chip" onclick="showChat()">继续聊 PostgreSQL 索引？</div>
+          <div class="chip" onclick="showChat()">Java 虚拟线程 vs 线程池</div>
+          <div class="chip" onclick="showChat()">Flyway 回滚策略</div>
+          <div class="chip" onclick="showChat()">写一个二叉树层序遍历</div>
+        </div>
+      </div>
+
+      <div class="model-row">
+        当前模型：
+        <span class="model-badge">claude-sonnet-4-6 ▾</span>
+      </div>
+    </div>
+
+    <!-- ② Chat state -->
+    <div class="state chat-state hidden" id="chatState">
+      <div class="chat-topbar">
+        <div class="topbar-title-group">
+          <div>
+            <div class="topbar-title" onclick="openRename()" title="点击重命名">
+              TCP 三次握手原理
+            </div>
+            <div class="topbar-meta">claude-sonnet-4-6 · 今天 14:32 · 4 条消息</div>
+          </div>
+          <svg class="topbar-title-edit" onclick="openRename()" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M11 2l3 3-9 9H2v-3l9-9z"/>
+          </svg>
+        </div>
+        <div class="topbar-actions">
+          <button class="icon-btn" title="复制全部内容">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v7a1 1 0 001 1h2"/>
+            </svg>
+          </button>
+          <button class="icon-btn" title="删除对话">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M2 4h12M5 4V2h6v2M6 7v5M10 7v5M3 4l1 10h8l1-10"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="messages" id="messages">
+
+        <div class="msg msg-user">
+          <div class="msg-body">
+            <div class="user-content">帮我解释一下 TCP 三次握手</div>
+          </div>
+        </div>
+
+        <div class="msg msg-ai">
+          <div class="ai-avatar">N</div>
+          <div class="msg-body">
+            <div class="msg-sender">
+              Nexus
+              <span class="model-tag">claude-sonnet-4-6</span>
+            </div>
+            <div class="ai-content">
+              <p>TCP 三次握手（Three-Way Handshake）是建立 TCP 连接时客户端与服务端之间的握手协议，目的是<strong>同步双方初始序列号并确认收发能力</strong>。</p>
+              <ul>
+                <li><strong>SYN</strong>：客户端发送带 SYN 标志的包，携带初始序列号 ISN(c)</li>
+                <li><strong>SYN-ACK</strong>：服务端确认 ISN(c)+1，并发送自己的 ISN(s)</li>
+                <li><strong>ACK</strong>：客户端确认 ISN(s)+1，连接建立</li>
+              </ul>
+              <div class="code-block">
+                <div class="code-header">
+                  <span class="code-lang">python</span>
+                  <button class="code-copy" onclick="this.textContent='已复制 ✓'; setTimeout(()=>this.textContent='复制',1500)">复制</button>
+                </div>
+                <pre><span class="cm"># 三次握手的序列号变化</span>
+<span class="kw">def</span> <span class="fn">handshake</span>():
+    c_isn, s_isn = <span class="nm">1000</span>, <span class="nm">2000</span>
+
+    syn     = {<span class="st">"SYN"</span>: <span class="nm">1</span>, <span class="st">"seq"</span>: c_isn}
+    syn_ack = {<span class="st">"SYN"</span>: <span class="nm">1</span>, <span class="st">"ACK"</span>: <span class="nm">1</span>, <span class="st">"seq"</span>: s_isn, <span class="st">"ack"</span>: c_isn+<span class="nm">1</span>}
+    ack     = {<span class="st">"ACK"</span>: <span class="nm">1</span>, <span class="st">"ack"</span>: s_isn+<span class="nm">1</span>}
+    <span class="cm"># 连接建立完成</span></pre>
+              </div>
+              <p>两次握手为什么不够？因为第二次握手后服务端无法确认<strong>客户端的接收能力</strong>，历史失效的 SYN 包可能让服务端误建连接。</p>
+            </div>
+            <div class="msg-actions">
+              <button class="msg-action-btn">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="5" y="5" width="9" height="9" rx="2"/><path d="M11 5V3a1 1 0 00-1-1H3a1 1 0 00-1 1v7a1 1 0 001 1h2"/></svg>
+                复制
+              </button>
+              <button class="msg-action-btn">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2l-10 5 4 2 2 4 4-11z"/></svg>
+                重新生成
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="msg msg-user">
+          <div class="msg-body">
+            <div class="user-content">那四次挥手呢？为什么断开要比建立多一次？</div>
+          </div>
+        </div>
+
+        <div class="msg msg-ai" id="streamingMsg">
+          <div class="ai-avatar">N</div>
+          <div class="msg-body">
+            <div class="msg-sender">Nexus <span class="model-tag">claude-sonnet-4-6</span></div>
+            <div class="ai-content" id="streamContent">
+              因为 TCP 是<strong>全双工</strong>的，双方各自独立维护发送通道，关闭时需要各自确认。<span class="cursor" id="cursor"></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="chat-input-bar">
+        <div class="input-wrap">
+          <textarea placeholder="继续追问…" rows="1" id="chatInput"></textarea>
+          <button class="send-btn">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M14 8H3M8 3l6 5-6 5"/>
+            </svg>
+          </button>
+        </div>
+        <div class="input-meta">
+          <kbd>↵</kbd> 发送 &nbsp;·&nbsp; <kbd>Shift+↵</kbd> 换行 &nbsp;·&nbsp; <kbd>↑</kbd> 重发上条
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Rename modal -->
+<div class="modal-overlay" id="renameModal">
+  <div class="modal">
+    <div class="modal-title">重命名对话</div>
+    <div class="modal-sub">AI 已根据内容自动命名，你可以直接修改或让 AI 重新提炼。</div>
+
+    <div class="modal-input-wrap">
+      <input class="modal-input" type="text" value="TCP 三次握手原理" id="renameInput">
+      <button class="modal-ai-btn" onclick="aiSuggestName()" id="aiBtn">
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M6 1l1.2 3.4L11 6 7.2 7.6 6 11 4.8 7.6 1 6l3.8-1.6z"/>
+        </svg>
+        AI 提炼
+      </button>
+    </div>
+    <div class="modal-hint" id="aiHint">AI 将根据对话内容生成更准确的名称</div>
+
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeRename()">取消</button>
+      <button class="btn btn-primary" onclick="closeRename()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Demo controls -->
+<div class="demo-controls">
+  <div class="demo-label">原型切换</div>
+  <button class="demo-btn active" id="btnWelcome" onclick="showWelcome()">空状态（首页）</button>
+  <button class="demo-btn" id="btnChat" onclick="showChat()">对话状态</button>
+  <button class="demo-btn" onclick="openRename()" style="margin-top:4px">重命名弹窗</button>
+</div>
+
+<script>
+function showWelcome() {
+  document.getElementById('welcomeState').classList.remove('hidden');
+  document.getElementById('chatState').classList.add('hidden');
+  document.getElementById('btnWelcome').classList.add('active');
+  document.getElementById('btnChat').classList.remove('active');
+  document.querySelectorAll('.conv-item').forEach(el => el.classList.remove('active'));
+}
+
+function showChat() {
+  document.getElementById('chatState').classList.remove('hidden');
+  document.getElementById('welcomeState').classList.add('hidden');
+  document.getElementById('btnChat').classList.add('active');
+  document.getElementById('btnWelcome').classList.remove('active');
+  document.querySelectorAll('.conv-item').forEach((el,i)=>el.classList.toggle('active',i===0));
+  setTimeout(()=>{
+    const m=document.getElementById('messages');
+    m.scrollTop=m.scrollHeight;
+  },50);
+}
+
+function openRename() {
+  document.getElementById('renameModal').classList.add('open');
+  setTimeout(()=>{ document.getElementById('renameInput').select(); },150);
+}
+function closeRename() {
+  document.getElementById('renameModal').classList.remove('open');
+}
+document.getElementById('renameModal').addEventListener('click', function(e){
+  if(e.target===this) closeRename();
+});
+
+const aiSuggestions = [
+  'TCP 握手机制与全双工关闭流程',
+  'TCP 连接建立与断开原理解析',
+  'TCP 三次握手 & 四次挥手详解',
+];
+let aiIdx = 0;
+function aiSuggestName() {
+  const btn = document.getElementById('aiBtn');
+  const hint = document.getElementById('aiHint');
+  btn.textContent = '生成中…';
+  btn.style.pointerEvents = 'none';
+  hint.textContent = '正在分析对话内容…';
+  setTimeout(()=>{
+    document.getElementById('renameInput').value = aiSuggestions[aiIdx++ % aiSuggestions.length];
+    btn.innerHTML = `<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 1l1.2 3.4L11 6 7.2 7.6 6 11 4.8 7.6 1 6l3.8-1.6z"/></svg> AI 提炼`;
+    btn.style.pointerEvents = '';
+    hint.textContent = 'AI 已提炼 · 可继续修改或再次提炼';
+  }, 900);
+}
+
+// Streaming text demo
+const parts = [
+  '\n\n具体步骤：\n\n',
+  '1. **FIN**：主动关闭方发送 FIN，表示"我不再发送数据了"，但仍可接收\n',
+  '2. **ACK**：被动方确认，自己可能还有数据未发完，连接处于半关闭状态\n',
+  '3. **FIN**：被动方数据发送完毕，再发一个 FIN\n',
+  '4. **ACK**：主动方最终确认，等待 2MSL 后彻底关闭\n\n',
+  '所以多出一步的原因在于：建立时服务端可以把 SYN 和 ACK 合并发送，而关闭时服务端的 ACK 和 FIN 通常不能合并（中间可能还有数据要发）。',
+];
+let pi = 0;
+const sc = document.getElementById('streamContent');
+const cur = document.getElementById('cursor');
+function stream() {
+  if(pi < parts.length) {
+    const text = parts[pi++];
+    sc.insertBefore(document.createTextNode(text), cur);
+    setTimeout(stream, 280 + Math.random()*180);
+  } else {
+    cur && cur.remove();
+  }
+}
+setTimeout(stream, 1200);
+
+// Auto-resize textarea
+document.querySelectorAll('textarea').forEach(ta=>{
+  ta.addEventListener('input',function(){
+    this.style.height='auto';
+    this.style.height=Math.min(this.scrollHeight,180)+'px';
+  });
+});
+
+document.getElementById('welcomeInput').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();showChat();}
+});
+</script>
+</body>
+</html>

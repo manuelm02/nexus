@@ -7,8 +7,8 @@
 - [x] Phase 0: 清理旧文档和旧阶段计划
 - [x] Phase 1: ToDo 减法工作流
 - [x] Phase 2: Translate 简化版翻译软件
-- [ ] Phase 3: Inbox 三类接入
-- [ ] Phase 4: Subscriptions 基础订阅管理
+- [x] Phase 3: Inbox 三类接入
+- [x] Phase 4: Subscriptions 基础订阅管理
 - [ ] Phase 5: Chat 日常问答
 - [ ] Phase 6: Mindbank & Crawl 单独设计
 
@@ -33,35 +33,64 @@
 
 ## Phase 3: Inbox
 
-- [ ] 复刻 Linkding 核心书签功能：Nexus 本地 bookmarks、URL 保存、标签、搜索、未读/归档、编辑删除
-- [ ] paperless-ngx 文档上传、列表、详情展示
-- [ ] Quick Note / Memo 写入 Obsidian Markdown，不落业务库
-- [ ] 开发前确认 Obsidian vault 路径和文件组织规则
+- [x] 复刻 Linkding 核心书签功能：Nexus 本地 bookmarks、URL 保存、标签、搜索、未读/归档、编辑删除
+- [x] paperless-ngx 文档上传、列表、详情展示
+- [x] Quick Note / Memo 写入 Obsidian Markdown，不落业务库
+- [x] 开发前确认 Obsidian vault 路径和文件组织规则
 
 ## Phase 4: Subscriptions
 
 详细计划见 `docs/superpowers/plans/2026-06-14-subscriptions-phase-4.md`，提示词见 `docs/superpowers/prompts/2026-06-14-subscriptions-phase-4-deepseek.md`。
 
-- [ ] 新增 V1_9 迁移，删除 `notion_page_url` / `notion_synced` / `task_id` 三列及对应实体字段
-- [ ] 新增 `SubscriptionResponse`，屏蔽 `api_*` 五个字段，列保留供后续阶段
-- [ ] 基础 CRUD（实体/DTO/Controller 改为返回 `SubscriptionResponse`）
-- [ ] 手动维护用量（`usageUsed` 编辑 + 进度条 + 前端 +1 快捷操作）
-- [ ] 到期提醒：每日自动把过期 `active` 置为 `expired`（`autoExpireOverdue`）+ 沿用现有 `NotificationService`
-- [ ] 站内可见的“即将到期 / 已到期”汇总和 chip，不依赖通知渠道配置
-- [ ] 前端按 AGENTS.md 拆 `SubscriptionsDesktopView` / `SubscriptionsMobileView`，提取通用 `DatePicker`
-- [ ] API 用量拉取和余额同步后置（不在本阶段实现）
+- [x] 新增 V1_9 迁移，删除 `notion_page_url` / `notion_synced` / `task_id` 三列及对应实体字段
+- [x] 新增 `SubscriptionResponse`，屏蔽 `api_*` 五个字段，列保留供后续阶段
+- [x] 基础 CRUD（实体/DTO/Controller 改为返回 `SubscriptionResponse`）
+- [x] 手动维护用量（`usageUsed` 编辑 + 进度条 + 前端 +1 快捷操作）
+- [x] 到期提醒：每日自动把过期 `active` 置为 `expired`（`autoExpireOverdue`）+ 沿用现有 `NotificationService`
+- [x] 站内可见的”即将到期 / 已到期”汇总和 chip，不依赖通知渠道配置
+- [x] 前端按 AGENTS.md 拆 `SubscriptionsDesktopView` / `SubscriptionsMobileView`，提取通用 `DatePicker`
+- [x] API 用量拉取和余额同步后置（不在本阶段实现）
 
 ### Phase 4 扩展：订阅类型 UI 重构
 
 详细计划见 `docs/superpowers/plans/2026-06-14-subscriptions-ui-redesign.md`，提示词见 `docs/superpowers/prompts/2026-06-14-subscriptions-ui-redesign-deepseek.md`。
 
-- [ ] 新增 V1_10 迁移：auto_renew/archived/remaining_balance/monthly_spend/recharge_records/low_balance_notify/low_balance_threshold + subscription_categories 表
-- [ ] 表单按 billingType（月度/年度/一次性/买断/按量）渲染不同字段集合
-- [ ] 按量类型充值/记录消费/欠费通知，月初自动清零当月消费
-- [ ] 月度/年度自动续费：到期自动滚动到下一周期，不标记 expired
-- [ ] 归档（archived）独立开关，默认从列表和统计排除
-- [ ] Settings 新增订阅分类管理 + AI 分类识别/复用/生成
-- [ ] 统计面板：订阅中数量 / 月度订阅费 / 年度订阅费 / 本月待支付订阅费
+- [x] 新增 V1_10 迁移：auto_renew/archived/remaining_balance/monthly_spend/recharge_records/low_balance_notify/low_balance_threshold + subscription_categories 表
+- [x] 表单按 billingType（月度/年度/一次性/买断/按量）渲染不同字段集合
+- [x] 按量类型充值/记录消费/欠费通知，月初自动清零当月消费
+- [x] 月度/年度自动续费：到期自动滚动到下一周期，不标记 expired
+- [x] 归档（archived）独立开关，默认从列表和统计排除
+- [x] Settings 新增订阅分类管理 + AI 分类识别/复用/生成
+- [x] 统计面板：订阅中数量 / 月度订阅费 / 年度订阅费 / 本月待支付订阅费
+
+### Phase 4 扩展 v2：订阅表单/状态/归档体验打磨
+
+详细计划见 `docs/superpowers/plans/2026-06-14-subscriptions-ui-polish.md`，提示词见 `docs/superpowers/prompts/2026-06-14-subscriptions-ui-polish-deepseek.md`。
+
+- [x] 弹层统一为响应式 Dialog（删除 SubscriptionFormSheet，参照 ToDo 弹层模式）
+- [x] 分类字段改为下拉框（来源 Settings 分类），AI 自动分类按钮 hover 提示并自动写回
+- [x] 月度/年度开始日期联动自动填充到期日期/下次扣费日期（+1 月/年）
+- [x] 字段重命名："下次扣费"→"下次扣费日期"，"网址"→"订阅地址"
+- [x] 重排"到期提醒+提前天数"为单卡片
+- [x] 状态改为自动计算（active/expired/paused，去除 cancelled），表单移除手动状态选择；新增 V1_11 迁移
+- [x] 新增"已归档" Tab + 取消归档操作
+- [x] Settings 订阅模块新增"专用模型"配置（workflowType=subscriptions），修正 SubscriptionCategoryAiService 的 resolveModel 调用
+
+### Phase 4 扩展 v3：用量面板隔离 + DeepSeek 余额自动监控 + 概览图表
+
+详细计划见 `docs/superpowers/plans/2026-06-16-subscriptions-usage-redesign.md`，提示词见 `docs/superpowers/prompts/2026-06-16-subscriptions-usage-redesign-deepseek.md`。
+
+- [x] 新增 V1_13 迁移：`subscription_balance_snapshots` 余额历史快照表
+- [x] `DeepSeekBalanceClient` 调用 DeepSeek `/user/balance`，复用 `LlmConfigService` 加密存储 API Key
+- [x] `SubscriptionService` 新增 `syncBalance` / `getBalanceHistory` / `syncAllEnabledBalances`；创建用量账户时立即同步一次余额（失败则整体回滚）
+- [x] 新增每日定时余额同步任务
+- [x] "用量面板"Tab 完全独立：独立 hooks/组件树（`pages/Subscriptions/usage/`），不再与"订阅"共用概览/汇总组件
+- [x] 新建用量账户改为下拉选择监控 Provider（目前仅 DeepSeek）+ 填写 API Key，创建即自动获取余额
+- [x] 用量账户卡片：内联充值/消费输入框、可折叠流水（替代弹窗）、余额迷你趋势图、"刷新余额"按钮
+- [x] 概览 Tab 移除用量信息，只服务订阅；新增三块图表：未来 6 个月支出预测、分类支出占比（全币种折算为 CNY）、未来 90 天到期时间线
+- [x] 新增 V1_14 迁移：`exchange_rates` 汇率缓存表；`ExchangeRateClient` 调用 Frankfurter 实时汇率 API，`ExchangeRateService` 提供 24h 缓存与定时刷新
+- [x] 新增每日 00:20 `syncExchangeRates` 定时任务（早于 00:30 余额同步），新增 `GET /exchange-rates` 接口
+- [x] 新增 `recharts` 依赖
 
 ## Phase 5: Chat
 

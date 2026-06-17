@@ -24,7 +24,11 @@
       "Bash(mvn -o test -Dtest=ObsidianMarkdownWriterTest)",
       "Bash(echo \"EXIT=$?\")",
       "Bash(mvn -q test -Dtest=NoteTagReorganizeServiceTest,InboxControllerTest,ObsidianMarkdownWriterTest,NoteAiServiceTest)",
-      "Bash(xargs -I{} sh -c 'echo === {} ===; cat {}')"
+      "Bash(xargs -I{} sh -c 'echo === {} ===; cat {}')",
+      "WebSearch"
     ]
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true
   }
 }

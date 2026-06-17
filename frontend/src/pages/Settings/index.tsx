@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '../../api/client'
 import { settingsApi } from '../../api/settings.api'
+import { subscriptionCategoryApi } from '../../api/subscriptionCategory.api'
 import type { ApiResponse } from '../../types/api.types'
 import type { LlmProvider, WorkflowLlmConfig, InboxSettings, InboxSettingsUpdateRequest } from '../../types/domain.types'
 import type { ProviderFormData } from './components/ProviderForm'
@@ -14,7 +15,7 @@ export default function SettingsPage() {
   const initialTab = (() => {
     const tab = new URLSearchParams(window.location.search).get('tab')
     if (tab === 'workflows') return 'translate'
-    return tab === 'translate' || tab === 'inbox' || tab === 'system' ? tab : 'models'
+    return tab === 'translate' || tab === 'inbox' || tab === 'subscriptions' || tab === 'chat' || tab === 'system' ? tab : 'models'
   })() as SettingsTab
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(initialTab)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -114,6 +115,26 @@ export default function SettingsPage() {
     },
   })
 
+  // --- 订阅分类 ---
+  const { data: categoriesRes, isLoading: categoriesLoading } = useQuery({
+    queryKey: ['subscription-categories'],
+    queryFn: () => subscriptionCategoryApi.list(),
+  })
+  const subscriptionCategories = categoriesRes?.data?.data ?? []
+
+  const createCategoryMutation = useMutation({
+    mutationFn: (name: string) => subscriptionCategoryApi.create(name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription-categories'] }),
+  })
+
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null)
+  const deleteCategoryMutation = useMutation({
+    mutationFn: (id: string) => subscriptionCategoryApi.delete(id),
+    onMutate: (id) => setDeletingCategoryId(id),
+    onSettled: () => setDeletingCategoryId(null),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription-categories'] }),
+  })
+
   // --- 派生数据 ---
   const providers: LlmProvider[] = providerRes?.data?.data ?? []
   const workflows: WorkflowLlmConfig[] = wfRes?.data?.data ?? []
@@ -122,15 +143,31 @@ export default function SettingsPage() {
   const translateProviderId = translateWorkflow?.providerId ?? ''
   const inboxWorkflow = workflows.find((w) => w.workflowType === 'inbox')
   const inboxProviderId = inboxWorkflow?.providerId ?? ''
+  const subscriptionsWorkflow = workflows.find((w) => w.workflowType === 'subscriptions')
+  const subscriptionsProviderId = subscriptionsWorkflow?.providerId ?? ''
+  const chatWorkflow = workflows.find((w) => w.workflowType === 'chat')
+  const chatProviderId = chatWorkflow?.providerId ?? ''
   const [translateProviderDraft, setTranslateProviderDraft] = useState(translateProviderId)
+  const [subscriptionsProviderDraft, setSubscriptionsProviderDraft] = useState(subscriptionsProviderId)
+  const [chatProviderDraft, setChatProviderDraft] = useState(chatProviderId)
 
   // 工作流配置由远程数据驱动；查询刷新后同步草稿，避免旧草稿覆盖后端新值。
   useEffect(() => {
     setTranslateProviderDraft(translateProviderId)
   }, [translateProviderId])
 
+  useEffect(() => {
+    setSubscriptionsProviderDraft(subscriptionsProviderId)
+  }, [subscriptionsProviderId])
+
+  useEffect(() => {
+    setChatProviderDraft(chatProviderId)
+  }, [chatProviderId])
+
   const workflowPendingType = workflowMutation.isPending ? workflowMutation.variables?.type : null
   const translateDirty = translateProviderDraft !== translateProviderId
+  const subscriptionsDirty = subscriptionsProviderDraft !== subscriptionsProviderId
+  const chatDirty = chatProviderDraft !== chatProviderId
 
   // --- Provider 编辑操作 ---
   const handleStartCreate = () => {
@@ -189,6 +226,24 @@ export default function SettingsPage() {
       onSave: () => workflowMutation.mutate({ type: 'translate', providerId: translateProviderDraft }),
       onCancel: () => setTranslateProviderDraft(translateProviderId),
     },
+    subscriptionsSettings: {
+      providerId: subscriptionsProviderDraft,
+      dirty: subscriptionsDirty,
+      savePending: workflowPendingType === 'subscriptions',
+      saveError: workflowMutation.isError && workflowMutation.variables?.type === 'subscriptions',
+      onProviderChange: setSubscriptionsProviderDraft,
+      onSave: () => workflowMutation.mutate({ type: 'subscriptions', providerId: subscriptionsProviderDraft }),
+      onCancel: () => setSubscriptionsProviderDraft(subscriptionsProviderId),
+    },
+    chatSettings: {
+      providerId: chatProviderDraft,
+      dirty: chatDirty,
+      savePending: workflowPendingType === 'chat',
+      saveError: workflowMutation.isError && workflowMutation.variables?.type === 'chat',
+      onProviderChange: setChatProviderDraft,
+      onSave: () => workflowMutation.mutate({ type: 'chat', providerId: chatProviderDraft }),
+      onCancel: () => setChatProviderDraft(chatProviderId),
+    },
     providersLoading,
     providersError,
     workflowsLoading,
@@ -246,6 +301,14 @@ export default function SettingsPage() {
       workflowUpdateError: workflowMutation.isError && workflowMutation.variables?.type === 'inbox',
       onUpdate: (update: InboxSettingsUpdateRequest) => updateInboxSettingsMutation.mutate(update),
       onWorkflowProviderSave: (providerId: string) => workflowMutation.mutate({ type: 'inbox', providerId }),
+    },
+    subscriptionCategories: {
+      categories: subscriptionCategories,
+      isLoading: categoriesLoading,
+      isCreating: createCategoryMutation.isPending,
+      isDeleting: deletingCategoryId,
+      onCreate: (name: string) => createCategoryMutation.mutate(name),
+      onDelete: (id: string) => deleteCategoryMutation.mutate(id),
     },
   }
 

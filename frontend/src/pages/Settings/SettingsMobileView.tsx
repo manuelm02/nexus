@@ -3,9 +3,12 @@ import type { SettingsTab } from './SettingsDesktopView'
 import { ProviderCard } from './components/ProviderCard'
 import { ProviderForm, type ProviderFormData } from './components/ProviderForm'
 import { TranslateSettingsPanel } from './components/TranslateSettingsPanel'
+import { ChatModelPanel } from './components/ChatModelPanel'
+import { SubscriptionModelPanel } from './components/SubscriptionModelPanel'
 import { SystemConfigSection, type SystemConfigSectionProps } from './components/SystemConfigSection'
 import { InboxSettingsPanel } from './components/InboxSettingsPanel'
-import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest } from '../../types/domain.types'
+import { SubscriptionCategoriesPanel } from './components/SubscriptionCategoriesPanel'
+import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest, SubscriptionCategory } from '../../types/domain.types'
 
 type SettingsMobileViewProps = {
   activeSettingsTab: SettingsTab
@@ -13,6 +16,24 @@ type SettingsMobileViewProps = {
   providers: LlmProvider[]
   defaultProvider: LlmProvider | undefined
   translateSettings: {
+    providerId: string
+    dirty: boolean
+    savePending: boolean
+    saveError: boolean
+    onProviderChange: (providerId: string) => void
+    onSave: () => void
+    onCancel: () => void
+  }
+  subscriptionsSettings: {
+    providerId: string
+    dirty: boolean
+    savePending: boolean
+    saveError: boolean
+    onProviderChange: (providerId: string) => void
+    onSave: () => void
+    onCancel: () => void
+  }
+  chatSettings: {
     providerId: string
     dirty: boolean
     savePending: boolean
@@ -58,6 +79,15 @@ type SettingsMobileViewProps = {
     onUpdate: (update: InboxSettingsUpdateRequest) => void
     onWorkflowProviderSave: (providerId: string) => void
   }
+
+  subscriptionCategories: {
+    categories: SubscriptionCategory[]
+    isLoading: boolean
+    isCreating: boolean
+    isDeleting: string | null
+    onCreate: (name: string) => void
+    onDelete: (id: string) => void
+  }
 }
 
 // SettingsMobileView 移动端单列堆叠面板，避免硬压成两栏，保持信息层级与桌面端一致。
@@ -71,8 +101,8 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
     createPending, createError, updatePending, updateError,
     setDefaultPendingId, deletePendingId,
     onCreateSubmit, onUpdateSubmit, onSetDefault, onDelete,
-    systemConfig, inboxSettings,
-    translateSettings,
+    systemConfig, inboxSettings, subscriptionCategories,
+    translateSettings, subscriptionsSettings, chatSettings,
   } = props
 
   const isEditing = editingId !== null
@@ -80,7 +110,9 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
     { key: 'models', label: '模型' },
     { key: 'translate', label: 'Translate' },
     { key: 'inbox', label: 'Inbox' },
-    { key: 'system', label: '系统' },
+    { key: 'subscriptions', label: 'Subscriptions' },
+    { key: 'chat', label: 'Chat' },
+    { key: 'system', label: 'System' },
   ]
 
   return (
@@ -89,7 +121,7 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
       <section className="nexus-surface p-4">
         <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System</p>
         <h1 className="mt-1 text-[24px] font-black leading-tight text-foreground">Settings</h1>
-        <div className="mt-4 grid grid-cols-4 rounded-lg border bg-muted/40 p-1">
+        <div className="mt-4 grid grid-cols-6 rounded-lg border bg-muted/40 p-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -216,6 +248,48 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
             workflowUpdateError={inboxSettings.workflowUpdateError}
           />
         </section>
+      )}
+
+      {activeSettingsTab === 'subscriptions' && (
+        <section className="space-y-3">
+          <SubscriptionModelPanel
+            providers={providers}
+            providerId={subscriptionsSettings.providerId}
+            dirty={subscriptionsSettings.dirty}
+            workflowsLoading={workflowsLoading}
+            workflowsError={workflowsError}
+            savePending={subscriptionsSettings.savePending}
+            saveError={subscriptionsSettings.saveError}
+            onProviderChange={subscriptionsSettings.onProviderChange}
+            onSave={subscriptionsSettings.onSave}
+            onCancel={subscriptionsSettings.onCancel}
+          />
+          <section className="nexus-surface space-y-3 p-4">
+            <SubscriptionCategoriesPanel
+              categories={subscriptionCategories.categories}
+              isLoading={subscriptionCategories.isLoading}
+              onCreate={subscriptionCategories.onCreate}
+              onDelete={subscriptionCategories.onDelete}
+              isCreating={subscriptionCategories.isCreating}
+              isDeleting={subscriptionCategories.isDeleting}
+            />
+          </section>
+        </section>
+      )}
+
+      {activeSettingsTab === 'chat' && (
+        <ChatModelPanel
+          providers={providers}
+          providerId={chatSettings.providerId}
+          dirty={chatSettings.dirty}
+          workflowsLoading={workflowsLoading}
+          workflowsError={workflowsError}
+          savePending={chatSettings.savePending}
+          saveError={chatSettings.saveError}
+          onProviderChange={chatSettings.onProviderChange}
+          onSave={chatSettings.onSave}
+          onCancel={chatSettings.onCancel}
+        />
       )}
     </div>
   )

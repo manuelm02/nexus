@@ -23,7 +23,10 @@ public class SubscriptionUpdateRequest {
     private String usageUnit;
     private String url;
     private String notes;
-    private String status;  // active|expired|cancelled|paused
     private Boolean notifyEnabled;
     private Integer notifyDaysBefore;
+    private Boolean autoRenew;
+    private Boolean archived;
+    private Boolean lowBalanceNotify;
+    private BigDecimal lowBalanceThreshold;
 }

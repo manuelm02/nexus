@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-/** Subscriptions Phase 4 对外响应，只暴露基础订阅管理所需字段。 */
+/** Subscriptions 对外响应，包含基础订阅管理和 UI 重构新增的自动续费/归档/按量字段。 */
 @Data
 public class SubscriptionResponse {
     private String id;
@@ -27,14 +27,22 @@ public class SubscriptionResponse {
     private String status;
     private boolean notifyEnabled;
     private int notifyDaysBefore;
+    private boolean autoRenew;
+    private boolean archived;
+    private BigDecimal remainingBalance;
+    private BigDecimal monthlySpend;
+    private boolean lowBalanceNotify;
+    private BigDecimal lowBalanceThreshold;
+    private String apiProvider;
+    private boolean apiFetchEnabled;
+    private LocalDateTime apiLastFetchedAt;
+    private Object apiBalanceJson;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
     /**
-     * 将数据库实体转换为 Phase 4 响应对象。
-     *
-     * @param entity 订阅实体，包含数据库完整列
-     * @return 不含 api_* 与 Notion 遗留字段的响应对象；API 余额字段留待后续阶段开放，避免当前前端误依赖未实现能力
+     * 将数据库实体转换为响应对象。
+     * 不暴露 api_* 与 Notion 遗留字段；API 余额字段留待后续阶段开放。
      */
     public static SubscriptionResponse from(Subscription entity) {
         SubscriptionResponse response = new SubscriptionResponse();
@@ -55,6 +63,16 @@ public class SubscriptionResponse {
         response.setStatus(entity.getStatus());
         response.setNotifyEnabled(entity.isNotifyEnabled());
         response.setNotifyDaysBefore(entity.getNotifyDaysBefore());
+        response.setAutoRenew(entity.isAutoRenew());
+        response.setArchived(entity.isArchived());
+        response.setRemainingBalance(entity.getRemainingBalance());
+        response.setMonthlySpend(entity.getMonthlySpend());
+        response.setLowBalanceNotify(entity.isLowBalanceNotify());
+        response.setLowBalanceThreshold(entity.getLowBalanceThreshold());
+        response.setApiProvider(entity.getApiProvider());
+        response.setApiFetchEnabled(entity.isApiFetchEnabled());
+        response.setApiLastFetchedAt(entity.getApiLastFetchedAt());
+        response.setApiBalanceJson(entity.getApiBalanceJson());
         response.setCreatedAt(entity.getCreatedAt());
         response.setUpdatedAt(entity.getUpdatedAt());
         return response;

@@ -119,12 +119,58 @@ export interface Subscription {
   usageUnit?: string
   url?: string
   notes?: string
-  status: 'active' | 'expired' | 'cancelled' | 'paused'
+  status: 'active' | 'expired' | 'paused'
   notifyEnabled: boolean
   notifyDaysBefore: number
+  autoRenew: boolean
+  archived: boolean
+  remainingBalance?: number
+  monthlySpend: number
+  lowBalanceNotify: boolean
+  lowBalanceThreshold?: number
+  apiProvider?: string
+  apiFetchEnabled: boolean
+  apiLastFetchedAt?: string
+  apiBalanceJson?: { is_available?: boolean; balance_infos?: Array<{ currency: string; total_balance: string; granted_balance: string; topped_up_balance: string }> } | null
   createdAt: string
   updatedAt: string
 }
+
+/** 按量订阅充值/消费流水条目 */
+export interface LedgerEntry {
+  id: string
+  type: 'recharge' | 'consume'
+  amount: number
+  balanceAfter: number
+  note?: string
+  occurredOn: string
+  createdAt: string
+}
+
+/** 订阅分类 */
+export interface SubscriptionCategory {
+  id: string
+  name: string
+  createdAt: string
+}
+
+/** 订阅统计 */
+export interface SubscriptionStats {
+  activeCount: number
+  monthlyTotal: Record<string, number>
+  yearlyTotal: Record<string, number>
+  dueThisMonth: Record<string, number>
+}
+
+/** API 余额监控历史快照点 */
+export interface BalanceSnapshot {
+  balance: number
+  currency: string
+  snapshottedAt: string
+}
+
+/** 各币种兑 CNY 的实时汇率，CNY 自身固定为 1 */
+export type ExchangeRates = Record<string, number>
 
 export interface LlmProvider {
   id: string
@@ -144,6 +190,30 @@ export interface WorkflowLlmConfig {
   modelOverride?: string
   temperature?: number
   updatedAt: string
+}
+
+// ==================== Chat 日常问答 ====================
+
+export interface ChatConversation {
+  id: string
+  title: string
+  titleAi: boolean
+  workflowType: string
+  messageCount: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ChatMessage {
+  id: string
+  conversationId: string
+  role: 'user' | 'assistant'
+  content: string
+  createdAt: string
+}
+
+export interface ChatSuggestion {
+  text: string
 }
 
 // ==================== Inbox AI Workspace 新类型 ====================
