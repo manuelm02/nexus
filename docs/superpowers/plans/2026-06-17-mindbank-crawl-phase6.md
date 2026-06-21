@@ -866,19 +866,314 @@ mise exec java@21 -- mvn -q test
 
 ---
 
-## Phase 6.8（可选/未来）：Agent A 融合自检 + Agent C 检索增强
+## Phase 6.8：Agent A 融合自检 + Agent C 检索增强
 
-> 基础设施已在 Phase 6.7 验证，此阶段按需推进。
+### 目标
+Agent 基础设施已在 Phase 6.7 验证，本阶段把 Agent 能力接入两个高价值环节：Pipeline Step 2 的融合质量提升 + Q&A 的智能检索。
 
-**Agent A — 融合自检**
-- 接入 Pipeline Step 2，当 Master Note 已存在且新材料 >1500 token 时调用
-- 多轮自检：抽取知识点 → 判断与现有内容关系 → 生成新版 → 自检 → 修正（最多 3 轮）
-- 每轮落 mindbank_agent_steps 表
+### 架构依据
+> Agent A 解决"单篇入库质量"，Agent C 解决"问答体验"。
+> 详见 `docs/nexus-mindbank-pipeline-agent-design.md` 第 6.2 + 6.4 节。
 
-**Agent C — Q&A agentic 检索**
-- 替换 Phase 6.6 的固定单 Workspace 查询
-- Agent 自主判断：查哪几个 Workspace、是否追溯原始文件、答不上来时建议补充材料
-- 升级 MindBankQaView 展示 Agent 思考过程
+### Agent A — 融合自检（接入 Pipeline Step 2）
+
+**触发条件**（在 `MindBankPipelineService.step2Organize` 中判断）：
+- Master Note 不存在（首次导入）→ 走原始单次 Prompt（不走 Agent A）
+- 新材料 < 1500 字符 → 走原始单次 Prompt
+- 其余情况 → 走 Agent A 多轮融合自检
+
+**Agent A loop 行为**：
+```
+1. 抽取新材料的核心知识点列表
+2. 逐个判断每个知识点与现有 Master Note 的关系：
+   全新概念 / 对已有内容的补充 / 与已有内容矛盾 / 重复
+3. 决定每个知识点的插入位置
+4. 生成新版 Master Note
+5. 自检：有没有遗漏知识点？有没有制造矛盾？章节结构是否断裂？知识地图是否同步更新？
+6. 自检不通过 → 回到步骤 4 修正；通过 → 输出
+最多 3 轮自检，防止无限循环
+```
+
+**实现**：`MindBankMergeCheckAgent`
+```java
+@Service
+public class MindBankMergeCheckAgent {
+    // 复用 Phase 6.7 的 Agent 基础设施（AiServices + @Tool + 步骤落库）
+    // 工具：NotePort.readMaster（读现有笔记）+ LlmPort 调用
+    // 每轮自检记录到 mindbank_agent_steps（task 关联到 document）
+    // agent_type = 'merge_check'
+
+    public String mergeWithSelfCheck(String existingMaster, String newContent,
+                                      String workspaceName, Long documentId) {
+        // 1. 创建 agent_task（agent_type=merge_check）
+        // 2. 构建 AiServices + 自检 Prompt
+        // 3. 执行 loop（最多 3 轮）
+        // 4. 每步记录 agent_steps
+        // 5. 返回最终 Master Note 内容
+    }
+}
+```
+
+**Step 2 修改**：
+```java
+private void step2Organize(Long docId) {
+    // ... 读取内容和判断 ...
+    if (!hasMasterNote || newContent.length() < 1500) {
+        // 走原始单次 Prompt（不变）
+        masterNoteContent = generateWithChunking(model, prompt, newContent);
+    } else {
+        // 走 Agent A 融合自检
+        masterNoteContent = mergeCheckAgent.mergeWithSelfCheck(
+            existingMaster, newContent, workspace.getName(), docId);
+    }
+    putCache(docId, "masterNoteContent", masterNoteContent);
+}
+```
+
+### Agent C — Q&A agentic 检索
+
+**定位**：替换 Phase 6.6 的固定单 Workspace RAG 查询，升级为"会查资料的 Agent"。
+
+**Agent C loop 行为**：
+```
+1. 接收用户问题
+2. 调用 listWorkspaces 了解可用知识库
+3. 自主判断该查哪几个 Workspace（而非固定一个）
+4. 调用 searchKnowledgeBase 检索相关内容
+5. 若检索结果不足，尝试换关键词或查其他 Workspace
+6. 要不要追溯到 MinIO 原始文件求证
+7. 综合所有检索结果生成回答
+8. 答不上来时建议用户补充材料
+```
+
+**实现**：`MindBankQaAgent`
+```java
+@Service
+public class MindBankQaAgent {
+    // 工具：KnowledgeBasePort.query / queryMultiple、StoragePort.readProcessed、
+    //       listWorkspaces（复用 MindBankAgentTools）
+    // agent_type = 'qa'
+
+    public QaAgentResponse ask(String question, Long preferredWorkspaceId) {
+        // 1. 创建 agent_task（agent_type=qa, workspace_id=preferredWorkspaceId）
+        // 2. 构建 AiServices + Q&A 系统 Prompt
+        // 3. 执行 loop
+        // 4. 返回 { answer, sources, searchedWorkspaces, agentTaskId }
+    }
+}
+```
+
+**前端升级**：
+- `MindBankQaView.tsx` 新增"Agent 模式"开关（Toggle）
+- Agent 模式关闭 → 走原来的简单 RAG（快、省 token）
+- Agent 模式开启 → 走 Agent C（多轮检索、跨 Workspace、展示思考过程）
+- Agent 回答下方可展开 AgentTraceView（复用 Phase 6.7 组件）
+
+**Q&A Controller 升级**：
+```
+POST /api/v1/mindbank/qa/{workspaceId}/chat
+  Body: { question: String, agentMode: boolean }
+  → agentMode=false：走 KnowledgeBasePort.query（不变）
+  → agentMode=true：走 MindBankQaAgent.ask
+  → 返回: { answer, sources, agentTaskId? }
+```
+
+### MindBankAgentTools 扩展（供 Agent A/C 共用）
+
+```java
+@Tool("读取 MinIO 中的原始文件内容，用于追溯求证")
+public String readOriginalFile(@P("MinIO 文件 key") String key) {
+    return storagePort.readProcessed(key); // processed 版本即可
+}
+
+@Tool("读取指定 Workspace 的文档列表，了解知识库收录了哪些材料")
+public String listDocuments(@P("Workspace ID") Long workspaceId) { ... }
+```
+
+### 验证
+```bash
+pnpm build
+mise exec java@21 -- mvn -q test
+# Agent A 测试：导入一篇较长材料到已有 Master Note 的 Workspace
+#   → 检查 agent_steps 表有自检记录
+#   → 对比 Agent A 产出 vs 单次 Prompt 产出的质量
+# Agent C 测试：在 Q&A 中开启 Agent 模式提问
+#   → 检查 Agent 是否自主查询了多个 Workspace
+#   → 展开 Agent 执行轨迹查看思考过程
+```
+
+---
+
+## Phase 6.9：巡检建议自动执行
+
+### 目标
+Phase 6.7 中 Agent B 巡检产出的建议，用户点击"采纳"后只是改了状态标记。本阶段让"采纳"真正触发自动执行：拆分 Workspace、合并笔记、修正索引等。
+
+### 架构依据
+> 建议采纳后的执行仍然是**确定性操作**（不需要 Agent 判断），因此用普通 Service 方法实现，不走 Agent loop。
+
+### 后端 — SuggestionExecutor
+
+创建 `backend/src/main/java/com/nexus/service/MindBankSuggestionExecutor.java`：
+
+```java
+/**
+ * 执行用户采纳的巡检建议。
+ * 每种 suggestion_type 对应一个确定性执行方法。
+ * 所有操作通过 Port 接口完成，执行前后记录操作日志。
+ */
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class MindBankSuggestionExecutor {
+
+    private final NotePort notePort;
+    private final KnowledgeBasePort knowledgeBasePort;
+    private final MindBankWorkspaceService workspaceService;
+    private final MindBankWorkspaceMapper workspaceMapper;
+    private final MindBankDocumentMapper documentMapper;
+    private final MindBankAgentSuggestionMapper suggestionMapper;
+    private final LlmConfigService llmConfigService;
+
+    /**
+     * 根据建议类型分发执行。
+     * @return 执行结果描述（展示在前端）
+     */
+    public String execute(MindBankAgentSuggestion suggestion) {
+        return switch (suggestion.getSuggestionType()) {
+            case "split_note" -> executeSplitNote(suggestion);
+            case "merge_workspace" -> executeMergeWorkspace(suggestion);
+            case "resplit_workspace" -> executeResplitWorkspace(suggestion);
+            case "fix_index" -> executeFixIndex(suggestion);
+            case "orphan_note" -> executeOrphanNote(suggestion);
+            default -> throw new IllegalArgumentException("未知建议类型：" + suggestion.getSuggestionType());
+        };
+    }
+}
+```
+
+### 各类型执行逻辑
+
+**split_note — 拆分过长 Master Note**
+```java
+private String executeSplitNote(MindBankAgentSuggestion suggestion) {
+    // 1. 从 proposed_action 解析：源 Workspace 名称、建议拆分出的新 Workspace 名称列表
+    // 2. 读取源 Master Note 全文
+    // 3. 用 LLM（mindbank_organize）拆分内容：
+    //    Prompt："将以下笔记按主题拆分为 N 份，每份围绕一个独立主题。输出 JSON：[{title, content}]"
+    // 4. 为每个拆分结果：
+    //    a. 创建新 Workspace（workspaceService.create）
+    //    b. 通过 NotePort.writeMaster 写入新 Master Note
+    //    c. 通过 KnowledgeBasePort.uploadDocument 创建新 embedding
+    // 5. 保留源 Workspace（不自动删除，用户可手动确认后删）
+    // 6. 返回："已拆分为 N 个新 Workspace：{names}"
+}
+```
+
+**merge_workspace — 合并重叠 Workspace**
+```java
+private String executeMergeWorkspace(MindBankAgentSuggestion suggestion) {
+    // 1. 从 proposed_action 解析：要合并的 Workspace 名称列表、目标 Workspace 名称
+    // 2. 读取所有待合并 Workspace 的 Master Note
+    // 3. 用 LLM（mindbank_organize）合并：
+    //    Prompt："将以下多份知识笔记合并为一份，消除重复，保留所有知识点"
+    // 4. 创建目标 Workspace 或使用已有
+    // 5. NotePort.writeMaster 写入合并后 Master Note
+    // 6. KnowledgeBasePort 更新 embedding
+    // 7. 迁移源 Workspace 的文档记录到目标 Workspace
+    // 8. 标记源 Workspace 为"已合并"（不自动删除）
+    // 9. 返回："已将 {names} 合并至 {target}"
+}
+```
+
+**resplit_workspace — 重新切分 Workspace**
+```java
+private String executeResplitWorkspace(MindBankAgentSuggestion suggestion) {
+    // 类似 split_note，但粒度更细：
+    // 读取 Master Note → LLM 按领域拆分 → 创建多个新 Workspace → 写笔记 + embedding
+}
+```
+
+**fix_index — 修正知识索引**
+```java
+private String executeFixIndex(MindBankAgentSuggestion suggestion) {
+    // 1. 从 proposed_action 解析：需修正的条目列表
+    // 2. 读取当前 _index.md
+    // 3. 扫描 vault 实际文件，对比索引条目
+    // 4. 移除指向不存在文件的条目
+    // 5. 补充未被索引的 Master Note 条目
+    // 6. NotePort.writeIndex 覆盖写入修正后的索引
+    // 7. 返回："修正了 N 个索引条目"
+}
+```
+
+**orphan_note — 处理孤立笔记**
+```java
+private String executeOrphanNote(MindBankAgentSuggestion suggestion) {
+    // 1. 从 proposed_action 解析：孤立笔记路径、建议操作（归档/删除/归入某 Workspace）
+    // 2. 若建议归入 Workspace：
+    //    a. 读取孤立笔记内容
+    //    b. 作为新材料走 Pipeline 导入到建议的 Workspace
+    // 3. 若建议归档：
+    //    a. 移动到 vault/_archive/ 目录
+    // 4. 返回操作描述
+}
+```
+
+### 后端 — Controller 升级
+
+修改 `MindBankAgentController.approveSuggestion`：
+
+```java
+@PostMapping("/suggestions/{id}/approve")
+public ApiResponse<SuggestionExecuteResult> approveSuggestion(@PathVariable Long id) {
+    MindBankAgentSuggestion suggestion = suggestionMapper.selectById(id);
+    if (suggestion == null) return ApiResponse.error("建议不存在");
+    if (!"pending".equals(suggestion.getStatus())) {
+        return ApiResponse.error("该建议已被处理");
+    }
+
+    try {
+        String result = suggestionExecutor.execute(suggestion);
+        suggestion.setStatus("accepted");
+        suggestionMapper.updateById(suggestion);
+        return ApiResponse.ok(new SuggestionExecuteResult(true, result));
+    } catch (Exception e) {
+        log.error("执行建议失败 suggestionId={}: {}", id, e.getMessage(), e);
+        return ApiResponse.error("执行失败：" + e.getMessage());
+    }
+}
+```
+
+`SuggestionExecuteResult`：`record SuggestionExecuteResult(boolean success, String message) {}`
+
+### 前端 — SuggestionCard 升级
+
+更新 `SuggestionCard.tsx`：
+- [采纳] 按钮点击后展示 loading spinner + "正在执行..."
+- 执行成功：展示结果描述（绿色 toast / 内联提示）
+- 执行失败：展示错误信息（红色提示），状态不变（仍可重试）
+- 采纳后 [采纳] 按钮变为 "已采纳 ✓"（disabled），旁边展示执行结果描述
+
+### 安全约束
+
+- **所有操作通过 Port 接口**，不直接操作文件系统或数据库外的资源
+- **不自动删除源 Workspace 或源笔记**，只标记/归档，用户手动确认后删除
+- **LLM 调用失败时回滚**：已创建的新 Workspace / 已写入的笔记需清理
+- **前端二次确认**：split_note 和 merge_workspace 操作在执行前弹确认框：
+  "确认执行此操作？这将创建 N 个新 Workspace 并迁移内容。"
+
+### 验证
+```bash
+pnpm build
+mise exec java@21 -- mvn -q test
+# 手动测试：
+# 1. 确保 Agent B 巡检已产出建议（可手动插入测试数据）
+# 2. 点击 split_note 建议的 [采纳] → 验证新 Workspace 创建 + 笔记拆分
+# 3. 点击 fix_index 建议的 [采纳] → 验证 _index.md 修正
+# 4. 验证执行结果在前端正确展示
+# 5. 验证 LLM 调用失败时的回滚（可临时断开模型配置测试）
+```
 
 ---
 
@@ -890,7 +1185,7 @@ mise exec java@21 -- mvn -q test
 
 ---
 
-## 整体验证（Phase 6.7 完成后）
+## 整体验证（Phase 6.9 完成后）
 
 ```bash
 # 1. 后端全量测试
@@ -903,14 +1198,15 @@ pnpm build
 # Crawl: URL → MinIO → 预览
 # Crawl: PDF 上传 → MarkItDown 转换 → MinIO → 预览
 # Crawl → Mindbank: 导入 → 5 步 Pipeline → Obsidian 笔记生成 → AnythingLLM embedding
-# Mindbank Q&A: 提问 → 回答 + 引用
-# Mindbank Agent: 巡检 → 执行轨迹 → 建议审批
+# Mindbank Q&A: 提问 → 回答 + 引用（简单模式 + Agent 模式）
+# Mindbank Agent: 巡检 → 执行轨迹 → 建议审批 → 采纳自动执行
+# Pipeline Agent A: 复杂材料融合自检 → 查看 agent_steps 自检轨迹
 # Notes: 文件树 → 编辑 → 保存 → 验证
 ```
 
 ---
 
-## 文件改动总览（Phase 6.5-6.7）
+## 文件改动总览（Phase 6.5-6.9）
 
 ### 后端新增文件
 ```
@@ -939,6 +1235,9 @@ backend/src/main/java/com/nexus/
   service/MindBankAgentTools.java                        ← Phase 6.7
   service/MindBankInspectAgent.java                      ← Phase 6.7
   controller/MindBankAgentController.java                ← Phase 6.7
+  service/MindBankMergeCheckAgent.java                   ← Phase 6.8
+  service/MindBankQaAgent.java                           ← Phase 6.8
+  service/MindBankSuggestionExecutor.java                ← Phase 6.9
 ```
 
 ### 前端新增文件
@@ -967,379 +1266,6 @@ frontend/src/pages/
 ```
 frontend/src/pages/Mindbank/index.tsx                    ← Phase 6.5 替换占位页
 frontend/src/pages/Settings/components/MindBankSettingsPanel.tsx  ← Phase 6.6 扩展 Prompt 模板
-```
-GET    /api/mindbank/workspaces
-POST   /api/mindbank/workspaces   Body: { name, domainTag, description }
-          → 同时调用 AnythingLlmClient.createWorkspace()，保存 slug
-PUT    /api/mindbank/workspaces/{id}
-DELETE /api/mindbank/workspaces/{id}
-          → 同时调用 AnythingLLM 删除 workspace（可选，提示用户）
-```
-
-**MindBankDocumentController** (`/api/mindbank/documents`)
-```
-GET  /api/mindbank/documents?workspaceId={id}  → 查询该 workspace 下所有文档
-GET  /api/mindbank/documents/{id}/status       → 查询单文档流水线状态（前端轮询）
-POST /api/mindbank/documents/{id}/retry-step   Body: { step: int }
-          → 重跑指定步骤（step 1-5）
-```
-
-**MindBankPipelineService**（核心，详见 Phase 6.6）
-
-### 前端
-
-**页面结构**
-```
-frontend/src/pages/Mindbank/
-├── index.tsx
-├── mindbank.api.ts
-├── mindbank.types.ts
-├── MindBankDesktopView.tsx
-├── MindBankMobileView.tsx
-└── components/
-    ├── WorkspaceList.tsx（左侧/顶部列表，领域标签分组，新建按钮）
-    ├── WorkspaceCard.tsx（名称/描述/文档数/领域 Tag，支持删除）
-    ├── WorkspaceDialog.tsx（新建/编辑 Workspace 弹窗）
-    ├── DocumentList.tsx（当前 Workspace 下的文档列表）
-    ├── DocumentCard.tsx（文件名/状态/流水线步骤进度条）
-    ├── PipelineStatus.tsx（5 步状态可视化：Step1-5，每步 pending/processing/done/failed）
-    └── MinioFilePicker.tsx（从 MinIO 选文件弹窗，选择后分配到当前 Workspace）
-```
-
-**关键交互**
-- 左侧 Workspace 列表，点击进入 Workspace 详情
-- Workspace 详情显示：文档列表 + 每个文档的流水线状态
-- "选择文件"按钮打开 MinioFilePicker（展示 Crawl 页面上传的文件）
-- 选定文件后可指定 Prompt 模板（默认使用 default 模板），点击"开始处理"
-- 流水线状态每 3s 轮询一次 `/status` 接口，完成后停止轮询
-- 每步状态：灰色圆点（pending）/ 旋转动画（processing）/ 绿勾（done）/ 红叉+错误文本（failed）
-- failed 状态展示"重试此步骤"按钮
-
-### 验证
-```bash
-pnpm build
-mise exec java@21 -- mvn -q test
-# 手动测试：新建 Workspace → 选择 MinIO 文件 → 查看流水线状态轮询
-```
-
----
-
-## Phase 6.6：AI 处理流水线
-
-### 目标
-实现 5 步异步 AI 处理流水线，每步独立状态，可单步重试。
-
-### 核心服务：MindBankPipelineService
-
-```java
-@Service
-public class MindBankPipelineService {
-
-    // 入口：@Async 异步触发（不阻塞 HTTP 请求）
-    @Async
-    public void triggerAsync(Long documentId) {
-        runStep(documentId, 1, this::step1Classify);
-        runStep(documentId, 2, this::step2Organize);
-        runStep(documentId, 3, this::step3SessionNote);
-        runStep(documentId, 4, this::step4WriteObsidian);
-        runStep(documentId, 5, this::step5Embed);
-    }
-
-    // 单步重试入口
-    public void retryStep(Long documentId, int step) { ... }
-
-    private void runStep(Long documentId, int step, Runnable task) {
-        updateStepStatus(documentId, step, "processing");
-        try {
-            task.run();
-            updateStepStatus(documentId, step, "done");
-        } catch (Exception e) {
-            updateStepStatus(documentId, step, "failed", e.getMessage());
-            throw e; // 终止后续步骤
-        }
-    }
-}
-```
-
-### Step 1：内容类型识别
-
-```java
-private void step1Classify(Long docId) {
-    // 1. 从 MinIO 读取 processed Markdown 内容（前 500 字）
-    // 2. 使用 workflowType=mindbank_classify 调用 LLM
-    // 3. Prompt 从 mindbank_prompt_templates 读取 classify_folder 模板（此处复用分类逻辑）
-    //    实际用系统内置简单判断 Prompt：返回 A/B/C/D/E/F
-    // 4. 保存 content_type_tag 到 mindbank_documents
-}
-```
-
-### Step 2：AI 整理 → 更新 Master Note
-
-```java
-private void step2Organize(Long docId) {
-    // 1. 从 MinIO 读取 processed 文件完整内容
-    //    → 若超过 3000 token：按段落分块，每块单独整理后合并（分块阈值可配置）
-    // 2. 判断当前 Workspace 是否已有 Master Note（master_note_path 非空）
-    //    → 无：使用 organize_init 模板
-    //    → 有：读取现有 Master Note 内容，使用 organize_merge 模板
-    // 3. 使用 workflowType=mindbank_organize 调用 LLM
-    // 4. 用 classify_folder Prompt 获取 AI 建议的 Obsidian 子文件夹名（Step4 用）
-    //    → 保存到临时字段或内存传递到 Step4
-    // 注意：此步只生成内容，不写文件（写文件在 Step4）
-    //       生成的 Master Note 内容存入内存/Redis 缓存供 Step3/4 使用
-}
-```
-
-### Step 3：AI 生成 Session Note
-
-```java
-private void step3SessionNote(Long docId) {
-    // 读取 settings：mindbank.pipeline.auto_session_note
-    // 若为 false：跳过此步（直接标记 done）
-    // 否则：
-    // 1. 使用 processed 文件内容
-    // 2. 使用 workflowType=mindbank_condense 调用 LLM（session_note 模板）
-    // 3. 生成 Session Note 内容存缓存供 Step4 使用
-}
-```
-
-### Step 4：写入 Obsidian Vault
-
-```java
-private void step4WriteObsidian(Long docId) {
-    // 1. 读取 vault 根路径和子文件夹配置
-    // 2. 创建/更新文件夹：vault/{sub_folder}/{AI建议子文件夹}/
-    // 3. 写入 Master Note：{workspace_name}__master.md（覆盖）
-    // 4. 写入 Session Note：{workspace_name}__session__{date}.md（追加，新建文件）
-    // 5. 更新 _index.md（追加一条记录，若不存在则创建）
-    // 6. 更新 mindbank_workspaces.master_note_path
-    // 7. 更新 mindbank_documents.session_note_path
-}
-```
-
-### Step 5：更新 AnythingLLM Embedding
-
-```java
-private void step5Embed(Long docId) {
-    // 1. 若 mindbank_workspaces.anythingllm_doc_id 非空：
-    //    → 调用 AnythingLlmClient.deleteDocument() 删除旧 embedding
-    // 2. 读取最新 Master Note 文件内容
-    // 3. 调用 AnythingLlmClient.uploadDocument() 上传新 Master Note
-    // 4. 保存新 doc_id 到 mindbank_workspaces.anythingllm_doc_id
-}
-```
-
-### @Async 配置
-```java
-// 在 NexusApplication 或独立 @Configuration 类上添加
-@EnableAsync
-// 配置线程池（可选，防止 pipeline 占满默认线程池）
-@Bean
-public Executor mindBankPipelineExecutor() {
-    ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-    executor.setCorePoolSize(2);
-    executor.setMaxPoolSize(5);
-    executor.setThreadNamePrefix("mindbank-pipeline-");
-    executor.initialize();
-    return executor;
-}
-```
-
-### 验证
-```bash
-mise exec java@21 -- mvn -q test
-# 手动端到端测试：上传一个 PDF → Crawl 导入 MinIO → Mindbank 选文件 → 
-# 点击处理 → 观察 5 步状态流转 → 验证 Obsidian 文件已生成 → 验证 AnythingLLM 已 embedding
-```
-
----
-
-## Phase 6.7：Q&A + Prompt 模板管理
-
-### 目标
-Workspace Q&A 问答界面（复用 Chat 组件）、笔记查看器、Settings Prompt 模板管理。
-
-### 后端新增
-
-**MindBankQaController** (`/api/mindbank/qa`)
-```
-POST /api/mindbank/qa/{workspaceId}/chat
-  Body: { question: String }
-  → 调用 AnythingLlmClient.query(workspace.anythingllm_slug, question)
-  → 返回: { answer, sources: [{ chunkText, minioOriginalUrl }] }
-```
-
-**MindBankPromptTemplateController** (`/api/mindbank/prompt-templates`)
-```
-GET    /api/mindbank/prompt-templates?type={type}
-POST   /api/mindbank/prompt-templates
-PUT    /api/mindbank/prompt-templates/{id}
-DELETE /api/mindbank/prompt-templates/{id}  （内置模板不可删除）
-```
-
-**NotesController 新增** — Master Note 查看接口
-```
-GET /api/mindbank/workspaces/{id}/master-note
-  → 读取 mindbank_workspaces.master_note_path 对应文件
-  → 返回 { content: String }（供 Mindbank 笔记查看器使用）
-```
-
-### 前端
-
-**Q&A 页面（Mindbank 内嵌 Tab）**
-```
-MindBankQaView.tsx
-├── 顶部：Workspace 名称 + "当前知识库"说明文字
-├── 消息列表（复用 Chat 页的 MessageBubble 组件，含 Markdown 渲染）
-├── 来源引用卡片（每条 AI 回答下方展示引用来源，含原始文件 MinIO 链接）
-└── 输入框（复用 ChatInputBar 组件）
-```
-
-**笔记查看器（Mindbank 内嵌 Tab）**
-```
-MindBankNotesView.tsx
-├── Master Note 内容（react-markdown 渲染，只读）
-├── Session Notes 列表（按时间倒序，可展开内容）
-└── "在 Notes 页编辑" 跳转按钮（带文件路径参数）
-```
-
-**Prompt 模板管理（Settings Mindbank Tab 内）**
-- 按 prompt_type 分组展示内置模板（可查看但不可删除）
-- 用户自定义模板：新建/编辑/删除
-- 编辑器使用普通 `<textarea>`，提供变量占位符提示（`{content}` 等）
-
-### Mindbank 页面最终 Tab 结构
-```
-Mindbank 页面
-├── Tab: 文档库（DocumentList + PipelineStatus）
-├── Tab: 问答（MindBankQaView）
-└── Tab: 笔记（MindBankNotesView）
-```
-
-### 验证
-```bash
-pnpm build
-mise exec java@21 -- mvn -q test
-# 手动测试：在已 embedding 的 Workspace 里提问 → 收到回答 + 来源引用
-# 手动测试：查看 Master Note 渲染效果
-```
-
----
-
-## 导航更新（所有阶段完成后）
-
-**桌面侧边栏** 新增三项导航：
-- Crawl（已存在，补完功能）
-- Notes（新增）
-- Mindbank（已存在，补完功能）
-
-**移动端底部 More Sheet** 已有 Crawl / Mindbank 入口，补充 Notes 入口。
-
----
-
-## 整体验证（Phase 6 完成后）
-
-```bash
-# 1. 后端全量测试
-mise exec java@21 -- mvn -q test
-
-# 2. 前端构建
-pnpm build
-
-# 3. 端到端流程验证
-# Crawl: URL → MinIO → 预览
-# Crawl: PDF 上传 → MarkItDown 转换 → MinIO → 预览
-# Crawl → Mindbank: 一键导入 → 流水线 5 步 → Obsidian 笔记生成 → AnythingLLM embedding
-# Mindbank Q&A: 提问 → 回答 + 引用
-# Notes: 文件树 → 编辑 → 保存 → 验证文件已更新
-```
-
----
-
-## 文件改动总览
-
-### 后端新增文件
-```
-backend/src/main/resources/db/migration/
-  V1_16__mindbank_init.sql
-
-backend/src/main/java/com/nexus/
-  port/KnowledgeBasePort.java
-  entity/MindBankWorkspace.java
-  entity/MindBankDocument.java
-  entity/MindBankPromptTemplate.java
-  mapper/MindBankWorkspaceMapper.java
-  mapper/MindBankDocumentMapper.java
-  mapper/MindBankPromptTemplateMapper.java
-  dto/response/WorkspaceResponse.java
-  dto/response/DocumentResponse.java
-  dto/response/FileTreeNodeResponse.java
-  dto/response/CrawlResultResponse.java
-  dto/response/KnowledgeBaseAnswer.java
-  dto/request/CreateWorkspaceRequest.java
-  dto/request/TriggerPipelineRequest.java
-  dto/request/SaveNoteRequest.java
-  integration/minio/MinioService.java
-  integration/minio/MinioFileInfo.java
-  integration/anythingllm/AnythingLlmClient.java
-  integration/crawl4ai/Crawl4AiClient.java
-  integration/markitdown/MarkItDownClient.java
-  service/CrawlService.java
-  service/MindBankWorkspaceService.java
-  service/MindBankDocumentService.java
-  service/MindBankPipelineService.java
-  service/NotesService.java
-  controller/CrawlController.java
-  controller/MindBankWorkspaceController.java
-  controller/MindBankDocumentController.java
-  controller/MindBankQaController.java
-  controller/MindBankPromptTemplateController.java
-  controller/NotesController.java
-```
-
-### 前端新增文件
-```
-frontend/src/pages/
-  Crawl/crawl.api.ts
-  Crawl/crawl.types.ts
-  Crawl/CrawlDesktopView.tsx
-  Crawl/CrawlMobileView.tsx
-  Crawl/components/WebCrawlTab.tsx
-  Crawl/components/FileUploadTab.tsx
-  Crawl/components/MinioFileList.tsx
-  Crawl/components/ImportToMindbank.tsx
-
-  Notes/index.tsx
-  Notes/notes.api.ts
-  Notes/notes.types.ts
-  Notes/NotesDesktopView.tsx
-  Notes/NotesMobileView.tsx
-  Notes/components/NotesFileTree.tsx
-  Notes/components/FileTreeNode.tsx
-  Notes/components/NotesEditor.tsx
-  Notes/components/FileNameDialog.tsx
-
-  Mindbank/mindbank.api.ts
-  Mindbank/mindbank.types.ts
-  Mindbank/MindBankDesktopView.tsx
-  Mindbank/MindBankMobileView.tsx
-  Mindbank/components/WorkspaceList.tsx
-  Mindbank/components/WorkspaceCard.tsx
-  Mindbank/components/WorkspaceDialog.tsx
-  Mindbank/components/DocumentList.tsx
-  Mindbank/components/DocumentCard.tsx
-  Mindbank/components/PipelineStatus.tsx
-  Mindbank/components/MinioFilePicker.tsx
-  Mindbank/components/MindBankQaView.tsx
-  Mindbank/components/MindBankNotesView.tsx
-
-  Settings/MindBankSettingsPanel.tsx
-```
-
-### 前端修改文件
-```
-frontend/src/pages/Settings/index.tsx   ← 新增 mindbank Tab
-frontend/src/App.tsx 或路由文件          ← 新增 /notes 路由
-frontend/src/components/layout/Sidebar.tsx ← Notes 导航项
-frontend/src/components/layout/MobileNav.tsx ← Notes 导航项
+frontend/src/pages/Mindbank/components/MindBankQaView.tsx        ← Phase 6.8 新增 Agent 模式
+frontend/src/pages/Mindbank/components/SuggestionCard.tsx        ← Phase 6.9 采纳执行结果展示
 ```
