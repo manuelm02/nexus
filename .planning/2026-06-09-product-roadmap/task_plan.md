@@ -9,8 +9,8 @@
 - [x] Phase 2: Translate 简化版翻译软件
 - [x] Phase 3: Inbox 三类接入
 - [x] Phase 4: Subscriptions 基础订阅管理
-- [ ] Phase 5: Chat 日常问答
-- [ ] Phase 6: Mindbank & Crawl 单独设计
+- [x] Phase 5: Chat 日常问答
+- [ ] Phase 6: Mindbank & Crawl（Pipeline + Agent 双层架构）
 
 ## Phase 1: ToDo
 
@@ -94,15 +94,31 @@
 
 ## Phase 5: Chat
 
-- [ ] 简单日常问答窗口
-- [ ] 模型配置走 `chat` workflow
-- [ ] 不承担 Mindbank 知识库问答职责
+详细计划见 `docs/plans/2026-06-17-chat-phase-5.md`。
 
-## Phase 6: Mindbank & Crawl
+- [x] 简单日常问答窗口
+- [x] 多会话管理（新建、删除、侧边栏列表）
+- [x] SSE 流式输出（复用 Translate 的 fetch + ReadableStream 模式）
+- [x] AI 自动命名（首轮对话后 @Async 生成 ≤10 字标题）
+- [x] Markdown 渲染 + CodeBlock 语法高亮 + 一键复制
+- [x] 动态推荐 Chips（取最近 7 天对话 title 去重）
+- [x] 重命名弹窗（支持 AI 提炼 + 手动改名）
+- [x] 移动端 Sheet 抽屉侧边栏适配
+- [x] Settings 新增 Chat Tab（workflowType=chat 专用模型配置）
+- [x] 模型配置走 `chat` workflow
+- [x] 不承担 Mindbank 知识库问答职责
 
-- [ ] 开发前重新讨论 Mindbank 具体流程
-- [ ] 开发前重新讨论 Crawl / Radar 具体流程
-- [ ] 不作为前五阶段的前置依赖
+## Phase 6: Mindbank & Crawl（Pipeline + Agent 双层架构）
+
+详细计划见 `docs/superpowers/plans/2026-06-17-mindbank-crawl-phase6.md`，架构设计见 `docs/nexus-mindbank-pipeline-agent-design.md`。
+
+- [x] Phase 6-1：基础设施层（Flyway V1_17-V1_19、Port/Integration/Entity/Mapper）
+- [x] Phase 6-2：Settings Mindbank Tab + Crawl 页面（MindBankSettingsPanel、CrawlController/Service、前端 Crawl 全组件）
+- [x] Phase 6-3：Notes 页面（NotesController/Service、文件树、Markdown 编辑器、AI 辅助功能）
+- [ ] Phase 6-4：Port 抽象层 + Mindbank 核心页面（NotePort/StoragePort、Workspace CRUD、文档管理 UI）
+- [ ] Phase 6-5：5 步确定性 Pipeline + Q&A 基础 + Prompt 模板管理（Layer 1 完整闭环）
+- [ ] Phase 6-6：Agent 基础设施 + Agent B 知识库巡检（Layer 2，LangChain4j agent loop + 只读巡检 + 审批流）
+- [ ] Phase 6-7（可选）：Agent A 融合自检 + Agent C 检索增强
 
 ## Decisions
 

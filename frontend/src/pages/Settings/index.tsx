@@ -4,7 +4,7 @@ import { apiClient } from '../../api/client'
 import { settingsApi } from '../../api/settings.api'
 import { subscriptionCategoryApi } from '../../api/subscriptionCategory.api'
 import type { ApiResponse } from '../../types/api.types'
-import type { LlmProvider, WorkflowLlmConfig, InboxSettings, InboxSettingsUpdateRequest } from '../../types/domain.types'
+import type { LlmProvider, WorkflowLlmConfig, InboxSettings, InboxSettingsUpdateRequest, MindBankSettings, MindBankSettingsUpdateRequest } from '../../types/domain.types'
 import type { ProviderFormData } from './components/ProviderForm'
 import { SettingsDesktopView } from './SettingsDesktopView'
 import type { SettingsTab } from './SettingsDesktopView'
@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const initialTab = (() => {
     const tab = new URLSearchParams(window.location.search).get('tab')
     if (tab === 'workflows') return 'translate'
-    return tab === 'translate' || tab === 'inbox' || tab === 'subscriptions' || tab === 'chat' || tab === 'system' ? tab : 'models'
+    return tab === 'translate' || tab === 'inbox' || tab === 'subscriptions' || tab === 'chat' || tab === 'crawl' || tab === 'notes' || tab === 'mindbank' || tab === 'system' ? tab : 'models'
   })() as SettingsTab
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(initialTab)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -133,6 +133,21 @@ export default function SettingsPage() {
     onMutate: (id) => setDeletingCategoryId(id),
     onSettled: () => setDeletingCategoryId(null),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['subscription-categories'] }),
+  })
+
+  // --- Mindbank 设置 ---
+  const mindbankSettingsQuery = useQuery({
+    queryKey: ['settings', 'mindbank'],
+    queryFn: () => settingsApi.getMindBankSettings(),
+  })
+
+  const mindbankSettings: MindBankSettings | undefined = mindbankSettingsQuery.data?.data?.data
+
+  const updateMindBankSettingsMutation = useMutation({
+    mutationFn: (data: MindBankSettingsUpdateRequest) => settingsApi.updateMindBankSettings(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['settings', 'mindbank'] })
+    },
   })
 
   // --- 派生数据 ---
@@ -309,6 +324,26 @@ export default function SettingsPage() {
       isDeleting: deletingCategoryId,
       onCreate: (name: string) => createCategoryMutation.mutate(name),
       onDelete: (id: string) => deleteCategoryMutation.mutate(id),
+    },
+    mindbankSettings: {
+      settings: mindbankSettings ?? {
+        anythingllmUrl: '',
+        minioUrl: '',
+        minioBucket: '',
+        obsidianSubFolder: '',
+        anythingllmApiKeyConfigured: false,
+        minioAccessKeyConfigured: false,
+        minioSecretKeyConfigured: false,
+        mindbankClassifyProviderId: '',
+        mindbankOrganizeProviderId: '',
+        mindbankCondenseProviderId: '',
+        pipelineAutoSessionNote: true,
+        providers: [],
+      },
+      isLoading: mindbankSettingsQuery.isLoading,
+      isUpdating: updateMindBankSettingsMutation.isPending,
+      updateError: updateMindBankSettingsMutation.isError,
+      onUpdate: (update: MindBankSettingsUpdateRequest) => updateMindBankSettingsMutation.mutate(update),
     },
   }
 

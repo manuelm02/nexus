@@ -149,4 +149,54 @@ public class SettingsController {
             return ApiResponse.error("TEST_FAILED", "Obsidian 连接测试失败: " + e.getMessage());
         }
     }
+
+    // ==================== Crawl 配置 ====================
+
+    private static final String K_CRAWL4AI_URL = "crawl.crawl4ai.url";
+    private static final String K_MARKITDOWN_URL = "crawl.markitdown.url";
+    private static final String DEFAULT_CRAWL4AI_URL = "http://192.168.110.10:3003";
+    private static final String DEFAULT_MARKITDOWN_URL = "http://192.168.110.10:3004";
+
+    /** 获取 Crawl 相关服务地址配置 */
+    @GetMapping("/crawl")
+    public ApiResponse<Map<String, String>> getCrawlSettings() {
+        return ApiResponse.ok(Map.of(
+                K_CRAWL4AI_URL, systemConfigService.get(K_CRAWL4AI_URL, DEFAULT_CRAWL4AI_URL),
+                K_MARKITDOWN_URL, systemConfigService.get(K_MARKITDOWN_URL, DEFAULT_MARKITDOWN_URL)
+        ));
+    }
+
+    /** 保存 Crawl 相关服务地址配置 */
+    @PutMapping("/crawl")
+    public ApiResponse<Void> saveCrawlSettings(@RequestBody Map<String, String> body) {
+        if (body.containsKey(K_CRAWL4AI_URL)) {
+            systemConfigService.upsert(K_CRAWL4AI_URL, body.get(K_CRAWL4AI_URL), null);
+        }
+        if (body.containsKey(K_MARKITDOWN_URL)) {
+            systemConfigService.upsert(K_MARKITDOWN_URL, body.get(K_MARKITDOWN_URL), null);
+        }
+        return ApiResponse.ok();
+    }
+
+    // ==================== Notes 配置 ====================
+
+    private static final String K_NOTES_VAULT_PATH = "notes.obsidian.vault_path";
+
+    /** 获取 Notes 配置（Obsidian vault 路径） */
+    @GetMapping("/notes")
+    public ApiResponse<Map<String, String>> getNotesSettings() {
+        String vaultPath = systemConfigService.get(K_NOTES_VAULT_PATH);
+        return ApiResponse.ok(Map.of(
+                K_NOTES_VAULT_PATH, vaultPath != null ? vaultPath : ""
+        ));
+    }
+
+    /** 保存 Notes 配置 */
+    @PutMapping("/notes")
+    public ApiResponse<Void> saveNotesSettings(@RequestBody Map<String, String> body) {
+        if (body.containsKey(K_NOTES_VAULT_PATH)) {
+            systemConfigService.upsert(K_NOTES_VAULT_PATH, body.get(K_NOTES_VAULT_PATH), null);
+        }
+        return ApiResponse.ok();
+    }
 }

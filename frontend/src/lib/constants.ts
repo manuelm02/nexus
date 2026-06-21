@@ -2,6 +2,7 @@ export const NAV_ITEMS = [
   { path: '/chat',            label: 'Chat',            icon: 'Sparkles'  },
   { path: '/todo',            label: 'ToDo',            icon: 'Target'    },
   { path: '/inbox',           label: 'Inbox',           icon: 'Feather'   },
+  { path: '/notes',           label: 'Notes',           icon: 'FileText'  },
   { path: '/crawl',           label: 'Crawl',           icon: 'Radio'     },
   { path: '/mindbank',        label: 'Mindbank',        icon: 'Brain'     },
   { path: '/coding-practice', label: 'Coding Practice', icon: 'Hammer'    },

@@ -8,7 +8,10 @@ import { SubscriptionModelPanel } from './components/SubscriptionModelPanel'
 import { SystemConfigSection, type SystemConfigSectionProps } from './components/SystemConfigSection'
 import { InboxSettingsPanel } from './components/InboxSettingsPanel'
 import { SubscriptionCategoriesPanel } from './components/SubscriptionCategoriesPanel'
-import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest, SubscriptionCategory } from '../../types/domain.types'
+import { MindBankSettingsPanel } from './components/MindBankSettingsPanel'
+import { CrawlSettingsPanel } from './components/CrawlSettingsPanel'
+import { NotesSettingsPanel } from './components/NotesSettingsPanel'
+import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest, SubscriptionCategory, MindBankSettings, MindBankSettingsUpdateRequest } from '../../types/domain.types'
 
 type SettingsMobileViewProps = {
   activeSettingsTab: SettingsTab
@@ -88,6 +91,15 @@ type SettingsMobileViewProps = {
     onCreate: (name: string) => void
     onDelete: (id: string) => void
   }
+
+  // Mindbank 设置
+  mindbankSettings: {
+    settings: MindBankSettings
+    isLoading: boolean
+    isUpdating: boolean
+    updateError: boolean
+    onUpdate: (update: MindBankSettingsUpdateRequest) => void
+  }
 }
 
 // SettingsMobileView 移动端单列堆叠面板，避免硬压成两栏，保持信息层级与桌面端一致。
@@ -101,7 +113,7 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
     createPending, createError, updatePending, updateError,
     setDefaultPendingId, deletePendingId,
     onCreateSubmit, onUpdateSubmit, onSetDefault, onDelete,
-    systemConfig, inboxSettings, subscriptionCategories,
+    systemConfig, inboxSettings, subscriptionCategories, mindbankSettings,
     translateSettings, subscriptionsSettings, chatSettings,
   } = props
 
@@ -112,6 +124,9 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
     { key: 'inbox', label: 'Inbox' },
     { key: 'subscriptions', label: 'Subscriptions' },
     { key: 'chat', label: 'Chat' },
+    { key: 'crawl', label: 'Crawl' },
+    { key: 'notes', label: 'Notes' },
+    { key: 'mindbank', label: 'Mindbank' },
     { key: 'system', label: 'System' },
   ]
 
@@ -121,7 +136,7 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
       <section className="nexus-surface p-4">
         <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System</p>
         <h1 className="mt-1 text-[24px] font-black leading-tight text-foreground">Settings</h1>
-        <div className="mt-4 grid grid-cols-6 rounded-lg border bg-muted/40 p-1">
+        <div className="mt-4 grid grid-cols-3 rounded-lg border bg-muted/40 p-1">
           {tabs.map((tab) => (
             <button
               key={tab.key}
@@ -289,6 +304,25 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
           onProviderChange={chatSettings.onProviderChange}
           onSave={chatSettings.onSave}
           onCancel={chatSettings.onCancel}
+        />
+      )}
+
+      {activeSettingsTab === 'crawl' && (
+        <CrawlSettingsPanel />
+      )}
+
+      {activeSettingsTab === 'notes' && (
+        <NotesSettingsPanel />
+      )}
+
+      {activeSettingsTab === 'mindbank' && !mindbankSettings.isLoading && (
+        <MindBankSettingsPanel
+          settings={mindbankSettings.settings}
+          providers={providers}
+          isLoading={mindbankSettings.isLoading}
+          isUpdating={mindbankSettings.isUpdating}
+          updateError={mindbankSettings.updateError}
+          onUpdate={mindbankSettings.onUpdate}
         />
       )}
     </div>

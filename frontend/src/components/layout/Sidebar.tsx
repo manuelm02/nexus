@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import {
-  Target, Feather, Layers, Brain, Radio,
+  Target, Feather, Layers, Brain, Radio, FileText,
   CreditCard, Hammer, Sparkles, Settings, Languages, LogOut,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -9,7 +9,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { BrandMark } from '../brand/BrandMark'
 
 const icons: Record<string, React.ComponentType<{ className?: string }>> = {
-  Target, Feather, Layers, Brain, Radio,
+  Target, Feather, Layers, Brain, Radio, FileText,
   CreditCard, Hammer, Sparkles, Settings, Languages,
 }
 

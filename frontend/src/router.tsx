@@ -9,6 +9,7 @@ const TodoPage       = lazy(() => import('./pages/ToDo'))
 const InboxPage      = lazy(() => import('./pages/Inbox'))
 const CrawlPage      = lazy(() => import('./pages/Crawl'))
 const MindbankPage   = lazy(() => import('./pages/Mindbank'))
+const NotesPage      = lazy(() => import('./pages/Notes'))
 const CodingPracticePage = lazy(() => import('./pages/CodingPractice'))
 const TranslatePage  = lazy(() => import('./pages/Translate'))
 const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'))
@@ -49,6 +50,7 @@ export const router = createBrowserRouter([
       { path: 'inbox', element: <Wrap><InboxPage /></Wrap> },
       { path: 'crawl', element: <Wrap><CrawlPage /></Wrap> },
       { path: 'mindbank', element: <Wrap><MindbankPage /></Wrap> },
+      { path: 'notes', element: <Wrap><NotesPage /></Wrap> },
       { path: 'coding-practice', element: <Wrap><CodingPracticePage /></Wrap> },
       { path: 'translate', element: <Wrap><TranslatePage /></Wrap> },
       { path: 'subscriptions', element: <Wrap><SubscriptionsPage /></Wrap> },
