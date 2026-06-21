@@ -1,0 +1,7 @@
+services:
+  markitdown:
+    build: .
+    container_name: nexus-markitdown
+    restart: unless-stopped
+    ports:
+      - "3004:3004"

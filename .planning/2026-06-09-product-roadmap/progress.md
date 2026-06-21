@@ -68,6 +68,16 @@
 - ToDo 详情 sheet 继续做移动端密度优化：手机端标题、字段高度、备注区、日期输入和底部操作区整体收紧；桌面端通过 `sm:` 保持原有 modal 尺寸。
 - 验证通过：`pnpm build`。`pnpm lint` 当前受项目 ESLint 9 配置缺失阻塞；Browser 插件仍返回 `Browser is not available: iab`，项目未安装 Playwright，未完成截图级 QA。
 
+## 2026-06-17
+
+- Phase 5 Chat 完成，详细计划见 `docs/plans/2026-06-17-chat-phase-5.md`，合并于 PR #6（commit f2267f6）。
+- 新增 V1_15 Flyway 迁移：`chat_conversations` / `chat_messages` 两张表 + `chat` workflow_type 初始化。
+- 后端实现：`ChatConversation` / `ChatMessage` Entity、Mapper、`ChatService`（含 SSE 流式发送、@Async AI 命名、动态推荐）、`ChatController`（8 个路由）。
+- 前端实现：`chat.api.ts`、`useConversations` / `useMessages` / `useStreamingMessage` / `useSuggestions` hooks、`ChatSidebar`、`WelcomeView`、`ChatView`、`MessageBubble`（react-markdown + remark-gfm + react-syntax-highlighter）、`ChatInputBar`、`ConversationRenameDialog`、`SuggestionChips`。
+- Settings 新增 Chat Tab：`ChatModelPanel.tsx` + `SettingsTab` 联合类型扩展 + `useWorkflowConfig('chat')` 接入，桌面/移动端同步。
+- 移动端 Sheet 抽屉侧边栏适配完成。
+- 验证：`pnpm build` 通过，`mise exec java@21 -- mvn -q test` 通过。
+
 ## 2026-06-13
 
 - ToDo 日期控件纳入 `DESIGN.md` 产品规范：所有 ToDo 日期入口统一使用 Nexus 风格 `TodoDatePicker`，禁止裸露浏览器原生日期控件；清空动作内聚在组件内部。

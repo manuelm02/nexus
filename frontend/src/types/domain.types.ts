@@ -514,3 +514,43 @@ export interface InboxSettingsUpdateRequest {
   bookmarksDefaultUnread?: boolean
   bookmarksSmartGroupsEnabled?: boolean
 }
+
+// ==================== Mindbank Settings ====================
+
+/** Mindbank 配置响应（API Key 类字段仅返回是否已配置，不暴露实际值） */
+export interface MindBankSettings {
+  // 服务地址
+  anythingllmUrl: string
+  minioUrl: string
+  minioBucket: string
+  obsidianSubFolder: string
+  // 认证（脱敏标记）
+  anythingllmApiKeyConfigured: boolean
+  minioAccessKeyConfigured: boolean
+  minioSecretKeyConfigured: boolean
+  // AI 模型（三个工作流的 providerId，空串表示继承全局默认）
+  mindbankClassifyProviderId: string
+  mindbankOrganizeProviderId: string
+  mindbankCondenseProviderId: string
+  // 流水线行为
+  pipelineAutoSessionNote: boolean
+  /** 可用的 Provider 列表，供模型下拉选择 */
+  providers: LlmProvider[]
+}
+
+/** Mindbank 配置更新请求（PATCH 语义：仅非 null/undefined 字段被更新） */
+export interface MindBankSettingsUpdateRequest {
+  anythingllmUrl?: string
+  minioUrl?: string
+  minioBucket?: string
+  obsidianSubFolder?: string
+  // Key 类字段：undefined=不变，空串=清除，非空=加密存储
+  anythingllmApiKey?: string | null
+  minioAccessKey?: string | null
+  minioSecretKey?: string | null
+  // 模型 providerId：undefined=不变，空串=清除绑定
+  mindbankClassifyProviderId?: string
+  mindbankOrganizeProviderId?: string
+  mindbankCondenseProviderId?: string
+  pipelineAutoSessionNote?: boolean
+}

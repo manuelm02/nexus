@@ -138,6 +138,13 @@
             <version>${minio.version}</version>
         </dependency>
 
+        <!-- OkHttp（MinIO SDK 传递依赖，显式声明锁定版本） -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
         <!-- Tencent Cloud Machine Translation SDK -->
         <dependency>
             <groupId>com.tencentcloudapi</groupId>

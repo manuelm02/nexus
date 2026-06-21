@@ -20,8 +20,9 @@ spring:
     baseline-on-migrate: false
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
+      # Mindbank 文件上传需要支持较大 PDF/DOCX，上限放宽到 100MB
+      max-file-size: 100MB
+      max-request-size: 100MB
   task:
     execution:
       pool:

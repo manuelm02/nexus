@@ -1,4 +1,4 @@
-import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest, SubscriptionCategory } from '../../types/domain.types'
+import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest, SubscriptionCategory, MindBankSettings, MindBankSettingsUpdateRequest } from '../../types/domain.types'
 import { ProviderCard } from './components/ProviderCard'
 import { ProviderForm, type ProviderFormData } from './components/ProviderForm'
 import { TranslateSettingsPanel } from './components/TranslateSettingsPanel'
@@ -7,10 +7,13 @@ import { SubscriptionModelPanel } from './components/SubscriptionModelPanel'
 import { SystemConfigSection, type SystemConfigSectionProps } from './components/SystemConfigSection'
 import { InboxSettingsPanel } from './components/InboxSettingsPanel'
 import { SubscriptionCategoriesPanel } from './components/SubscriptionCategoriesPanel'
+import { MindBankSettingsPanel } from './components/MindBankSettingsPanel'
+import { CrawlSettingsPanel } from './components/CrawlSettingsPanel'
+import { NotesSettingsPanel } from './components/NotesSettingsPanel'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-export type SettingsTab = 'models' | 'translate' | 'inbox' | 'subscriptions' | 'chat' | 'system'
+export type SettingsTab = 'models' | 'translate' | 'inbox' | 'subscriptions' | 'chat' | 'crawl' | 'notes' | 'mindbank' | 'system'
 
 export type SettingsViewProps = {
   activeSettingsTab: SettingsTab
@@ -94,6 +97,15 @@ export type SettingsViewProps = {
     onCreate: (name: string) => void
     onDelete: (id: string) => void
   }
+
+  // Mindbank 设置
+  mindbankSettings: {
+    settings: MindBankSettings
+    isLoading: boolean
+    isUpdating: boolean
+    updateError: boolean
+    onUpdate: (update: MindBankSettingsUpdateRequest) => void
+  }
 }
 
 // SettingsDesktopView 按连续面板结构组织模型工作台，桌面端使用更宽松的分区间距。
@@ -107,7 +119,7 @@ export function SettingsDesktopView(props: SettingsViewProps) {
     createPending, createError, updatePending, updateError,
     setDefaultPendingId, deletePendingId,
     onCreateSubmit, onUpdateSubmit, onSetDefault, onDelete,
-    systemConfig, inboxSettings, subscriptionCategories,
+    systemConfig, inboxSettings, subscriptionCategories, mindbankSettings,
     translateSettings, subscriptionsSettings, chatSettings,
   } = props
 
@@ -118,6 +130,9 @@ export function SettingsDesktopView(props: SettingsViewProps) {
     { key: 'inbox', label: 'Inbox' },
     { key: 'subscriptions', label: 'Subscriptions' },
     { key: 'chat', label: 'Chat' },
+    { key: 'crawl', label: 'Crawl' },
+    { key: 'notes', label: 'Notes' },
+    { key: 'mindbank', label: 'Mindbank' },
     { key: 'system', label: 'System' },
   ]
 
@@ -318,6 +333,25 @@ export function SettingsDesktopView(props: SettingsViewProps) {
               onProviderChange={chatSettings.onProviderChange}
               onSave={chatSettings.onSave}
               onCancel={chatSettings.onCancel}
+            />
+          )}
+
+          {activeSettingsTab === 'crawl' && (
+            <CrawlSettingsPanel />
+          )}
+
+          {activeSettingsTab === 'notes' && (
+            <NotesSettingsPanel />
+          )}
+
+          {activeSettingsTab === 'mindbank' && !mindbankSettings.isLoading && (
+            <MindBankSettingsPanel
+              settings={mindbankSettings.settings}
+              providers={providers}
+              isLoading={mindbankSettings.isLoading}
+              isUpdating={mindbankSettings.isUpdating}
+              updateError={mindbankSettings.updateError}
+              onUpdate={mindbankSettings.onUpdate}
             />
           )}
         </div>
