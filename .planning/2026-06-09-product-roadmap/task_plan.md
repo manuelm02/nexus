@@ -118,7 +118,8 @@
 - [ ] Phase 6-4：Port 抽象层 + Mindbank 核心页面（NotePort/StoragePort、Workspace CRUD、文档管理 UI）
 - [ ] Phase 6-5：5 步确定性 Pipeline + Q&A 基础 + Prompt 模板管理（Layer 1 完整闭环）
 - [ ] Phase 6-6：Agent 基础设施 + Agent B 知识库巡检（Layer 2，LangChain4j agent loop + 只读巡检 + 审批流）
-- [ ] Phase 6-7（可选）：Agent A 融合自检 + Agent C 检索增强
+- [ ] Phase 6-7：Agent A 融合自检 + Agent C 检索增强（接入 Pipeline Step 2 + Q&A Agent 模式）
+- [ ] Phase 6-8：巡检建议自动执行（采纳后自动拆分/合并/修正 Workspace）
 
 ## Decisions
 
