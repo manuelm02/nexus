@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { AlertCircle, Loader2, Save, Server, Key, Cpu, Workflow } from 'lucide-react'
 import type { LlmProvider, MindBankSettings, MindBankSettingsUpdateRequest } from '../../../types/domain.types'
 import { WorkflowModelSelect } from './WorkflowModelSelect'
+import { PromptTemplateManager } from '../../Mindbank/components/PromptTemplateManager'
 
 type MindBankSettingsPanelProps = {
   settings: MindBankSettings
@@ -268,6 +269,9 @@ export function MindBankSettingsPanel({
           </span>
         )}
       </div>
+
+      {/* === Prompt 模板管理 === */}
+      <PromptTemplateManager />
     </section>
   )
 }

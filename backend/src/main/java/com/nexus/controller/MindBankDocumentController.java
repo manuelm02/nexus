@@ -5,6 +5,7 @@ import com.nexus.dto.response.ApiResponse;
 import com.nexus.dto.response.MindBankDocumentResponse;
 import com.nexus.entity.MindBankDocument;
 import com.nexus.service.MindBankDocumentService;
+import com.nexus.service.MindBankPipelineService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ import java.util.List;
 public class MindBankDocumentController {
 
     private final MindBankDocumentService documentService;
+    private final MindBankPipelineService pipelineService;
 
     /**
      * 查询指定 workspace 的文档列表。
@@ -52,11 +54,13 @@ public class MindBankDocumentController {
     }
 
     /**
-     * 重置指定步骤及后续步骤状态为 pending。Phase 6.6 接入 Pipeline 后会触发实际重跑。
+     * 重置指定步骤及后续步骤状态为 pending，并异步触发 Pipeline 重跑。
+     * retryStep 同步重置 DB 状态，triggerAsync 跨 Bean 调用确保 @Async 代理生效。
      */
     @PostMapping("/{id}/retry-step")
     public ApiResponse<Void> retryStep(@PathVariable Long id, @Valid @RequestBody RetryStepRequest req) {
         documentService.retryStep(id, req.getStep());
+        pipelineService.triggerAsync(id);
         return ApiResponse.ok();
     }
 }

@@ -21,4 +21,16 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /** Mindbank 5 步入库 Pipeline 专用线程池，core=2 / max=5 / queue=20，控制并发避免 LLM 过载 */
+    @Bean(name = "mindBankPipelineExecutor")
+    public Executor mindBankPipelineExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(5);
+        executor.setQueueCapacity(20);
+        executor.setThreadNamePrefix("mindbank-pipeline-");
+        executor.initialize();
+        return executor;
+    }
 }

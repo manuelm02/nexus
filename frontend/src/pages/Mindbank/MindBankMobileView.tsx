@@ -8,6 +8,7 @@ import {
 import { WorkspaceDialog } from './components/WorkspaceDialog'
 import { DocumentList } from './components/DocumentList'
 import { MinioFilePicker } from './components/MinioFilePicker'
+import { MindBankQaView } from './components/MindBankQaView'
 import type { MindBankViewProps } from './MindBankDesktopView'
 
 const TAB_ICONS: Record<MindBankTab, typeof Files> = {
@@ -49,9 +50,6 @@ export function MindBankMobileView(props: MindBankViewProps) {
   // 移动端编辑模式标记：从 DesktopView 通过 onEditWorkspace 触发（这里保留简单实现）
   const [editingWsId, setEditingWsId] = useState<number | null>(null)
   const editingWs = editingWsId != null ? workspaces.find((w) => w.id === editingWsId) ?? null : null
-
-  const isPlaceholderTab = activeTab === 'qa' || activeTab === 'agent'
-  const TabIcon = TAB_ICONS[activeTab]
 
   return (
     <div className="nexus-page-enter flex h-[calc(100dvh-2rem)] flex-col md:hidden">
@@ -165,16 +163,15 @@ export function MindBankMobileView(props: MindBankViewProps) {
             onRetryStep={onRetryStep}
           />
         )}
-        {isPlaceholderTab && (
+        {activeTab === 'qa' && selectedWorkspace && (
+          <MindBankQaView workspace={selectedWorkspace} />
+        )}
+        {activeTab === 'agent' && (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <TabIcon className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm font-bold text-foreground">
-              {activeTab === 'qa' ? 'Q&A 即将推出' : 'Agent 知识管家 即将推出'}
-            </p>
+            <Bot className="h-10 w-10 text-muted-foreground/40" />
+            <p className="text-sm font-bold text-foreground">Agent 知识管家</p>
             <p className="max-w-xs text-xs leading-5 text-muted-foreground">
-              {activeTab === 'qa'
-                ? 'Phase 6.6 接入 RAG 问答，基于 AnythingLLM workspace 回答知识库问题。'
-                : 'Phase 6.7 接入 LangChain4j 自建 Agent 巡检 / 融合自检 / 知识库维护。'}
+              即将于下一阶段推出——AI 自动巡检知识库体系性、发现问题并提出建议
             </p>
           </div>
         )}

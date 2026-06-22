@@ -84,7 +84,7 @@ export interface UpdateWorkspaceRequest {
   description?: string
 }
 
-/** Mindbank 内部 Tab 枚举（Phase 6.5：仅文件 Tab 可用，Q&A / Agent 占位） */
+/** Mindbank 内部 Tab 枚举 */
 export type MindBankTab = 'documents' | 'qa' | 'agent'
 
 /** Mindbank 内部 Tab 标签与定义 */
@@ -93,3 +93,60 @@ export const MINDBANK_TABS: { key: MindBankTab; label: string }[] = [
   { key: 'qa', label: 'Q&A' },
   { key: 'agent', label: 'Agent 知识管家' },
 ]
+
+/** Q&A 消息角色 */
+export type QaMessageRole = 'user' | 'assistant'
+
+/** Q&A 消息 */
+export interface QaMessage {
+  id: string
+  role: QaMessageRole
+  content: string
+  sources?: string[]
+}
+
+/** Prompt 模板类型 */
+export type PromptType = 'organize_init' | 'organize_merge' | 'session_note' | 'classify_folder'
+
+/** Prompt 模板 */
+export interface PromptTemplate {
+  id: number
+  name: string
+  promptType: PromptType
+  content: string
+  defaultFlag: boolean
+  builtinFlag: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** 创建 Prompt 模板请求 */
+export interface CreatePromptTemplateRequest {
+  name: string
+  promptType: PromptType
+  content: string
+  defaultFlag?: boolean
+}
+
+/** 更新 Prompt 模板请求 */
+export interface UpdatePromptTemplateRequest {
+  name?: string
+  content?: string
+  defaultFlag?: boolean
+}
+
+/** Prompt 模板类型中文映射 */
+export const PROMPT_TYPE_LABELS: Record<PromptType, string> = {
+  organize_init: '初始整理',
+  organize_merge: '融合更新',
+  session_note: '导入速记',
+  classify_folder: '文件夹分类',
+}
+
+/** 各模板类型可用变量 */
+export const PROMPT_TYPE_VARIABLES: Record<PromptType, string[]> = {
+  organize_init: ['{content}', '{source_url}', '{timestamp}', '{workspace_name}'],
+  organize_merge: ['{master_note}', '{new_content}', '{document_name}', '{timestamp}', '{workspace_name}'],
+  session_note: ['{content}', '{document_name}', '{date}', '{workspace_name}', '{source_url}', '{master_note_path}'],
+  classify_folder: ['{existing_folders}', '{workspace_name}', '{domain_tag}', '{summary}'],
+}
