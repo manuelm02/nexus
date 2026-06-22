@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Plus, Files, MessageSquare, Bot } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { MINDBANK_TABS, type MindBankTab, type Workspace, type MindBankDocument, type CreateWorkspaceRequest } from '../../types/mindbank.types'
@@ -6,6 +5,7 @@ import { WorkspaceList } from './components/WorkspaceList'
 import { WorkspaceDialog } from './components/WorkspaceDialog'
 import { DocumentList } from './components/DocumentList'
 import { MinioFilePicker } from './components/MinioFilePicker'
+import { MindBankQaView } from './components/MindBankQaView'
 
 /** Mindbank Desktop 视图的全部 props，由 index.tsx 数据编排层注入 */
 export type MindBankViewProps = {
@@ -74,11 +74,6 @@ export function MindBankDesktopView(props: MindBankViewProps) {
     onCloseFilePicker,
     onImported,
   } = props
-
-  // placeholder Tab 标记
-  const [placeholderHovered, setPlaceholderHovered] = useState(false)
-  const isPlaceholderTab = activeTab === 'qa' || activeTab === 'agent'
-  const TabIcon = TAB_ICONS[activeTab]
 
   return (
     <div className="hidden h-[calc(100dvh-2rem)] md:flex">
@@ -176,24 +171,16 @@ export function MindBankDesktopView(props: MindBankViewProps) {
               onRetryStep={onRetryStep}
             />
           )}
-          {isPlaceholderTab && (
-            <div
-              className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center"
-              onMouseEnter={() => setPlaceholderHovered(true)}
-              onMouseLeave={() => setPlaceholderHovered(false)}
-            >
-              <TabIcon className="h-10 w-10 text-muted-foreground/40" />
-              <p className="text-base font-bold text-foreground">
-                {activeTab === 'qa' ? 'Q&A 即将推出' : 'Agent 知识管家 即将推出'}
-              </p>
+          {activeTab === 'qa' && selectedWorkspace && (
+            <MindBankQaView workspace={selectedWorkspace} />
+          )}
+          {activeTab === 'agent' && (
+            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+              <Bot className="h-10 w-10 text-muted-foreground/40" />
+              <p className="text-sm font-medium text-foreground">Agent 知识管家</p>
               <p className="max-w-md text-xs leading-5 text-muted-foreground">
-                {activeTab === 'qa'
-                  ? 'Phase 6.6 接入 RAG 问答，基于 AnythingLLM workspace 回答知识库问题。'
-                  : 'Phase 6.7 接入 LangChain4j 自建 Agent 巡检 / 融合自检 / 知识库维护。'}
+                即将于下一阶段推出——AI 自动巡检知识库体系性、发现问题并提出建议
               </p>
-              {placeholderHovered && (
-                <p className="text-[10px] text-muted-foreground/60">继续使用文件/入库 Tab 管理 Mindbank 文档。</p>
-              )}
             </div>
           )}
         </div>

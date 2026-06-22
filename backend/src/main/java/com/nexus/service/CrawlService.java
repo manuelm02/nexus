@@ -39,6 +39,7 @@ public class CrawlService {
     private final MinioService minioService;
     private final MindBankDocumentMapper mindBankDocumentMapper;
     private final SystemConfigService systemConfigService;
+    private final MindBankPipelineService mindBankPipelineService;
 
     /**
      * 爬取网页：提交 Crawl4AI 任务 → 轮询直到完成 → 上传 MinIO → 入库。
@@ -171,8 +172,8 @@ public class CrawlService {
         doc.setWorkspaceId(workspaceId);
         doc.setPipelineStatus("processing");
         mindBankDocumentMapper.updateById(doc);
-        // TODO Phase 6.6: mindBankPipelineService.triggerAsync(docId)
-        log.info("文档 {} 已导入到 workspace {}，Pipeline 触发待 Phase 6.6 实现", docId, workspaceId);
+        mindBankPipelineService.triggerAsync(docId);
+        log.info("文档 {} 已导入到 workspace {}，Pipeline 异步触发", docId, workspaceId);
     }
 
     // === 内部工具方法 ===

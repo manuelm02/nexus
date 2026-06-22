@@ -13,8 +13,8 @@ import java.util.List;
  * Mindbank 文档管理服务。
  *
  * 文档由 Crawl 阶段（CrawlService）创建并上传 MinIO 后挂载到 Workspace，
- * Phase 6.5 本服务只负责查询和重置流水线状态，Pipeline 实际执行在 Phase 6.6 接入
- * （届时本类的 retryStep 会改为调用 MindBankPipelineService.retryStep()）。
+ * 本服务负责查询和重置流水线状态。Pipeline 实际执行由 MindBankPipelineService 承担，
+ * Controller 层在调用 retryStep 后需另行调用 triggerAsync 触发异步重跑。
  */
 @Slf4j
 @Service
@@ -22,6 +22,7 @@ import java.util.List;
 public class MindBankDocumentService {
 
     private final MindBankDocumentMapper documentMapper;
+    private final MindBankPipelineService mindBankPipelineService;
 
     /**
      * 查询指定 workspace 下所有文档，按创建时间倒序。
@@ -48,7 +49,7 @@ public class MindBankDocumentService {
 
     /**
      * 重置指定步骤及后续步骤状态为 pending，清空错误信息，将 pipelineStatus 置为 processing。
-     * Phase 6.6 接入 Pipeline 后会改为同步调用 MindBankPipelineService.retryStep() 触发实际执行。
+     * Pipeline 实际重跑由 Controller 层调用 triggerAsync 触发（避免同类 @Async 自调用失效）。
      *
      * @param docId 文档 ID
      * @param step  1-5
@@ -62,18 +63,7 @@ public class MindBankDocumentService {
             throw new IllegalArgumentException("文档不存在: id=" + docId);
         }
 
-        // 重置 step 及后续所有步骤为 pending（包含 step 本身）
-        if (step <= 1) doc.setStep1Status("pending");
-        if (step <= 2) doc.setStep2Status("pending");
-        if (step <= 3) doc.setStep3Status("pending");
-        if (step <= 4) doc.setStep4Status("pending");
-        if (step <= 5) doc.setStep5Status("pending");
-
-        doc.setPipelineStatus("processing");
-        doc.setStepErrorMsg(null);
-        documentMapper.updateById(doc);
-
-        // TODO Phase 6.6: 调用 mindBankPipelineService.retryStep(docId, step) 触发实际执行
-        log.info("文档 {} 步骤 {} 及后续已重置为 pending（Pipeline 触发待 Phase 6.6）", docId, step);
+        mindBankPipelineService.retryStep(docId, step);
+        log.info("文档 {} 步骤 {} 及后续已重置为 pending，Pipeline 已触发", docId, step);
     }
 }
