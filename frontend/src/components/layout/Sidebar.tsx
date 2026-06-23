@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
   Target, Feather, Layers, Brain, Radio, FileText,
-  CreditCard, Hammer, Sparkles, Settings, Languages, LogOut,
+  LayoutDashboard, Hammer, Sparkles, Settings, Languages, LogOut,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { NAV_ITEMS } from '../../lib/constants'
@@ -10,7 +10,7 @@ import { BrandMark } from '../brand/BrandMark'
 
 const icons: Record<string, React.ComponentType<{ className?: string }>> = {
   Target, Feather, Layers, Brain, Radio, FileText,
-  CreditCard, Hammer, Sparkles, Settings, Languages,
+  LayoutDashboard, Hammer, Sparkles, Settings, Languages,
 }
 
 // Sidebar 展示桌面端主功能导航和底部系统入口。

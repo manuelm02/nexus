@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import * as Dialog from '@radix-ui/react-dialog'
 import {
-  Target, Feather, Layers, Brain, Radio, FileText, CreditCard, Hammer, Sparkles,
+  Target, Feather, Layers, Brain, Radio, FileText, LayoutDashboard, Hammer, Sparkles,
   Languages, LogOut, Menu, Settings, User, X,
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
@@ -11,7 +11,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { BrandMark } from '../brand/BrandMark'
 
 const icons: Record<string, React.ComponentType<{ className?: string }>> = {
-  Target, Feather, Layers, Brain, Radio, FileText, CreditCard, Hammer, Sparkles, Languages,
+  Target, Feather, Layers, Brain, Radio, FileText, LayoutDashboard, Hammer, Sparkles, Languages,
   LogOut, Menu, Settings, User,
 }
 

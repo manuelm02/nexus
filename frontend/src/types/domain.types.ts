@@ -120,14 +120,6 @@ export interface Subscription {
   notifyDaysBefore: number
   autoRenew: boolean
   archived: boolean
-  remainingBalance?: number
-  monthlySpend: number
-  lowBalanceNotify: boolean
-  lowBalanceThreshold?: number
-  apiProvider?: string
-  apiFetchEnabled: boolean
-  apiLastFetchedAt?: string
-  apiBalanceJson?: { is_available?: boolean; balance_infos?: Array<{ currency: string; total_balance: string; granted_balance: string; topped_up_balance: string }> } | null
   createdAt: string
   updatedAt: string
 }
@@ -163,6 +155,72 @@ export interface BalanceSnapshot {
   balance: number
   currency: string
   snapshottedAt: string
+}
+
+// ==================== Panel Hub 新增类型 ====================
+
+/** API Key 保险箱条目 */
+export interface ApiKey {
+  id: string
+  label: string
+  provider: string
+  maskedKey: string
+  baseUrl?: string
+  status: 'active' | 'exhausted' | 'disabled'
+  planName?: string
+  planExpireDate?: string
+  subscriptionId?: string
+  remainingBalance?: number
+  monthlySpend: number
+  lowBalanceNotify: boolean
+  lowBalanceThreshold?: number
+  apiFetchEnabled: boolean
+  apiLastFetchedAt?: string
+  apiBalanceJson?: Record<string, unknown> | null
+  notes?: string
+  archived: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+/** API Key 充值/消费流水条目 */
+export interface ApiKeyLedgerEntry {
+  id: string
+  apiKeyId: string
+  entryType: 'recharge' | 'consume'
+  amount: number
+  balanceAfter: number
+  note?: string
+  occurredOn: string
+  createdAt: string
+}
+
+/** API Key 余额快照 */
+export interface ApiKeyBalanceSnapshot {
+  id: string
+  apiKeyId: string
+  balance: number
+  currency: string
+  rawJson?: Record<string, unknown>
+  snapshottedAt: string
+}
+
+/** 账号凭证 */
+export interface Credential {
+  id: string
+  platform: string
+  label?: string
+  category?: string
+  username?: string
+  passwordSet: boolean
+  totpSet: boolean
+  url?: string
+  expireDate?: string
+  subscriptionId?: string
+  notes?: string
+  archived: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 /** 各币种兑 CNY 的实时汇率，CNY 自身固定为 1 */

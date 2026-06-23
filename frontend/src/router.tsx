@@ -12,7 +12,7 @@ const MindbankPage   = lazy(() => import('./pages/Mindbank'))
 const NotesPage      = lazy(() => import('./pages/Notes'))
 const CodingPracticePage = lazy(() => import('./pages/CodingPractice'))
 const TranslatePage  = lazy(() => import('./pages/Translate'))
-const SubscriptionsPage = lazy(() => import('./pages/Subscriptions'))
+const PanelHubPage = lazy(() => import('./pages/PanelHub'))
 const TasksPage      = lazy(() => import('./pages/Tasks'))
 const SettingsPage   = lazy(() => import('./pages/Settings'))
 const ProfilePage    = lazy(() => import('./pages/Profile'))
@@ -53,12 +53,13 @@ export const router = createBrowserRouter([
       { path: 'notes', element: <Wrap><NotesPage /></Wrap> },
       { path: 'coding-practice', element: <Wrap><CodingPracticePage /></Wrap> },
       { path: 'translate', element: <Wrap><TranslatePage /></Wrap> },
-      { path: 'subscriptions', element: <Wrap><SubscriptionsPage /></Wrap> },
+      { path: 'panel-hub', element: <Wrap><PanelHubPage /></Wrap> },
+      { path: 'subscriptions', element: <Wrap><PanelHubPage /></Wrap> },
       { path: 'focus', element: <Wrap><TodoPage /></Wrap> },
       { path: 'fleeting', element: <Wrap><InboxPage /></Wrap> },
       { path: 'prism', element: <Wrap><TranslatePage /></Wrap> },
       { path: 'radar', element: <Wrap><CrawlPage /></Wrap> },
-      { path: 'ledger', element: <Wrap><SubscriptionsPage /></Wrap> },
+      { path: 'ledger', element: <Wrap><PanelHubPage /></Wrap> },
       { path: 'forge', element: <Wrap><CodingPracticePage /></Wrap> },
       { path: 'muse', element: <Wrap><ChatPage /></Wrap> },
       { path: 'tasks',    element: <Wrap><TasksPage /></Wrap> },

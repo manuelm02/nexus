@@ -29,14 +29,6 @@ public class SubscriptionResponse {
     private int notifyDaysBefore;
     private boolean autoRenew;
     private boolean archived;
-    private BigDecimal remainingBalance;
-    private BigDecimal monthlySpend;
-    private boolean lowBalanceNotify;
-    private BigDecimal lowBalanceThreshold;
-    private String apiProvider;
-    private boolean apiFetchEnabled;
-    private LocalDateTime apiLastFetchedAt;
-    private Object apiBalanceJson;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -65,14 +57,6 @@ public class SubscriptionResponse {
         response.setNotifyDaysBefore(entity.getNotifyDaysBefore());
         response.setAutoRenew(entity.isAutoRenew());
         response.setArchived(entity.isArchived());
-        response.setRemainingBalance(entity.getRemainingBalance());
-        response.setMonthlySpend(entity.getMonthlySpend());
-        response.setLowBalanceNotify(entity.isLowBalanceNotify());
-        response.setLowBalanceThreshold(entity.getLowBalanceThreshold());
-        response.setApiProvider(entity.getApiProvider());
-        response.setApiFetchEnabled(entity.isApiFetchEnabled());
-        response.setApiLastFetchedAt(entity.getApiLastFetchedAt());
-        response.setApiBalanceJson(entity.getApiBalanceJson());
         response.setCreatedAt(entity.getCreatedAt());
         response.setUpdatedAt(entity.getUpdatedAt());
         return response;

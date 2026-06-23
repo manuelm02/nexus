@@ -1,10 +1,13 @@
 package com.nexus.scheduler;
 
+import com.nexus.entity.ApiKey;
+import com.nexus.entity.Credential;
 import com.nexus.entity.Subscription;
 import com.nexus.integration.notification.NotificationEvent;
 import com.nexus.integration.notification.NotificationService;
 import com.nexus.mapper.SubscriptionMapper;
-import com.nexus.dto.response.SubscriptionResponse;
+import com.nexus.service.ApiKeyService;
+import com.nexus.service.CredentialService;
 import com.nexus.service.ExchangeRateService;
 import com.nexus.service.SubscriptionService;
 import com.nexus.service.SystemConfigService;
@@ -18,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 定时扫描订阅到期状态、自动续费滚动、月初消费重置、低余额提醒、汇率刷新和 API 余额同步。
+ * 定时扫描订阅到期状态、自动续费滚动、汇率刷新、API Key 余额同步/低余额/月消费重置、凭证到期提醒。
  * 到期提醒目前只 Telegram；新增提醒渠道（微信/短信）只需新增实现 NotificationService 的 @Component。
  */
 @Slf4j
@@ -28,6 +31,8 @@ public class SubscriptionNotifyScheduler {
 
     private final SubscriptionMapper subscriptionMapper;
     private final SubscriptionService subscriptionService;
+    private final ApiKeyService apiKeyService;
+    private final CredentialService credentialService;
     private final SystemConfigService systemConfigService;
     private final List<NotificationService> notificationServices;
     private final ExchangeRateService exchangeRateService;
@@ -47,16 +52,16 @@ public class SubscriptionNotifyScheduler {
     }
 
     /**
-     * 每月 1 日 00:10 重置所有 per_token 类型订阅的当月消费。
+     * 每月 1 日 00:10 重置所有 API Key 的当月消费。
      */
     @Scheduled(cron = "0 10 0 1 * *")
     public void resetMonthlySpend() {
-        int affected = subscriptionService.resetMonthlySpend();
-        log.info("Subscription 月初消费重置完成，共 {} 条 per_token 订阅", affected);
+        int affected = apiKeyService.resetMonthlySpend();
+        log.info("API Key 月初消费重置完成，共 {} 条", affected);
     }
 
     /**
-     * 每天 00:20 强制刷新当前所有币种的汇率缓存，早于 00:30 的余额同步。
+     * 每天 00:20 强制刷新当前所有币种的汇率缓存。
      */
     @Scheduled(cron = "0 20 0 * * *")
     public void syncExchangeRates() {
@@ -65,12 +70,12 @@ public class SubscriptionNotifyScheduler {
     }
 
     /**
-     * 每天 00:30 同步所有开启自动余额监控的账户（DeepSeek 等），晚于汇率刷新任务。
+     * 每天 00:30 同步所有开启自动余额监控的 API Key（DeepSeek 等）。
      */
     @Scheduled(cron = "0 30 0 * * *")
     public void syncApiBalances() {
-        int success = subscriptionService.syncAllEnabledBalances();
-        log.info("Subscription API 余额同步完成，成功 {} 条", success);
+        int success = apiKeyService.syncAllEnabledBalances();
+        log.info("API Key 余额同步完成，成功 {} 条", success);
     }
 
     /**
@@ -101,18 +106,18 @@ public class SubscriptionNotifyScheduler {
     }
 
     /**
-     * 每天 09:00 检查按量订阅低余额并发送通知。
+     * 每天 09:00 检查 API Key 低余额并发送通知。
      */
     @Scheduled(cron = "0 0 9 * * *")
     public void checkLowBalance() {
-        List<SubscriptionResponse> lowBalance = subscriptionService.findLowBalance();
+        List<ApiKey> lowBalance = apiKeyService.findLowBalance();
         if (lowBalance.isEmpty()) return;
 
-        lowBalance.forEach(s -> {
+        lowBalance.forEach(k -> {
             Map<String, Object> payload = Map.of(
-                    "name", s.getName(),
-                    "remaining_balance", s.getRemainingBalance().toString(),
-                    "threshold", s.getLowBalanceThreshold().toString()
+                    "name", k.getLabel(),
+                    "remaining_balance", k.getRemainingBalance().toString(),
+                    "threshold", k.getLowBalanceThreshold().toString()
             );
             notificationServices.forEach(svc -> {
                 try {
@@ -122,6 +127,32 @@ public class SubscriptionNotifyScheduler {
                 }
             });
         });
-        log.info("Subscription 低余额提醒发送完成，共 {} 条", lowBalance.size());
+        log.info("API Key 低余额提醒发送完成，共 {} 条", lowBalance.size());
+    }
+
+    /**
+     * 每天 09:00 检查凭证到期（7 天内）并发送通知。
+     */
+    @Scheduled(cron = "0 0 9 * * *")
+    public void checkCredentialExpiry() {
+        List<Credential> expiring = credentialService.findExpiringPasswords(7);
+        if (expiring.isEmpty()) return;
+
+        expiring.forEach(c -> {
+            Map<String, Object> payload = Map.of(
+                    "platform", c.getPlatform(),
+                    "label", c.getLabel() != null ? c.getLabel() : c.getPlatform(),
+                    "expire_date", c.getExpireDate().toString(),
+                    "days_left", java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), c.getExpireDate())
+            );
+            notificationServices.forEach(svc -> {
+                try {
+                    svc.send(null, NotificationEvent.SUBSCRIPTION_EXPIRING, payload);
+                } catch (Exception e) {
+                    log.warn("发送凭证到期提醒失败 [{}]: {}", svc.channel(), e.getMessage());
+                }
+            });
+        });
+        log.info("凭证到期提醒发送完成，共 {} 条", expiring.size());
     }
 }
