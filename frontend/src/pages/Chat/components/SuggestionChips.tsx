@@ -9,13 +9,13 @@ type SuggestionChipsProps = {
 export function SuggestionChips({ suggestions, onSelect }: SuggestionChipsProps) {
   if (suggestions.length === 0) return null
   return (
-    <div className="flex gap-2 overflow-hidden whitespace-nowrap">
+    <div className="flex flex-wrap justify-center gap-2">
       {suggestions.slice(0, 4).map((s) => (
         <button
           key={s.text}
           type="button"
           onClick={() => onSelect(s.text)}
-          className="inline-flex shrink-0 items-center rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="inline-flex items-center rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-accent hover:text-foreground hover:shadow-[var(--shadow-xs)]"
         >
           {s.text}
         </button>
