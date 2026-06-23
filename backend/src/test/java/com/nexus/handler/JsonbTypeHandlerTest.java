@@ -1,7 +1,10 @@
 package com.nexus.handler;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableName;
 import com.nexus.entity.Bookmark;
+import com.nexus.entity.MindBankAgentStep;
+import com.nexus.entity.MindBankAgentSuggestion;
 import org.junit.jupiter.api.Test;
 
 import java.sql.PreparedStatement;
@@ -29,5 +32,23 @@ class JsonbTypeHandlerTest {
         TableField tableField = Bookmark.class.getDeclaredField("tags").getAnnotation(TableField.class);
 
         assertThat(tableField.typeHandler()).isEqualTo(JsonbTypeHandler.class);
+    }
+
+    @Test
+    void agentStepJsonbFieldsUseJsonbTypeHandler() throws Exception {
+        assertThat(MindBankAgentStep.class.getAnnotation(TableName.class).autoResultMap()).isTrue();
+        assertThat(MindBankAgentStep.class.getDeclaredField("toolInput").getAnnotation(TableField.class).typeHandler())
+                .isEqualTo(JsonbTypeHandler.class);
+        assertThat(MindBankAgentStep.class.getDeclaredField("toolOutput").getAnnotation(TableField.class).typeHandler())
+                .isEqualTo(JsonbTypeHandler.class);
+    }
+
+    @Test
+    void agentSuggestionJsonbFieldsUseJsonbTypeHandler() throws Exception {
+        assertThat(MindBankAgentSuggestion.class.getAnnotation(TableName.class).autoResultMap()).isTrue();
+        assertThat(MindBankAgentSuggestion.class.getDeclaredField("affectedNotes").getAnnotation(TableField.class).typeHandler())
+                .isEqualTo(JsonbTypeHandler.class);
+        assertThat(MindBankAgentSuggestion.class.getDeclaredField("proposedAction").getAnnotation(TableField.class).typeHandler())
+                .isEqualTo(JsonbTypeHandler.class);
     }
 }

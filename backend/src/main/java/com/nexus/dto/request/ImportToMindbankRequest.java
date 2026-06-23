@@ -10,4 +10,6 @@ public class ImportToMindbankRequest {
     private Long docId;
     @NotNull
     private Long workspaceId;
+    /** 可选：用户在导入弹窗指定的 Step 2 整理模板，空值时 Pipeline 使用当前默认模板。 */
+    private Long promptTemplateId;
 }

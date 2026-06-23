@@ -146,6 +146,45 @@ public class ObsidianNoteAdapter implements NotePort {
         }
     }
 
+    @Override
+    public void writeIndex(String subFolder, String content) {
+        Path indexPath = resolveSafePath(sanitizeSubFolder(subFolder) + "/" + INDEX_FILE);
+        try {
+            Files.createDirectories(indexPath.getParent());
+            // CREATE + TRUNCATE_EXISTING 等价于"覆盖写入"
+            Files.writeString(indexPath, content,
+                java.nio.file.StandardOpenOption.CREATE,
+                java.nio.file.StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            throw new RuntimeException("写入索引文件失败: " + indexPath, e);
+        }
+    }
+
+    @Override
+    public String archiveNote(String sourceRelativePath, String archiveFolder) {
+        Path source = resolveSafePath(sourceRelativePath);
+        if (!Files.exists(source)) {
+            throw new IllegalArgumentException("笔记不存在: " + sourceRelativePath);
+        }
+
+        String folder = sanitizeSubFolder(archiveFolder);
+        Path archiveDir = resolveSafePath(folder);
+        Path target = archiveDir.resolve(source.getFileName()).normalize();
+        Path vaultRoot = getVaultRoot();
+        if (!target.startsWith(vaultRoot)) {
+            throw new IllegalArgumentException("非法归档路径: " + archiveFolder);
+        }
+
+        try {
+            Files.createDirectories(archiveDir);
+            target = nextAvailableArchivePath(target);
+            Files.move(source, target);
+            return vaultRoot.relativize(target).toString().replace('\\', '/');
+        } catch (IOException e) {
+            throw new RuntimeException("归档笔记失败: " + sourceRelativePath, e);
+        }
+    }
+
     // === 内部工具方法 ===
 
     /**
@@ -189,6 +228,24 @@ public class ObsidianNoteAdapter implements NotePort {
             throw new IllegalArgumentException("subFolder 不能为空");
         }
         return subFolder.trim().replaceAll("^[/\\\\]+|[/\\\\]+$", "").replace('\\', '/');
+    }
+
+    /** 归档文件名冲突时追加序号后缀（-2、-3...），避免覆盖已有文件 */
+    private Path nextAvailableArchivePath(Path target) {
+        if (!Files.exists(target)) {
+            return target;
+        }
+        String name = target.getFileName().toString();
+        int dot = name.lastIndexOf('.');
+        String baseName = dot >= 0 ? name.substring(0, dot) : name;
+        String ext = dot >= 0 ? name.substring(dot) : "";
+        int suffix = 2;
+        Path candidate = target;
+        while (Files.exists(candidate)) {
+            candidate = target.getParent().resolve(baseName + "-" + suffix + ext);
+            suffix++;
+        }
+        return candidate;
     }
 
     /** 隐藏文件/目录过滤（以 . 开头） */

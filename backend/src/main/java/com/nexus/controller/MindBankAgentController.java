@@ -3,6 +3,7 @@ package com.nexus.controller;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nexus.dto.response.AgentTaskDetailResponse;
 import com.nexus.dto.response.ApiResponse;
+import com.nexus.dto.response.SuggestionExecuteResult;
 import com.nexus.entity.MindBankAgentStep;
 import com.nexus.entity.MindBankAgentSuggestion;
 import com.nexus.entity.MindBankAgentTask;
@@ -10,7 +11,9 @@ import com.nexus.mapper.MindBankAgentStepMapper;
 import com.nexus.mapper.MindBankAgentSuggestionMapper;
 import com.nexus.mapper.MindBankAgentTaskMapper;
 import com.nexus.service.MindBankInspectAgent;
+import com.nexus.service.MindBankSuggestionExecutor;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,13 +26,16 @@ import java.util.Map;
 /**
  * Mindbank Agent 管理接口。
  * 提供巡检触发、任务查询、建议审批功能，对应 Agent B 知识库巡检的完整 human-in-the-loop 流程。
+ * Phase 6-8：采纳按钮接入 MindBankSuggestionExecutor，真正执行建议操作。
  */
 @RestController
 @RequestMapping("/api/v1/mindbank/agent")
 @RequiredArgsConstructor
+@Slf4j
 public class MindBankAgentController {
 
     private final MindBankInspectAgent inspectAgent;
+    private final MindBankSuggestionExecutor suggestionExecutor;
     private final MindBankAgentTaskMapper taskMapper;
     private final MindBankAgentStepMapper stepMapper;
     private final MindBankAgentSuggestionMapper suggestionMapper;
@@ -69,14 +75,28 @@ public class MindBankAgentController {
         return ApiResponse.ok(new AgentTaskDetailResponse(task, steps, suggestions));
     }
 
-    /** 采纳建议，Phase 6.8 可接入根据 proposed_action 执行实际操作 */
+    /**
+     * 采纳建议并执行实际操作。Phase 6-8 接入 MindBankSuggestionExecutor，
+     * 执行成功将状态标记为 accepted 并返回结果描述；执行失败保留 pending 状态，用户可重试。
+     */
     @PostMapping("/suggestions/{id}/approve")
-    public ApiResponse<Void> approveSuggestion(@PathVariable Long id) {
+    public ApiResponse<SuggestionExecuteResult> approveSuggestion(@PathVariable Long id) {
         MindBankAgentSuggestion suggestion = suggestionMapper.selectById(id);
         if (suggestion == null) return ApiResponse.error("建议不存在");
-        suggestion.setStatus("accepted");
-        suggestionMapper.updateById(suggestion);
-        return ApiResponse.ok(null);
+        if (!"pending".equals(suggestion.getStatus())) {
+            return ApiResponse.error("该建议已被处理");
+        }
+
+        try {
+            String result = suggestionExecutor.execute(suggestion);
+            suggestion.setStatus("accepted");
+            suggestionMapper.updateById(suggestion);
+            return ApiResponse.ok(new SuggestionExecuteResult(true, result));
+        } catch (Exception e) {
+            log.error("执行建议失败 suggestionId={}: {}", id, e.getMessage(), e);
+            // 执行失败不改 status，用户可以重试
+            return ApiResponse.error("执行失败：" + e.getMessage());
+        }
     }
 
     /** 忽略建议 */

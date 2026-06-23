@@ -161,15 +161,19 @@ public class CrawlService {
     }
 
     /**
-     * 导入文件到 Workspace：更新 workspace_id，触发 Pipeline 异步处理。
-     * Pipeline 触发在 Phase 6.6 实现，本阶段预留方法签名，仅更新 workspace_id。
+     * 导入文件到 Workspace：更新 workspace_id 和可选 Prompt 模板，触发 Pipeline 异步处理。
+     *
+     * @param docId Crawl 文件对应的文档 ID
+     * @param workspaceId 目标 Mindbank Workspace ID
+     * @param promptTemplateId 可选 Step 2 整理模板 ID，空值时 Pipeline 使用默认模板
      */
-    public void importToWorkspace(Long docId, Long workspaceId) {
+    public void importToWorkspace(Long docId, Long workspaceId, Long promptTemplateId) {
         MindBankDocument doc = mindBankDocumentMapper.selectById(docId);
         if (doc == null) {
             throw new IllegalArgumentException("文档不存在: " + docId);
         }
         doc.setWorkspaceId(workspaceId);
+        doc.setPromptTemplateId(promptTemplateId);
         doc.setPipelineStatus("processing");
         mindBankDocumentMapper.updateById(doc);
         mindBankPipelineService.triggerAsync(docId);

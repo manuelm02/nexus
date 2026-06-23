@@ -11,9 +11,9 @@ import { MindBankMobileView } from './MindBankMobileView'
  * 视图层通过响应式 class 拆分到 MindBankDesktopView / MindBankMobileView。
  *
  * 当前阶段：
- * - 文件/入库 Tab：Workspace CRUD + 文档列表 + 5 步状态可视化（Pipeline 待 Phase 6.6）
- * - Q&A Tab：占位（Phase 6.6 接入）
- * - Agent 知识管家 Tab：已接入（Phase 6-6 巡检 + 建议 + 轨迹可视化）
+ * - 文件/入库 Tab：Workspace CRUD + 文档列表 + 5 步 Pipeline 状态可视化
+ * - Q&A Tab：支持普通 RAG 与 Agent 检索模式
+ * - Agent 知识管家 Tab：巡检 + 建议 + 轨迹可视化
  */
 export default function MindbankPage() {
   const qc = useQueryClient()

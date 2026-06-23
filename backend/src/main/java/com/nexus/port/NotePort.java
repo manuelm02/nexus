@@ -67,6 +67,24 @@ public interface NotePort {
     void appendIndex(String subFolder, String entry);
 
     /**
+     * 覆盖写入 {subFolder}/_index.md 完整内容，用于 fix_index 建议执行时修正索引。
+     * 文件不存在则创建，存在则截断后写入新内容。
+     *
+     * @param subFolder 相对 vault 根的子文件夹
+     * @param content   完整的索引 Markdown 内容
+     */
+    void writeIndex(String subFolder, String content);
+
+    /**
+     * 将 vault 内的笔记移动到归档目录。实现方必须校验 sourceRelativePath 不能逃逸 vault 根路径。
+     *
+     * @param sourceRelativePath vault 内相对路径
+     * @param archiveFolder      vault 内归档目录名，例如 "_archive"
+     * @return 归档后的 vault 内相对路径
+     */
+    String archiveNote(String sourceRelativePath, String archiveFolder);
+
+    /**
      * Obsidian 笔记元信息，用于 Agent 巡检判断。
      *
      * @param name         文件名（含扩展名）

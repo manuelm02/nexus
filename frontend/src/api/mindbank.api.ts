@@ -10,6 +10,9 @@ import type {
   UpdatePromptTemplateRequest,
   AgentTask,
   AgentTaskDetail,
+  SuggestionExecuteResult,
+  MasterNote,
+  SessionNote,
 } from '../types/mindbank.types'
 
 /**
@@ -59,13 +62,13 @@ export const mindbankApi = {
 
   /** 读取 Workspace 的 Master Note 内容 */
   getMasterNote: (workspaceId: number) =>
-    apiClient.get<ApiResponse<{ content: string | null; path: string | null; message: string | null }>>(
+    apiClient.get<ApiResponse<MasterNote>>(
       `/mindbank/workspaces/${workspaceId}/master-note`,
     ),
 
   /** 读取 Workspace 下所有 Session Note */
   getSessionNotes: (workspaceId: number) =>
-    apiClient.get<ApiResponse<{ content: string; path: string; date: string }[]>>(
+    apiClient.get<ApiResponse<SessionNote[]>>(
       `/mindbank/workspaces/${workspaceId}/session-notes`,
     ),
 
@@ -103,9 +106,9 @@ export const mindbankApi = {
   getAgentTaskDetail: (taskId: number) =>
     apiClient.get<ApiResponse<AgentTaskDetail>>(`/mindbank/agent/tasks/${taskId}`),
 
-  /** 采纳建议 */
+  /** 采纳建议并执行实际操作（Phase 6-8），返回执行结果描述 */
   approveSuggestion: (id: number) =>
-    apiClient.post<ApiResponse<void>>(`/mindbank/agent/suggestions/${id}/approve`),
+    apiClient.post<ApiResponse<SuggestionExecuteResult>>(`/mindbank/agent/suggestions/${id}/approve`),
 
   /** 忽略建议 */
   ignoreSuggestion: (id: number) =>

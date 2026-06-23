@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.nexus.handler.JsonbTypeHandler;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,7 +18,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@TableName("mindbank_agent_suggestions")
+@TableName(value = "mindbank_agent_suggestions", autoResultMap = true)
 public class MindBankAgentSuggestion {
     @TableId(type = IdType.AUTO)
     private Long id;
@@ -26,8 +27,10 @@ public class MindBankAgentSuggestion {
     private String suggestionType;
     private String description;
     /** 涉及的笔记/Workspace 名称列表，JSONB */
+    @TableField(typeHandler = JsonbTypeHandler.class)
     private String affectedNotes;
     /** 建议的具体操作，JSONB */
+    @TableField(typeHandler = JsonbTypeHandler.class)
     private String proposedAction;
     /** 审批状态：pending / accepted / ignored */
     private String status;
