@@ -153,7 +153,7 @@ public class MindBankPipelineService {
 
         if (!hasMasterNote) {
             // 首次导入：走原始单次 Prompt（organize_init 模板）
-            String promptTemplate = getDefaultPromptTemplate("organize_init");
+            String promptTemplate = getPromptTemplateForDocument(doc, "organize_init");
             String prompt = promptTemplate
                 .replace("{content}", newContent)
                 .replace("{source_url}", buildMinioUrl(doc.getOriginalMinioKey()))
@@ -164,7 +164,7 @@ public class MindBankPipelineService {
 
         } else if (newContent.length() < 1500) {
             // 简单材料：走原始单次 Prompt（organize_merge 模板）
-            String promptTemplate = getDefaultPromptTemplate("organize_merge");
+            String promptTemplate = getPromptTemplateForDocument(doc, "organize_merge");
             String prompt = promptTemplate
                 .replace("{master_note}", existingMaster)
                 .replace("{new_content}", newContent)
@@ -183,7 +183,7 @@ public class MindBankPipelineService {
             } catch (Exception e) {
                 // Agent A 失败时回退到单次 Prompt，不中断 Pipeline
                 log.warn("Agent A 失败，回退到单次 Prompt：{}", e.getMessage());
-                String promptTemplate = getDefaultPromptTemplate("organize_merge");
+                String promptTemplate = getPromptTemplateForDocument(doc, "organize_merge");
                 String prompt = promptTemplate
                     .replace("{master_note}", existingMaster)
                     .replace("{new_content}", newContent)
@@ -395,6 +395,21 @@ public class MindBankPipelineService {
             throw new IllegalStateException("未找到类型为 " + type + " 的 Prompt 模板，请在 Settings → Mindbank 中配置");
         }
         return template.getContent();
+    }
+
+    /**
+     * 获取文档指定的 Prompt 模板；模板类型必须匹配当前 Pipeline 分支。
+     * 用户可能在首次/融合两类模板中选错类型，类型不匹配时回退默认模板，避免一次导入配置错误阻断流水线。
+     */
+    private String getPromptTemplateForDocument(MindBankDocument doc, String type) {
+        if (doc.getPromptTemplateId() == null) {
+            return getDefaultPromptTemplate(type);
+        }
+        MindBankPromptTemplate template = promptTemplateMapper.selectById(doc.getPromptTemplateId());
+        if (template != null && type.equals(template.getPromptType())) {
+            return template.getContent();
+        }
+        return getDefaultPromptTemplate(type);
     }
 
     /** 构造 MinIO 文件完整 URL：{minio.url}/{bucket}/{key} */

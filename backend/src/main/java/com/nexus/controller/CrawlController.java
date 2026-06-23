@@ -61,7 +61,7 @@ public class CrawlController {
     /** 导入文件到 Mindbank Workspace，触发 Pipeline 异步处理 */
     @PostMapping("/import")
     public ApiResponse<Void> importToMindbank(@RequestBody ImportToMindbankRequest req) {
-        crawlService.importToWorkspace(req.getDocId(), req.getWorkspaceId());
+        crawlService.importToWorkspace(req.getDocId(), req.getWorkspaceId(), req.getPromptTemplateId());
         return ApiResponse.ok();
     }
 }

@@ -1,18 +1,17 @@
-import type { AgentSuggestion } from '../../../types/mindbank.types'
+import type { AgentSuggestion, SuggestionExecuteResult } from '../../../types/mindbank.types'
 import { SuggestionCard } from './SuggestionCard'
 
 // InspectionReport 巡检报告组件：展示 Agent 建议卡片列表，支持逐条采纳或忽略。
+// Phase 6-8：onApprove 改为异步，返回 SuggestionExecuteResult 供 SuggestionCard 展示执行结果。
 export function InspectionReport({
   suggestions,
   onApprove,
   onIgnore,
-  approvingId,
   ignoringId,
 }: {
   suggestions: AgentSuggestion[]
-  onApprove: (id: number) => void
+  onApprove: (id: number) => Promise<SuggestionExecuteResult>
   onIgnore: (id: number) => void
-  approvingId: number | null
   ignoringId: number | null
 }) {
   if (suggestions.length === 0) {
@@ -29,9 +28,8 @@ export function InspectionReport({
         <SuggestionCard
           key={s.id}
           suggestion={s}
-          onApprove={() => onApprove(s.id)}
-          onIgnore={() => onIgnore(s.id)}
-          isApproving={approvingId === s.id}
+          onApprove={onApprove}
+          onIgnore={onIgnore}
           isIgnoring={ignoringId === s.id}
         />
       ))}

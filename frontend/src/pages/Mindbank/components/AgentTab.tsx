@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Brain, Loader2, ChevronDown, ChevronRight, History } from 'lucide-react'
 import { mindbankApi } from '../../../api/mindbank.api'
-import type { AgentTask, AgentTaskDetail } from '../../../types/mindbank.types'
+import type { AgentTask, AgentTaskDetail, SuggestionExecuteResult } from '../../../types/mindbank.types'
 import { InspectionReport } from './InspectionReport'
 import { AgentTraceView } from './AgentTraceView'
 import { InspectionHistory } from './InspectionHistory'
@@ -16,7 +16,6 @@ export function AgentTab() {
   const qc = useQueryClient()
   const [selectedTaskId, setSelectedTaskId] = useState<number | null>(null)
   const [traceExpanded, setTraceExpanded] = useState(false)
-  const [approvingId, setApprovingId] = useState<number | null>(null)
   const [ignoringId, setIgnoringId] = useState<number | null>(null)
 
   // ==================== 查询：巡检任务列表 ====================
@@ -86,15 +85,20 @@ export function AgentTab() {
   })
 
   // ==================== Mutation：采纳/忽略建议 ====================
+  // 采纳改为异步，等待 SuggestionExecuteResult 返回给 SuggestionCard 展示
   const approveMutation = useMutation({
     mutationFn: (id: number) => mindbankApi.approveSuggestion(id),
-    onMutate: (id) => setApprovingId(id),
     onSuccess: () => {
-      setApprovingId(null)
       qc.invalidateQueries({ queryKey: ['mindbank', 'agent', 'task', selectedTaskId] })
     },
-    onError: () => setApprovingId(null),
   })
+
+  const handleApprove = async (id: number): Promise<SuggestionExecuteResult> => {
+    const res = await approveMutation.mutateAsync(id)
+    const result = res.data.data
+    if (!result) throw new Error('服务器未返回执行结果')
+    return result
+  }
 
   const ignoreMutation = useMutation({
     mutationFn: (id: number) => mindbankApi.ignoreSuggestion(id),
@@ -168,9 +172,8 @@ export function AgentTab() {
               </h3>
               <InspectionReport
                 suggestions={taskDetail.suggestions}
-                onApprove={(id) => approveMutation.mutate(id)}
+                onApprove={handleApprove}
                 onIgnore={(id) => ignoreMutation.mutate(id)}
-                approvingId={approvingId}
                 ignoringId={ignoringId}
               />
             </div>

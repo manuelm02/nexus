@@ -203,6 +203,12 @@ export interface AgentSuggestion {
   createdAt: string
 }
 
+/** 巡检建议执行结果（Phase 6-8） */
+export interface SuggestionExecuteResult {
+  success: boolean
+  message: string
+}
+
 /** Agent 任务详情（含步骤轨迹和建议列表） */
 export interface AgentTaskDetail {
   task: AgentTask
@@ -226,4 +232,20 @@ export const SUGGESTION_TYPE_COLORS: Record<SuggestionType, string> = {
   resplit_workspace: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-500',
   fix_index: 'bg-purple-500/15 text-purple-600 dark:text-purple-500',
   orphan_note: 'bg-gray-500/15 text-gray-600 dark:text-gray-400',
+}
+
+// ==================== Notes（Phase 6 closeout: Master Note / Session Note UI） ====================
+
+/** Workspace Master Note 响应 */
+export interface MasterNote {
+  content: string | null
+  path: string | null
+  message: string | null
+}
+
+/** Workspace Session Note 响应 */
+export interface SessionNote {
+  content: string
+  path: string
+  date: string
 }

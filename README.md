@@ -41,8 +41,9 @@
 | **Settings** | `/settings` | 集成设置：LLM 提供商、工作流模型、Inbox / Mindbank / Crawl / Notes | ✅ 已落地 |
 | **Profile** | `/profile` | 用户个人资料、退出登录 | ✅ 已落地 |
 | **CodingPractice** | `/coding-practice` | 编程练习记录（早期模块，保留） | ✅ 已落地 |
-| **Mindbank Agent 层** | — | 双层架构 Phase 6-6~6-8：知识库巡检 Agent、融合自检、检索增强、巡检建议自动执行 | 🚧 规划中 |
+| **Mindbank Agent 层** | — | 双层架构 Phase 6-6~6-8：知识库巡检 Agent、融合自检、检索增强、巡检建议自动执行 | ✅ 已落地 |
 | **Panel Hub** | — | Phase 7：API Keys + Credentials 统一凭据管理面板 | 🚧 规划中 |
+
 
 > **旧命名兼容**：早期模块曾命名为 `Focus` / `Prism` / `Ledger` / `Fleeting` / `Muse` / `Radar` / `Forge`。这些名称仅作为路由别名（如 `/focus` → ToDo）和数据库迁移兼容保留，当前展示统一使用上表新命名。
 
@@ -97,8 +98,8 @@
 ```
 controller/    REST 入口（16 个 Controller）
 service/       业务逻辑
-port/          抽象接口（NotePort / StoragePort / KnowledgeBasePort / WebCrawlerPort / MindBankPort）
-adapter/       Port 的具体实现（爬虫 / 笔记 / 存储 / Mindbank）
+port/          抽象接口（NotePort / StoragePort / KnowledgeBasePort / WebCrawlerPort）
+adapter/       Port 的具体实现（爬虫 / 笔记 / 存储）
 integration/   第三方客户端（anythingllm / crawl4ai / markitdown / minio / llm / balance / exchange / notification）
 mapper/        MyBatis-Plus 数据访问
 entity/        数据库实体
@@ -317,10 +318,13 @@ nexus/
 | Phase 5 | Chat 日常问答 | ✅ |
 | Phase 6-1~6-3 | Mindbank 基础设施 + Settings/Crawl + Notes 页面 | ✅ |
 | Phase 6-4~6-5 | Port 抽象层、Workspace/文档管理 UI、5 步 Pipeline、Q&A、Prompt 模板（Layer 1 闭环） | ✅ |
-| Phase 6-6~6-8 | Mindbank Agent 双层架构：知识库巡检 Agent、融合自检、检索增强、巡检建议自动执行（Layer 2） | 🚧 规划中 |
+| Phase 6-6~6-8 | Mindbank Agent 双层架构：知识库巡检 Agent、融合自检、检索增强、巡检建议自动执行（Layer 2） | ✅ |
 | Phase 7 | Panel Hub：API Keys + Credentials 统一凭据管理 | 🚧 规划中 |
 
+
 > **状态说明**：上表按**代码真实状态**标注。`.planning/.../task_plan.md` 中 Phase 6-4/6-5 仍标为未完成，但对应 Controller 与迁移（V1_17~V1_19、MindBank 四个 Controller）已落地，故按已完成处理。
+>
+> **Phase 6 closeout 已补齐**：Agent JSONB 映射、Master/Session Note 前端查看入口、orphan note 归档 Port 化。
 
 **规划文档**：
 - `.planning/2026-06-09-product-roadmap/task_plan.md` — 唯一阶段计划

@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as Dialog from '@radix-ui/react-dialog'
 import { X, Search, Upload, AlertCircle, Loader2, FileText, Globe, Calendar } from 'lucide-react'
 import { apiClient } from '../../../api/client'
+import { mindbankApi } from '../../../api/mindbank.api'
 import type { ApiResponse } from '../../../types/api.types'
-import type { MindBankDocument } from '../../../types/mindbank.types'
+import { PROMPT_TYPE_LABELS, type MindBankDocument, type PromptTemplate } from '../../../types/mindbank.types'
 import { formatRelative } from '../../../lib/utils'
 
 // MinioFilePicker 弹窗：选择 Crawl 已上传但未导入的 MinIO 文件，批量导入到当前 workspace。
@@ -22,8 +23,9 @@ export function MinioFilePicker({
   const qc = useQueryClient()
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
+  const [promptTemplateId, setPromptTemplateId] = useState('')
 
-  // 拉取未分配文件
+  // 拉取未分配文件，弹窗关闭时暂停请求，避免页面常驻时反复刷新 Crawl 列表。
   const filesQuery = useQuery({
     queryKey: ['crawl', 'files', 'unassigned'],
     queryFn: async () => {
@@ -33,14 +35,31 @@ export function MinioFilePicker({
     enabled: open,
   })
 
-  // 导入 mutation
+  // 只展示 Step 2 整理相关模板；未选择时后端仍按当前默认模板自动分支。
+  const promptTemplatesQuery = useQuery({
+    queryKey: ['mindbank', 'prompt-templates', 'organize'],
+    queryFn: async () => {
+      const res = await mindbankApi.listPromptTemplates()
+      return (res.data.data ?? []).filter((template) =>
+        template.promptType === 'organize_init' || template.promptType === 'organize_merge',
+      )
+    },
+    enabled: open,
+  })
+
+  // 导入 mutation：可选 promptTemplateId 仅影响 Pipeline Step 2，空值表示使用默认模板。
   const importMutation = useMutation({
     mutationFn: async (docIds: number[]) => {
       // 后端单条 import 端点：POST /crawl/import { docId, workspaceId }
       // 批量通过 Promise.all 并发请求，单条失败不阻断其他
+      const selectedPromptTemplateId = promptTemplateId ? Number(promptTemplateId) : null
       const results = await Promise.allSettled(
         docIds.map((docId) =>
-          apiClient.post<ApiResponse<void>>('/crawl/import', { docId, workspaceId }),
+          apiClient.post<ApiResponse<void>>('/crawl/import', {
+            docId,
+            workspaceId,
+            promptTemplateId: selectedPromptTemplateId,
+          }),
         ),
       )
       const failed = results.filter((r) => r.status === 'rejected').length
@@ -86,6 +105,7 @@ export function MinioFilePicker({
           onClose()
           setSelectedIds(new Set())
           setSearchQuery('')
+          setPromptTemplateId('')
         }
       }}
     >
@@ -118,14 +138,21 @@ export function MinioFilePicker({
                 整理 Prompt 模板
               </label>
               <select
-                disabled
-                className="nexus-input h-9 w-full cursor-not-allowed rounded-lg bg-muted/50 px-3 text-xs text-muted-foreground"
-                title="待 Phase 6.6 接入"
+                value={promptTemplateId}
+                onChange={(e) => setPromptTemplateId(e.target.value)}
+                disabled={promptTemplatesQuery.isLoading}
+                className="nexus-input h-9 w-full rounded-lg px-3 text-xs font-semibold"
               >
-                <option>系统默认（待 Phase 6.6 接入）</option>
+                <option value="">自动使用默认模板</option>
+                {(promptTemplatesQuery.data ?? []).map((template: PromptTemplate) => (
+                  <option key={template.id} value={template.id}>
+                    {PROMPT_TYPE_LABELS[template.promptType]} · {template.name}
+                    {template.defaultFlag ? '（默认）' : ''}
+                  </option>
+                ))}
               </select>
               <p className="mt-1 text-[10px] text-muted-foreground">
-                Prompt 模板管理在 Phase 6.6 启用，当前使用系统默认模板。
+                未选择时按默认模板处理；首次导入使用初始整理，已有 Master Note 时使用融合更新。
               </p>
             </div>
           </div>
