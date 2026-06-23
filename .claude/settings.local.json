@@ -25,7 +25,9 @@
       "Bash(echo \"EXIT=$?\")",
       "Bash(mvn -q test -Dtest=NoteTagReorganizeServiceTest,InboxControllerTest,ObsidianMarkdownWriterTest,NoteAiServiceTest)",
       "Bash(xargs -I{} sh -c 'echo === {} ===; cat {}')",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git log *)",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
     ]
   },
   "enabledPlugins": {

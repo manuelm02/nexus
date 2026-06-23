@@ -7,7 +7,7 @@ export const NAV_ITEMS = [
   { path: '/mindbank',        label: 'Mindbank',        icon: 'Brain'     },
   { path: '/coding-practice', label: 'Coding Practice', icon: 'Hammer'    },
   { path: '/translate',       label: 'Translate',       icon: 'Languages' },
-  { path: '/subscriptions',   label: 'Subscriptions',   icon: 'CreditCard'},
+  { path: '/panel-hub',      label: 'Panel Hub',        icon: 'LayoutDashboard'},
 ] as const
 
 export const PRIORITY_LABELS: Record<string, string> = {
@@ -27,7 +27,6 @@ export const STATUS_LABELS: Record<string, string> = {
 export const BILLING_TYPE_LABELS: Record<string, string> = {
   monthly:  '按月',
   yearly:   '按年',
-  per_token:'按量',
   lifetime: '买断',
   one_time: '一次性',
 }

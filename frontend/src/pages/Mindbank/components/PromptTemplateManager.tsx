@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Pencil, Trash2, Star, ChevronDown, Loader2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Star, ChevronDown, Loader2, Check } from 'lucide-react'
+import * as Select from '@radix-ui/react-select'
 import { mindbankApi } from '../../../api/mindbank.api'
 import type {
   PromptTemplate,
@@ -332,15 +333,26 @@ function TemplateCreateDialog({
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-muted-foreground">类型</label>
-            <select
-              value={promptType}
-              onChange={(e) => setPromptType(e.target.value as PromptType)}
-              className="nexus-input h-9 w-full px-3 text-sm"
-            >
-              {(Object.keys(PROMPT_TYPE_LABELS) as PromptType[]).map((t) => (
-                <option key={t} value={t}>{PROMPT_TYPE_LABELS[t]}</option>
-              ))}
-            </select>
+            <Select.Root value={promptType} onValueChange={(v) => setPromptType(v as PromptType)}>
+              <Select.Trigger className="nexus-input inline-flex h-9 w-full items-center justify-between gap-2 px-3 text-sm font-semibold shadow-none focus:outline-none focus:ring-2 focus:ring-ring">
+                <Select.Value />
+                <Select.Icon><ChevronDown className="h-4 w-4 text-muted-foreground" /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Content position="popper" sideOffset={6} className="z-[90] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg">
+                  <Select.Viewport>
+                    {(Object.keys(PROMPT_TYPE_LABELS) as PromptType[]).map((t) => (
+                      <Select.Item key={t} value={t} className="relative flex h-9 cursor-default select-none items-center rounded-md px-8 text-sm font-semibold outline-none data-[highlighted]:bg-accent">
+                        <Select.ItemIndicator className="absolute left-2 flex h-4 w-4 items-center justify-center text-primary">
+                          <Check className="h-3.5 w-3.5" />
+                        </Select.ItemIndicator>
+                        <Select.ItemText>{PROMPT_TYPE_LABELS[t]}</Select.ItemText>
+                      </Select.Item>
+                    ))}
+                  </Select.Viewport>
+                </Select.Content>
+              </Select.Portal>
+            </Select.Root>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-muted-foreground">内容</label>

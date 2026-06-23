@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as Dialog from '@radix-ui/react-dialog'
-import { X, Search, Upload, AlertCircle, Loader2, FileText, Globe, Calendar } from 'lucide-react'
+import * as Select from '@radix-ui/react-select'
+import { X, Search, Upload, AlertCircle, Loader2, FileText, Globe, Calendar, Check, ChevronDown } from 'lucide-react'
 import { apiClient } from '../../../api/client'
 import { mindbankApi } from '../../../api/mindbank.api'
 import type { ApiResponse } from '../../../types/api.types'
@@ -137,20 +138,32 @@ export function MinioFilePicker({
               <label className="mb-1 block text-[11px] font-bold text-muted-foreground">
                 整理 Prompt 模板
               </label>
-              <select
-                value={promptTemplateId}
-                onChange={(e) => setPromptTemplateId(e.target.value)}
-                disabled={promptTemplatesQuery.isLoading}
-                className="nexus-input h-9 w-full rounded-lg px-3 text-xs font-semibold"
-              >
-                <option value="">自动使用默认模板</option>
-                {(promptTemplatesQuery.data ?? []).map((template: PromptTemplate) => (
-                  <option key={template.id} value={template.id}>
-                    {PROMPT_TYPE_LABELS[template.promptType]} · {template.name}
-                    {template.defaultFlag ? '（默认）' : ''}
-                  </option>
-                ))}
-              </select>
+              <Select.Root value={promptTemplateId || '__default__'} onValueChange={(v) => setPromptTemplateId(v === '__default__' ? '' : v)}>
+                <Select.Trigger className="nexus-input inline-flex h-9 w-full items-center justify-between gap-2 rounded-lg px-3 text-xs font-semibold shadow-none focus:outline-none focus:ring-2 focus:ring-ring" disabled={promptTemplatesQuery.isLoading}>
+                  <Select.Value placeholder="自动使用默认模板" />
+                  <Select.Icon><ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></Select.Icon>
+                </Select.Trigger>
+                <Select.Portal>
+                  <Select.Content position="popper" sideOffset={6} className="z-[90] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg">
+                    <Select.Viewport>
+                      <Select.Item value="__default__" className="relative flex h-9 cursor-default select-none items-center rounded-md px-8 text-xs font-semibold outline-none data-[highlighted]:bg-accent">
+                        <Select.ItemIndicator className="absolute left-2 flex h-4 w-4 items-center justify-center text-primary">
+                          <Check className="h-3.5 w-3.5" />
+                        </Select.ItemIndicator>
+                        <Select.ItemText>自动使用默认模板</Select.ItemText>
+                      </Select.Item>
+                      {(promptTemplatesQuery.data ?? []).map((template: PromptTemplate) => (
+                        <Select.Item key={template.id} value={template.id.toString()} className="relative flex h-9 cursor-default select-none items-center rounded-md px-8 text-xs font-semibold outline-none data-[highlighted]:bg-accent">
+                          <Select.ItemIndicator className="absolute left-2 flex h-4 w-4 items-center justify-center text-primary">
+                            <Check className="h-3.5 w-3.5" />
+                          </Select.ItemIndicator>
+                          <Select.ItemText>{PROMPT_TYPE_LABELS[template.promptType]} · {template.name}{template.defaultFlag ? '（默认）' : ''}</Select.ItemText>
+                        </Select.Item>
+                      ))}
+                    </Select.Viewport>
+                  </Select.Content>
+                </Select.Portal>
+              </Select.Root>
               <p className="mt-1 text-[10px] text-muted-foreground">
                 未选择时按默认模板处理；首次导入使用初始整理，已有 Master Note 时使用融合更新。
               </p>

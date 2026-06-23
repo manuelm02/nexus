@@ -1,14 +1,10 @@
 package com.nexus.controller;
 
 import com.nexus.dto.request.SubscriptionCategorySuggestRequest;
-import com.nexus.dto.request.SubscriptionConsumeRequest;
 import com.nexus.dto.request.SubscriptionCreateRequest;
-import com.nexus.dto.request.SubscriptionRechargeRequest;
 import com.nexus.dto.request.SubscriptionUpdateRequest;
 import com.nexus.dto.request.SubscriptionUsageRequest;
 import com.nexus.dto.response.ApiResponse;
-import com.nexus.dto.response.BalanceSnapshotResponse;
-import com.nexus.dto.response.LedgerEntryResponse;
 import com.nexus.dto.response.SubscriptionResponse;
 import com.nexus.dto.response.SubscriptionStatsResponse;
 import com.nexus.dto.response.SubscriptionCategorySuggestResponse;
@@ -83,39 +79,5 @@ public class SubscriptionController {
     public ApiResponse<SubscriptionResponse> updateUsage(@PathVariable String id,
                                                           @Valid @RequestBody SubscriptionUsageRequest req) {
         return ApiResponse.ok(subscriptionService.updateUsage(id, req));
-    }
-
-    /** 按量订阅充值：余额累加，充值记录头插。 */
-    @PostMapping("/{id}/recharge")
-    public ApiResponse<SubscriptionResponse> recharge(@PathVariable String id,
-                                                       @Valid @RequestBody SubscriptionRechargeRequest req) {
-        return ApiResponse.ok(subscriptionService.recharge(id, req));
-    }
-
-    /** 按量订阅消费记录：余额扣减，月消费累加。 */
-    @PostMapping("/{id}/consume")
-    public ApiResponse<SubscriptionResponse> consume(@PathVariable String id,
-                                                      @Valid @RequestBody SubscriptionConsumeRequest req) {
-        return ApiResponse.ok(subscriptionService.consume(id, req));
-    }
-
-    /** 按量订阅流水：最近 N 条充值/消费记录，按时间倒序。 */
-    @GetMapping("/{id}/ledger")
-    public ApiResponse<List<LedgerEntryResponse>> ledger(@PathVariable String id,
-                                                          @RequestParam(defaultValue = "20") int limit) {
-        return ApiResponse.ok(subscriptionService.getLedger(id, limit));
-    }
-
-    /** 手动刷新 API 余额（仅 apiFetchEnabled=true 的账户）。 */
-    @PostMapping("/{id}/sync-balance")
-    public ApiResponse<SubscriptionResponse> syncBalance(@PathVariable String id) {
-        return ApiResponse.ok(subscriptionService.syncBalance(id));
-    }
-
-    /** 余额历史快照，默认最近 30 天，用于卡片内迷你趋势图。 */
-    @GetMapping("/{id}/balance-history")
-    public ApiResponse<List<BalanceSnapshotResponse>> balanceHistory(@PathVariable String id,
-                                                                       @RequestParam(defaultValue = "30") int days) {
-        return ApiResponse.ok(subscriptionService.getBalanceHistory(id, days));
     }
 }

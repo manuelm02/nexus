@@ -26,13 +26,4 @@ public class SubscriptionCreateRequest {
     private int notifyDaysBefore = 7;
     private boolean autoRenew;
     private boolean archived;
-    private BigDecimal remainingBalance;
-    private boolean lowBalanceNotify;
-    private BigDecimal lowBalanceThreshold;
-
-    /** 余额自动监控的 Provider 标识，目前仅支持 "deepseek"；为空表示不开启自动监控 */
-    private String apiProvider;
-
-    /** 创建时一次性传入的明文 API Key，仅在 apiProvider 非空时使用，落库前会加密 */
-    private String apiKey;
 }
