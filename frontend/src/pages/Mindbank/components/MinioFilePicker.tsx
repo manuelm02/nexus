@@ -7,14 +7,7 @@ import type { ApiResponse } from '../../../types/api.types'
 import type { MindBankDocument } from '../../../types/mindbank.types'
 import { formatRelative } from '../../../lib/utils'
 
-/**
- * MinioFilePicker 弹窗：选择 Crawl 已上传但未导入的 MinIO 文件，触发导入到当前 workspace。
- *
- * 数据源：GET /api/v1/crawl/files（后端返回 workspace_id IS NULL 的文档）。
- * 行为：用户勾选若干文件 → 点击"开始处理" → POST /api/v1/crawl/import 批量导入。
- *
- * Prompt 模板下拉本阶段不接（后端接口未实现），用占位文字 + disabled 状态标注"待 Phase 6.6"。
- */
+// MinioFilePicker 弹窗：选择 Crawl 已上传但未导入的 MinIO 文件，批量导入到当前 workspace。
 export function MinioFilePicker({
   open,
   workspaceId,

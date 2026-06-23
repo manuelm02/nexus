@@ -18,8 +18,6 @@ public class Todo {
     private LocalDate scheduledDate;
     private LocalDate dueDate;
     private String taskId;
-    private String notionPageUrl;
-    private boolean notionSynced;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(fill = FieldFill.INSERT_UPDATE)

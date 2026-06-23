@@ -4,6 +4,7 @@ import type { ComponentPropsWithoutRef, ElementRef } from 'react'
 import { forwardRef } from 'react'
 import { cn } from '../../lib/utils'
 
+// Select 基于 Radix UI 封装的统一下拉选择组件，导出 Select / SelectTrigger / SelectContent / SelectItem。
 export const Select = SelectPrimitive.Root
 export const SelectValue = SelectPrimitive.Value
 

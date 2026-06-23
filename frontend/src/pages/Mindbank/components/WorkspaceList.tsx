@@ -4,11 +4,7 @@ import * as Popover from '@radix-ui/react-popover'
 import { cn } from '../../../lib/utils'
 import type { Workspace } from '../../../types/mindbank.types'
 
-/**
- * WorkspaceList 桌面端左栏，按 domainTag 分组展示 Workspace。
- * 同一 domainTag 归入同一分组下，无 domainTag 的归入"未分组"分组。
- * 选中 workspace 高亮，hover 显示编辑/删除按钮（删除走 Popover 二次确认）。
- */
+// WorkspaceList 桌面端左栏 Workspace 列表，按 domainTag 分组展示，选中高亮，hover 显示编辑/删除操作。
 export function WorkspaceList({
   workspaces,
   selectedId,

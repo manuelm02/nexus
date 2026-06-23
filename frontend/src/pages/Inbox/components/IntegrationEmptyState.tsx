@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react'
 
-/** 外部集成未配置时的面板内空状态提示，不阻塞应用启动。 */
+// IntegrationEmptyState 外部集成未配置时的面板内空状态提示，不阻塞应用启动。
 export function IntegrationEmptyState({
   serviceName,
   description,

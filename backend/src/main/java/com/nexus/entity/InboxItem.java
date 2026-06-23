@@ -17,8 +17,6 @@ public class InboxItem {
     @TableField(typeHandler = JacksonTypeHandler.class)
     private List<String> tags;
     private String taskId;
-    private String notionPageUrl;
-    private boolean notionSynced;
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createdAt;
     @TableField(fill = FieldFill.INSERT_UPDATE)

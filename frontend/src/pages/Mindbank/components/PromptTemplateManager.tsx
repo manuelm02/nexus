@@ -10,10 +10,7 @@ import type {
 import { PROMPT_TYPE_LABELS, PROMPT_TYPE_VARIABLES } from '../../../types/mindbank.types'
 import { cn } from '../../../lib/utils'
 
-/**
- * Prompt 模板管理组件：按 promptType 分组展示，内置模板不可编辑/删除，自定义模板支持 CRUD。
- * 嵌入 MindBankSettingsPanel 底部。
- */
+// PromptTemplateManager Prompt 模板管理组件：按 promptType 分组展示，支持自定义模板 CRUD。
 export function PromptTemplateManager() {
   const qc = useQueryClient()
   const [editingTemplate, setEditingTemplate] = useState<PromptTemplate | null>(null)

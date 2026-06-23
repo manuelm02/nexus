@@ -103,6 +103,10 @@ export interface QaMessage {
   role: QaMessageRole
   content: string
   sources?: string[]
+  /** Agent 模式返回的 task ID，用于展开执行轨迹 */
+  agentTaskId?: number
+  /** 是否为 Agent 模式的回答 */
+  agentMode?: boolean
 }
 
 /** Prompt 模板类型 */
@@ -149,4 +153,77 @@ export const PROMPT_TYPE_VARIABLES: Record<PromptType, string[]> = {
   organize_merge: ['{master_note}', '{new_content}', '{document_name}', '{timestamp}', '{workspace_name}'],
   session_note: ['{content}', '{document_name}', '{date}', '{workspace_name}', '{source_url}', '{master_note_path}'],
   classify_folder: ['{existing_folders}', '{workspace_name}', '{domain_tag}', '{summary}'],
+}
+
+// ==================== Agent（Phase 6-6） ====================
+
+/** Agent 任务状态 */
+export type AgentTaskStatus = 'pending' | 'running' | 'awaiting_approval' | 'done' | 'failed'
+
+/** Agent 任务记录 */
+export interface AgentTask {
+  id: number
+  agentType: string
+  triggerType: string
+  status: AgentTaskStatus
+  workspaceId: number | null
+  summary: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Agent 执行步骤（轨迹可视化用） */
+export interface AgentStep {
+  id: number
+  stepIndex: number
+  thought: string | null
+  toolCalled: string | null
+  toolInput: string | null
+  toolOutput: string | null
+  createdAt: string
+}
+
+/** 建议类型 */
+export type SuggestionType = 'split_note' | 'merge_workspace' | 'resplit_workspace' | 'fix_index' | 'orphan_note'
+
+/** 建议审批状态 */
+export type SuggestionStatus = 'pending' | 'accepted' | 'ignored'
+
+/** Agent 巡检建议 */
+export interface AgentSuggestion {
+  id: number
+  taskId: number
+  suggestionType: SuggestionType
+  description: string
+  /** JSON 字符串，解析后为涉及的笔记/Workspace 名称列表 */
+  affectedNotes: string
+  /** JSON 字符串，解析后为建议的具体操作 */
+  proposedAction: string
+  status: SuggestionStatus
+  createdAt: string
+}
+
+/** Agent 任务详情（含步骤轨迹和建议列表） */
+export interface AgentTaskDetail {
+  task: AgentTask
+  steps: AgentStep[]
+  suggestions: AgentSuggestion[]
+}
+
+/** 建议类型中文映射 */
+export const SUGGESTION_TYPE_LABELS: Record<SuggestionType, string> = {
+  split_note: '建议拆分',
+  merge_workspace: '建议合并',
+  resplit_workspace: '建议重新切分',
+  fix_index: '索引修正',
+  orphan_note: '孤立笔记',
+}
+
+/** 建议类型对应的 chip 颜色（Tailwind class） */
+export const SUGGESTION_TYPE_COLORS: Record<SuggestionType, string> = {
+  split_note: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-500',
+  merge_workspace: 'bg-blue-500/15 text-blue-600 dark:text-blue-500',
+  resplit_workspace: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-500',
+  fix_index: 'bg-purple-500/15 text-purple-600 dark:text-purple-500',
+  orphan_note: 'bg-gray-500/15 text-gray-600 dark:text-gray-400',
 }

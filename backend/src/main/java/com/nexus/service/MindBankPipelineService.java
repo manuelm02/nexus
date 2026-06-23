@@ -52,6 +52,7 @@ public class MindBankPipelineService {
     private final MindBankWorkspaceMapper workspaceMapper;
     private final MindBankPromptTemplateMapper promptTemplateMapper;
     private final SystemConfigService systemConfigService;
+    private final MindBankMergeCheckAgent mergeCheckAgent;
 
     private final ConcurrentHashMap<Long, Map<String, String>> stepCache = new ConcurrentHashMap<>();
 
@@ -132,8 +133,13 @@ public class MindBankPipelineService {
     // ==================== Step 2：AI 整理 → 更新 Master Note ====================
 
     /**
-     * Step 2：AI 融合整理。当前使用单次 Prompt，Phase 6.8 可选升级为 Agent A 多轮自检。
-     * 判断逻辑：Workspace 已有 Master Note → organize_merge 模板；首次 → organize_init 模板。
+     * Step 2：AI 融合整理 → 更新 Master Note。
+     * 三分支策略：
+     * 1. 首次导入（无 Master Note）→ 单次 Prompt（organize_init 模板）
+     * 2. 简单材料（< 1500 字符）→ 单次 Prompt（organize_merge 模板）
+     * 3. 复杂材料（≥ 1500 字符）→ Agent A 多轮融合自检，失败时回退到单次 Prompt
+     *
+     * Agent A 失败回退是关键设计：不能让 Agent 问题导致整个 Pipeline 失败。
      */
     private void step2Organize(Long docId) {
         MindBankDocument doc = getDoc(docId);
@@ -143,27 +149,51 @@ public class MindBankPipelineService {
         String existingMaster = notePort.readMaster(workspace.getName());
         boolean hasMasterNote = existingMaster != null && !existingMaster.isBlank();
 
-        String promptType = hasMasterNote ? "organize_merge" : "organize_init";
-        String promptTemplate = getDefaultPromptTemplate(promptType);
+        String masterNoteContent;
 
-        String prompt;
-        if (hasMasterNote) {
-            prompt = promptTemplate
+        if (!hasMasterNote) {
+            // 首次导入：走原始单次 Prompt（organize_init 模板）
+            String promptTemplate = getDefaultPromptTemplate("organize_init");
+            String prompt = promptTemplate
+                .replace("{content}", newContent)
+                .replace("{source_url}", buildMinioUrl(doc.getOriginalMinioKey()))
+                .replace("{timestamp}", LocalDateTime.now().toString())
+                .replace("{workspace_name}", workspace.getName());
+            ChatLanguageModel model = llmConfigService.resolveModel("mindbank_organize");
+            masterNoteContent = generateWithChunking(model, prompt, newContent);
+
+        } else if (newContent.length() < 1500) {
+            // 简单材料：走原始单次 Prompt（organize_merge 模板）
+            String promptTemplate = getDefaultPromptTemplate("organize_merge");
+            String prompt = promptTemplate
                 .replace("{master_note}", existingMaster)
                 .replace("{new_content}", newContent)
                 .replace("{document_name}", doc.getFileName())
                 .replace("{timestamp}", LocalDateTime.now().toString())
                 .replace("{workspace_name}", workspace.getName());
-        } else {
-            prompt = promptTemplate
-                .replace("{content}", newContent)
-                .replace("{source_url}", buildMinioUrl(doc.getOriginalMinioKey()))
-                .replace("{timestamp}", LocalDateTime.now().toString())
-                .replace("{workspace_name}", workspace.getName());
-        }
+            ChatLanguageModel model = llmConfigService.resolveModel("mindbank_organize");
+            masterNoteContent = model.generate(prompt);
 
-        ChatLanguageModel model = llmConfigService.resolveModel("mindbank_organize");
-        String masterNoteContent = generateWithChunking(model, prompt, newContent);
+        } else {
+            // 复杂材料：走 Agent A 融合自检，失败时回退到单次 Prompt
+            log.info("材料长度 {} ≥ 1500，启用 Agent A 融合自检，docId={}", newContent.length(), docId);
+            try {
+                masterNoteContent = mergeCheckAgent.mergeWithSelfCheck(
+                    existingMaster, newContent, workspace.getName(), docId);
+            } catch (Exception e) {
+                // Agent A 失败时回退到单次 Prompt，不中断 Pipeline
+                log.warn("Agent A 失败，回退到单次 Prompt：{}", e.getMessage());
+                String promptTemplate = getDefaultPromptTemplate("organize_merge");
+                String prompt = promptTemplate
+                    .replace("{master_note}", existingMaster)
+                    .replace("{new_content}", newContent)
+                    .replace("{document_name}", doc.getFileName())
+                    .replace("{timestamp}", LocalDateTime.now().toString())
+                    .replace("{workspace_name}", workspace.getName());
+                ChatLanguageModel model = llmConfigService.resolveModel("mindbank_organize");
+                masterNoteContent = generateWithChunking(model, prompt, newContent);
+            }
+        }
 
         putCache(docId, "masterNoteContent", masterNoteContent);
         putCache(docId, "hasMasterNote", String.valueOf(hasMasterNote));

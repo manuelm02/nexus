@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * 异步任务查询接口：查询任务列表、详情、保留/删除操作。
+ */
 @RestController
 @RequestMapping("/api/v1/tasks")
 @RequiredArgsConstructor

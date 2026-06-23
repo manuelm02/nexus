@@ -24,8 +24,6 @@ public class Task {
     private Object resultJson;
     @TableField(typeHandler = JacksonTypeHandler.class)
     private Object resultFiles;
-    private String notionPageUrl;
-    private boolean notionSynced;
     private String telegramMessageId;
     private boolean telegramSent;
     private boolean keepForever;

@@ -3,10 +3,7 @@ import type { MindBankDocument, Workspace } from '../../../types/mindbank.types'
 import { DocumentCard } from './DocumentCard'
 import { DocumentListEmpty } from './PipelineStatus'
 
-/**
- * DocumentList 文档列表：grid 布局 + 加载态 + 空态。
- * workspace 未选择时显示空态引导。
- */
+// DocumentList 文档列表：grid 布局渲染文档卡片，workspace 未选择时显示空态引导。
 export function DocumentList({
   workspace,
   documents,

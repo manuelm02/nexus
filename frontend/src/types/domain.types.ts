@@ -6,8 +6,6 @@ export interface Todo {
   status: 'pending' | 'cancelled' | 'not_started' | 'in_progress' | 'done'
   scheduledDate?: string
   dueDate?: string
-  notionPageUrl?: string
-  notionSynced: boolean
   createdAt: string
   updatedAt: string
 }
@@ -25,8 +23,6 @@ export interface InboxItem {
   title?: string
   content: string
   tags?: string[]
-  notionPageUrl?: string
-  notionSynced: boolean
   createdAt: string
   updatedAt: string
 }

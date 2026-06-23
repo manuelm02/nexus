@@ -29,8 +29,6 @@ export interface TaskResponse {
   resultMarkdown?: string
   resultJson?: unknown
   resultFiles?: Array<{ url: string; name: string; storage: string; size: number }>
-  notionPageUrl?: string
-  notionSynced: boolean
   keepForever: boolean
   archived: boolean
   expiresAt?: string

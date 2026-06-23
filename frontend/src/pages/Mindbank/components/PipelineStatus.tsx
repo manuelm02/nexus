@@ -7,13 +7,7 @@ import {
   type PipelineStepStatus,
 } from '../../../types/mindbank.types'
 
-/**
- * PipelineStatus 5 步流水线状态可视化组件。
- * - pending：灰色圆点
- * - processing：蓝色 spinner（与品牌色一致）
- * - done：绿色对勾
- * - failed：红色叉（hover 展示 stepErrorMsg tooltip）
- */
+// PipelineStatus 5 步流水线状态可视化组件，按 pending/processing/done/failed 展示各步骤图标。
 export function PipelineStatus({
   document,
   onRetryStep,

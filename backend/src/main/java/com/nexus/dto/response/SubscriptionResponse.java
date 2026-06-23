@@ -42,7 +42,7 @@ public class SubscriptionResponse {
 
     /**
      * 将数据库实体转换为响应对象。
-     * 不暴露 api_* 与 Notion 遗留字段；API 余额字段留待后续阶段开放。
+     * 完整映射实体字段到 API 响应，api_key_masked 等敏感字段不暴露。
      */
     public static SubscriptionResponse from(Subscription entity) {
         SubscriptionResponse response = new SubscriptionResponse();
