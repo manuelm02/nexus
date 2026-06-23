@@ -9,6 +9,9 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 认证接口：登录、Token 刷新、登出。
+ */
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

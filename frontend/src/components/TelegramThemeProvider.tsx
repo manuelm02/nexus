@@ -6,6 +6,7 @@ declare global {
   }
 }
 
+// TelegramThemeProvider 适配 Telegram Mini App 环境，检测 colorScheme 并自动切换 dark mode。
 export function TelegramThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const tg = window.Telegram?.WebApp

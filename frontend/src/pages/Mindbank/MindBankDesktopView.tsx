@@ -6,6 +6,7 @@ import { WorkspaceDialog } from './components/WorkspaceDialog'
 import { DocumentList } from './components/DocumentList'
 import { MinioFilePicker } from './components/MinioFilePicker'
 import { MindBankQaView } from './components/MindBankQaView'
+import { AgentTab } from './components/AgentTab'
 
 /** Mindbank Desktop 视图的全部 props，由 index.tsx 数据编排层注入 */
 export type MindBankViewProps = {
@@ -43,10 +44,7 @@ const TAB_ICONS: Record<MindBankTab, typeof Files> = {
   agent: Bot,
 }
 
-/**
- * MindBankDesktopView 桌面端布局：左侧 Workspace 列表 + 右侧 Tab 主区域。
- * 三 Tab 文件/入库 · Q&A · Agent 知识管家 共享同一组 Workspace 选择（切换 Tab 保留选中 workspace）。
- */
+// MindBankDesktopView 桌面端 Mindbank 双栏布局：左侧 Workspace 列表 + 右侧三 Tab（文档/Q&A/Agent）内容面板。
 export function MindBankDesktopView(props: MindBankViewProps) {
   const {
     activeTab,
@@ -174,15 +172,7 @@ export function MindBankDesktopView(props: MindBankViewProps) {
           {activeTab === 'qa' && selectedWorkspace && (
             <MindBankQaView workspace={selectedWorkspace} />
           )}
-          {activeTab === 'agent' && (
-            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-              <Bot className="h-10 w-10 text-muted-foreground/40" />
-              <p className="text-sm font-medium text-foreground">Agent 知识管家</p>
-              <p className="max-w-md text-xs leading-5 text-muted-foreground">
-                即将于下一阶段推出——AI 自动巡检知识库体系性、发现问题并提出建议
-              </p>
-            </div>
-          )}
+          {activeTab === 'agent' && <AgentTab />}
         </div>
       </main>
 

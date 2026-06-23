@@ -1,7 +1,32 @@
--- V1_17: Mindbank Phase 6 基础设施表
--- 注意：与 V1_3 的 mindbank_docs 表不同，本批表服务于 Phase 6 的 Workspace/Pipeline/Prompt 模板体系。
+-- Mindbank 知识库：Phase 1-5 文档表 + Phase 6 Workspace/Pipeline/Prompt 模板体系
 
--- Workspace 表（对应 AnythingLLM workspace）
+-- Phase 1-5 文档表（历史文档记录）
+CREATE TABLE mindbank_docs (
+    id                  VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    title               VARCHAR(500) NOT NULL,
+    summary             TEXT,
+    domain              VARCHAR(100),
+    tags                TEXT[],
+    source_type         VARCHAR(50),
+    file_url            VARCHAR(1000),
+    file_storage        VARCHAR(20),
+    file_name           VARCHAR(300),
+    file_size           BIGINT,
+    source_url          VARCHAR(1000),
+    radar_task_id       VARCHAR(36),
+    review_status       VARCHAR(20) DEFAULT 'pending',
+    workspace_slug      VARCHAR(200),
+    anythingllm_doc_id  VARCHAR(200),
+    ingested_at         TIMESTAMP,
+    summary_doc_id      VARCHAR(36),
+    task_id             VARCHAR(36),
+    created_at          TIMESTAMP DEFAULT NOW(),
+    updated_at          TIMESTAMP DEFAULT NOW()
+);
+CREATE INDEX idx_mindbank_docs_domain ON mindbank_docs(domain);
+CREATE INDEX idx_mindbank_docs_review ON mindbank_docs(review_status);
+
+-- Phase 6 Workspace 表（对应 AnythingLLM workspace）
 CREATE TABLE mindbank_workspaces (
     id                  BIGSERIAL PRIMARY KEY,
     name                VARCHAR(100) NOT NULL,
@@ -14,15 +39,15 @@ CREATE TABLE mindbank_workspaces (
     updated_at          TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- 文档记录表（每次通过 Crawl 或 Mindbank 导入的文件）
+-- Phase 6 文档记录表（Crawl / Mindbank 导入的文件）
 CREATE TABLE mindbank_documents (
     id                  BIGSERIAL PRIMARY KEY,
     workspace_id        BIGINT REFERENCES mindbank_workspaces(id) ON DELETE SET NULL,
     file_name           VARCHAR(255) NOT NULL,
-    source_type         VARCHAR(20) NOT NULL,   -- 'crawl_web' | 'crawl_file'
-    original_minio_key  VARCHAR(500) NOT NULL,  -- MinIO key（originals/...）
-    processed_minio_key VARCHAR(500),           -- MinIO key（processed/...）
-    content_type_tag    VARCHAR(10),            -- Step1: A/B/C/D/E/F
+    source_type         VARCHAR(20) NOT NULL,       -- 'crawl_web' | 'crawl_file'
+    original_minio_key  VARCHAR(500) NOT NULL,
+    processed_minio_key VARCHAR(500),
+    content_type_tag    VARCHAR(10),                 -- Step1 分类标签: A/B/C/D/E/F
     pipeline_status     VARCHAR(20) NOT NULL DEFAULT 'pending',
     step1_status        VARCHAR(20) NOT NULL DEFAULT 'pending',
     step2_status        VARCHAR(20) NOT NULL DEFAULT 'pending',
@@ -48,7 +73,7 @@ CREATE TABLE mindbank_prompt_templates (
     updated_at  TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- 内置 Prompt 模板初始数据
+-- 内置 Prompt 模板种子数据
 INSERT INTO mindbank_prompt_templates (name, prompt_type, is_default, is_builtin, content) VALUES
 ('通用知识整理（初始）', 'organize_init', true, true, '你是专业的知识整理助手。将以下材料整理为结构清晰的知识笔记。
 

@@ -4,13 +4,7 @@ import { X, AlertCircle } from 'lucide-react'
 import type { Workspace, CreateWorkspaceRequest } from '../../../types/mindbank.types'
 import { cn } from '../../../lib/utils'
 
-/**
- * WorkspaceDialog 新建/编辑 Workspace 弹窗。
- * 桌面端居中弹窗，移动端转为底部 sheet（与 SubscriptionFormDialog 一致）。
- *
- * domainTag 输入使用 input + datalist 形式复用现有 tag，无强制选项。
- * 提交时仅传递非空字段，避免后端被空字符串覆盖已有值（PATCH 语义）。
- */
+// WorkspaceDialog 新建/编辑 Workspace 弹窗，桌面端居中、移动端底部 Sheet，提交时仅传非空字段（PATCH 语义）。
 export function WorkspaceDialog({
   open,
   editing,

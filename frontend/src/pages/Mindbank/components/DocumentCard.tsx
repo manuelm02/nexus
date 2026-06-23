@@ -3,10 +3,7 @@ import { formatRelative } from '../../../lib/utils'
 import type { MindBankDocument, SourceType } from '../../../types/mindbank.types'
 import { PipelineStatus } from './PipelineStatus'
 
-/**
- * DocumentCard 单个 Mindbank 文档卡片，展示文件名、来源类型、创建时间和 5 步流水线状态。
- * 整体可点击（占位：未来进入详情页），内部操作按钮不传递点击事件。
- */
+// DocumentCard 单个 Mindbank 文档卡片，展示文件名、来源类型、创建时间和 5 步流水线状态。
 export function DocumentCard({
   document,
   onRetryStep,

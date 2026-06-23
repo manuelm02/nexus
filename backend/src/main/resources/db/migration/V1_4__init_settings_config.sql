@@ -1,4 +1,4 @@
--- V4: 配置与通知
+-- LLM 配置 + 系统配置 + 通知配置 + 全部 workflow type 预置
 
 CREATE TABLE llm_providers (
     id          VARCHAR(36)  PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -22,7 +22,7 @@ CREATE TABLE workflow_llm_configs (
     updated_at      TIMESTAMP DEFAULT NOW()
 );
 
--- 预置工作流类型
+-- 统一预置所有 workflow type（Phase 1-6 全量）
 INSERT INTO workflow_llm_configs (id, workflow_type) VALUES
 (gen_random_uuid()::text, 'translate'),
 (gen_random_uuid()::text, 'mindbank_extract'),
@@ -32,7 +32,13 @@ INSERT INTO workflow_llm_configs (id, workflow_type) VALUES
 (gen_random_uuid()::text, 'coding_practice_tutor'),
 (gen_random_uuid()::text, 'coding_practice_summary'),
 (gen_random_uuid()::text, 'muse'),
-(gen_random_uuid()::text, 'todo_ai');
+(gen_random_uuid()::text, 'todo_ai'),
+(gen_random_uuid()::text, 'inbox'),
+(gen_random_uuid()::text, 'subscriptions'),
+(gen_random_uuid()::text, 'chat'),
+(gen_random_uuid()::text, 'mindbank_classify'),
+(gen_random_uuid()::text, 'mindbank_organize'),
+(gen_random_uuid()::text, 'mindbank_condense');
 
 CREATE TABLE system_configs (
     id          VARCHAR(36)  PRIMARY KEY DEFAULT gen_random_uuid()::text,
@@ -43,12 +49,15 @@ CREATE TABLE system_configs (
 );
 
 INSERT INTO system_configs (id, config_key, config_val, description) VALUES
-(gen_random_uuid()::text, 'todo.archive_days',         '30',    'ToDo 完成后归档天数'),
-(gen_random_uuid()::text, 'todo.rollover_time',        '00:05', '每日 ToDo Rollover 时间'),
-(gen_random_uuid()::text, 'task.cleanup_days',         '30',    '任务结果清理天数'),
-(gen_random_uuid()::text, 'subscription.notify_days_before', '7', '订阅到期提醒天数'),
-(gen_random_uuid()::text, 'mindbank.default_domain',   '其他',  'Mindbank 默认领域'),
-(gen_random_uuid()::text, 'crawler.preferred',         'jina',  '默认爬虫：jina|crawl4ai');
+(gen_random_uuid()::text, 'todo.archive_days',              '30',    'ToDo 完成后归档天数'),
+(gen_random_uuid()::text, 'todo.rollover_time',             '00:05', '每日 ToDo Rollover 时间'),
+(gen_random_uuid()::text, 'task.cleanup_days',              '30',    '任务结果清理天数'),
+(gen_random_uuid()::text, 'subscription.notify_days_before','7',     '订阅到期提醒天数'),
+(gen_random_uuid()::text, 'mindbank.default_domain',        '其他',  'Mindbank 默认领域'),
+(gen_random_uuid()::text, 'crawler.preferred',              'jina',  '默认爬虫：jina|crawl4ai'),
+(gen_random_uuid()::text, 'crawl.crawl4ai.url',             '',      'Crawl4AI 服务地址'),
+(gen_random_uuid()::text, 'crawl.markitdown.url',           '',      'MarkItDown 服务地址'),
+(gen_random_uuid()::text, 'notes.obsidian.vault_path',      '',      'Obsidian Vault 本地路径');
 
 CREATE TABLE user_notification_configs (
     id          VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,

@@ -8,6 +8,8 @@ import type {
   PromptTemplate,
   CreatePromptTemplateRequest,
   UpdatePromptTemplateRequest,
+  AgentTask,
+  AgentTaskDetail,
 } from '../types/mindbank.types'
 
 /**
@@ -42,11 +44,15 @@ export const mindbankApi = {
 
   // ==================== Q&A ====================
 
-  /** 基于 Workspace 知识库问答（AnythingLLM 同步返回，非流式） */
-  qaChat: (workspaceId: number, question: string) =>
-    apiClient.post<ApiResponse<{ answer: string; sources: string[] }>>(
+  /**
+   * 基于 Workspace 知识库问答。
+   * agentMode=false（默认）：简单 RAG，AnythingLLM 同步返回
+   * agentMode=true：Agent C agentic 检索，自主查多个 Workspace，返回 agentTaskId 供轨迹展示
+   */
+  qaChat: (workspaceId: number, question: string, agentMode: boolean = false) =>
+    apiClient.post<ApiResponse<{ answer: string; sources?: string[]; agentTaskId?: number; mode: string }>>(
       `/mindbank/qa/${workspaceId}/chat`,
-      { question },
+      { question, agentMode },
     ),
 
   // ==================== Notes ====================
@@ -82,4 +88,26 @@ export const mindbankApi = {
   /** 删除 Prompt 模板（内置模板不可删除） */
   deletePromptTemplate: (id: number) =>
     apiClient.delete<ApiResponse<void>>(`/mindbank/prompt-templates/${id}`),
+
+  // ==================== Agent ====================
+
+  /** 触发知识库巡检，异步执行，返回 taskId 供轮询 */
+  triggerInspection: () =>
+    apiClient.post<ApiResponse<{ taskId: number }>>('/mindbank/agent/inspect'),
+
+  /** 查询巡检历史列表 */
+  listAgentTasks: () =>
+    apiClient.get<ApiResponse<AgentTask[]>>('/mindbank/agent/tasks'),
+
+  /** 查询单次巡检详情（含步骤轨迹 + 建议列表） */
+  getAgentTaskDetail: (taskId: number) =>
+    apiClient.get<ApiResponse<AgentTaskDetail>>(`/mindbank/agent/tasks/${taskId}`),
+
+  /** 采纳建议 */
+  approveSuggestion: (id: number) =>
+    apiClient.post<ApiResponse<void>>(`/mindbank/agent/suggestions/${id}/approve`),
+
+  /** 忽略建议 */
+  ignoreSuggestion: (id: number) =>
+    apiClient.post<ApiResponse<void>>(`/mindbank/agent/suggestions/${id}/ignore`),
 }

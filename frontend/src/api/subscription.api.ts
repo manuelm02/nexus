@@ -15,9 +15,6 @@ export const subscriptionApi = {
   delete: (id: string) =>
     apiClient.delete(`/subscriptions/${id}`),
 
-  updateUsage: (id: string, usageUsed: number) =>
-    apiClient.patch<ApiResponse<Subscription>>(`/subscriptions/${id}/usage`, { usageUsed }),
-
   recharge: (id: string, data: { amount: number; date?: string; note?: string }) =>
     apiClient.post<ApiResponse<Subscription>>(`/subscriptions/${id}/recharge`, data),
 

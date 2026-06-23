@@ -1,6 +1,5 @@
--- V2: 核心功能模块
+-- 核心功能模块：ToDo / Inbox / Translate / Subscriptions / Coding Practice / Tasks
 
--- ToDo
 CREATE TABLE todos (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title           VARCHAR(500) NOT NULL,
@@ -10,27 +9,21 @@ CREATE TABLE todos (
     scheduled_date  DATE,
     due_date        DATE,
     task_id         VARCHAR(36),
-    notion_page_url VARCHAR(500),
-    notion_synced   BOOLEAN DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT NOW(),
     updated_at      TIMESTAMP DEFAULT NOW()
 );
 CREATE INDEX idx_todos_status_date ON todos(status, scheduled_date);
 
--- Inbox
 CREATE TABLE inbox_items (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     title           VARCHAR(500),
     content         TEXT NOT NULL,
     tags            TEXT[],
     task_id         VARCHAR(36),
-    notion_page_url VARCHAR(500),
-    notion_synced   BOOLEAN DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT NOW(),
     updated_at      TIMESTAMP DEFAULT NOW()
 );
 
--- Translate
 CREATE TABLE translations (
     id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     source_text     TEXT NOT NULL,
@@ -39,10 +32,13 @@ CREATE TABLE translations (
     target_lang     VARCHAR(20) NOT NULL,
     style           VARCHAR(30),
     task_id         VARCHAR(36),
+    explanation     TEXT,
+    keywords        JSONB,
+    alternatives    JSONB,
+    provider        VARCHAR(100),
     created_at      TIMESTAMP DEFAULT NOW()
 );
 
--- Subscriptions
 CREATE TABLE subscriptions (
     id                  VARCHAR(36)    PRIMARY KEY DEFAULT gen_random_uuid()::text,
     name                VARCHAR(200)   NOT NULL,
@@ -66,14 +62,50 @@ CREATE TABLE subscriptions (
     url                 VARCHAR(1000),
     notes               TEXT,
     status              VARCHAR(20)    DEFAULT 'active',
-    notion_page_url     VARCHAR(500),
-    notion_synced       BOOLEAN        DEFAULT FALSE,
-    task_id             VARCHAR(36),
+    auto_renew          BOOLEAN        NOT NULL DEFAULT FALSE,
+    archived            BOOLEAN        NOT NULL DEFAULT FALSE,
+    remaining_balance   NUMERIC(12,2),
+    monthly_spend       NUMERIC(12,2)  NOT NULL DEFAULT 0,
+    low_balance_notify  BOOLEAN        NOT NULL DEFAULT FALSE,
+    low_balance_threshold NUMERIC(12,2),
     created_at          TIMESTAMP      DEFAULT NOW(),
     updated_at          TIMESTAMP      DEFAULT NOW()
 );
 
--- Coding Practice（LeetCode Notes）
+CREATE TABLE subscription_categories (
+    id         VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    name       VARCHAR(64) NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE subscription_ledger_entries (
+    id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    subscription_id VARCHAR(36) NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+    entry_type      VARCHAR(16) NOT NULL,
+    amount          NUMERIC(12,2) NOT NULL,
+    balance_after   NUMERIC(12,2) NOT NULL,
+    note            VARCHAR(255),
+    occurred_on     DATE NOT NULL,
+    created_at      TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_ledger_sub_created ON subscription_ledger_entries(subscription_id, created_at DESC);
+
+CREATE TABLE subscription_balance_snapshots (
+    id              VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    subscription_id VARCHAR(36) NOT NULL REFERENCES subscriptions(id) ON DELETE CASCADE,
+    balance         NUMERIC(12,2) NOT NULL,
+    currency        VARCHAR(8) NOT NULL,
+    raw_json        JSONB,
+    snapshotted_at  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_balance_snap_sub ON subscription_balance_snapshots(subscription_id, snapshotted_at DESC);
+
+CREATE TABLE exchange_rates (
+    currency    VARCHAR(8) PRIMARY KEY,
+    rate_to_cny NUMERIC(14,6) NOT NULL,
+    updated_at  TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE coding_practice_notes (
     id                  VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     problem_id          VARCHAR(50),
@@ -82,8 +114,6 @@ CREATE TABLE coding_practice_notes (
     difficulty          VARCHAR(20),
     tags                TEXT[],
     status              VARCHAR(20) DEFAULT 'in_progress',
-    notion_page_url     VARCHAR(500),
-    notion_synced       BOOLEAN DEFAULT FALSE,
     mindbank_doc_id     VARCHAR(200),
     task_id             VARCHAR(36),
     created_at          TIMESTAMP DEFAULT NOW(),
@@ -97,7 +127,6 @@ CREATE TABLE coding_practice_note_contents (
     updated_at   TIMESTAMP DEFAULT NOW()
 );
 
--- 统一任务表
 CREATE TABLE tasks (
     id                  VARCHAR(36) PRIMARY KEY DEFAULT gen_random_uuid()::text,
     type                VARCHAR(50) NOT NULL,
@@ -109,8 +138,6 @@ CREATE TABLE tasks (
     result_markdown     TEXT,
     result_json         JSONB,
     result_files        JSONB,
-    notion_page_url     VARCHAR(500),
-    notion_synced       BOOLEAN DEFAULT FALSE,
     telegram_message_id VARCHAR(100),
     telegram_sent       BOOLEAN DEFAULT FALSE,
     keep_forever        BOOLEAN DEFAULT FALSE,

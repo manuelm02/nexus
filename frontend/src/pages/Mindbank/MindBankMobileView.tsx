@@ -9,6 +9,7 @@ import { WorkspaceDialog } from './components/WorkspaceDialog'
 import { DocumentList } from './components/DocumentList'
 import { MinioFilePicker } from './components/MinioFilePicker'
 import { MindBankQaView } from './components/MindBankQaView'
+import { AgentTab } from './components/AgentTab'
 import type { MindBankViewProps } from './MindBankDesktopView'
 
 const TAB_ICONS: Record<MindBankTab, typeof Files> = {
@@ -17,10 +18,7 @@ const TAB_ICONS: Record<MindBankTab, typeof Files> = {
   agent: Bot,
 }
 
-/**
- * MindBankMobileView 移动端布局：顶部 workspace chip 横向滚动 + Tab 切换 + 全宽内容。
- * 与 DesktopView 共享同一组 props，确保业务逻辑一致；交互模式允许设备差异（chip 替代侧边栏）。
- */
+// MindBankMobileView 移动端 Mindbank 布局：顶部 Workspace chip 横向滚动 + Tab 切换 + 全宽内容，与 DesktopView 共享 props。
 export function MindBankMobileView(props: MindBankViewProps) {
   const {
     activeTab,
@@ -166,15 +164,7 @@ export function MindBankMobileView(props: MindBankViewProps) {
         {activeTab === 'qa' && selectedWorkspace && (
           <MindBankQaView workspace={selectedWorkspace} />
         )}
-        {activeTab === 'agent' && (
-          <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-            <Bot className="h-10 w-10 text-muted-foreground/40" />
-            <p className="text-sm font-bold text-foreground">Agent 知识管家</p>
-            <p className="max-w-xs text-xs leading-5 text-muted-foreground">
-              即将于下一阶段推出——AI 自动巡检知识库体系性、发现问题并提出建议
-            </p>
-          </div>
-        )}
+        {activeTab === 'agent' && <AgentTab />}
       </div>
 
       {/* Dialogs */}

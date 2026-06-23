@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar'
 import { MobileNav } from './MobileNav'
 import { useAuthStore } from '../../stores/authStore'
 
+// AppLayout 提供全局布局框架：桌面端渲染侧边栏，移动端渲染底部导航，未登录时重定向到登录页。
 export function AppLayout() {
   const isAuthenticated = useAuthStore((s) => !!s.accessToken)
 

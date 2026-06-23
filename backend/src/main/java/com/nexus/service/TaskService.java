@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * 异步任务服务：各模块共用的 Task 生命周期管理（创建 → 运行中 → 完成/失败），支持保留和过期清理。
+ */
 @Service
 @RequiredArgsConstructor
 public class TaskService {
