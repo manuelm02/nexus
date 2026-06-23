@@ -39,7 +39,7 @@ export function ChatInputBar({ placeholder = '输入消息…', disabled, isStre
   }
 
   return (
-    <div className="relative rounded-xl border bg-card shadow-[var(--shadow-sm)]">
+    <div className="relative rounded-xl border border-border bg-card shadow-[var(--shadow-sm)] transition-shadow focus-within:ring-2 focus-within:ring-ring/15">
       <textarea
         ref={textareaRef}
         rows={1}

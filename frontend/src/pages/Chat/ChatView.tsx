@@ -24,8 +24,8 @@ export function ChatView({ conversation, messages, isLoading, isStreaming, strea
 
   return (
     <div className="flex h-full flex-col">
-      {/* 对话标题栏（桌面端，移动端已在顶部栏显示） */}
-      <div className="hidden items-center gap-2 border-b bg-card/60 px-4 py-2.5 md:flex">
+      {/* 对话标题栏（可见性由父级桌面/移动端分块控制） */}
+      <div className="flex items-center gap-2 border-b border-border px-5 py-3">
         <span className="flex-1 truncate text-sm font-bold text-foreground">{conversation.title}</span>
         <button
           type="button"
@@ -63,7 +63,7 @@ export function ChatView({ conversation, messages, isLoading, isStreaming, strea
         <div ref={bottomRef} />
       </div>
 
-      <div className="border-t bg-card p-3 md:p-4">
+      <div className="border-t border-border p-4">
         <ChatInputBar isStreaming={isStreaming} onSend={onSend} />
       </div>
     </div>

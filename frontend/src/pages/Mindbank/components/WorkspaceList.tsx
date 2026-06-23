@@ -36,26 +36,29 @@ export function WorkspaceList({
   }, [workspaces])
 
   return (
-    <div className="flex h-full flex-col">
-      {/* 标题区 */}
-      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+    <div className="flex flex-col p-3">
+      {/* 标题区 — 风格对齐全局 uppercase 小标题 */}
+      <div className="flex items-center justify-between gap-2 pb-3">
         <div className="flex items-center gap-1.5">
           <FolderOpen className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-black text-foreground">Workspaces</h2>
+          <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Workspaces</p>
           <span className="text-[10px] text-muted-foreground">({workspaces.length})</span>
         </div>
       </div>
 
       {/* 列表 */}
-      <div className="flex-1 overflow-y-auto p-2">
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <p className="px-3 py-6 text-center text-xs text-muted-foreground">加载中…</p>
         ) : grouped.length === 0 ? (
-          <p className="px-3 py-6 text-center text-xs leading-5 text-muted-foreground">
-            还没有 Workspace。
-            <br />
-            点击下方按钮创建第一个。
-          </p>
+          <div className="flex flex-col items-center py-8 text-center">
+            <FolderOpen className="h-8 w-8 text-muted-foreground/30" />
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              还没有 Workspace。
+              <br />
+              点击下方按钮创建第一个。
+            </p>
+          </div>
         ) : (
           <div className="space-y-3">
             {grouped.map(([tag, items]) => (
@@ -83,12 +86,12 @@ export function WorkspaceList({
         )}
       </div>
 
-      {/* 底部新建按钮 */}
-      <div className="border-t border-border p-2">
+      {/* 底部新建按钮 — 与全局主操作按钮风格统一 */}
+      <div className="pt-3">
         <button
           type="button"
           onClick={onCreate}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-border bg-card px-3 py-2.5 text-sm font-bold text-muted-foreground transition-colors hover:border-primary hover:bg-primary/5 hover:text-primary"
+          className="nexus-button-primary flex w-full items-center justify-center gap-1.5 h-9 text-sm font-bold"
         >
           <Plus className="h-3.5 w-3.5" />
           新建 Workspace
@@ -123,8 +126,8 @@ function WorkspaceRow({
       className={cn(
         'group relative flex items-center gap-2 rounded-md px-2 py-2 transition-colors',
         selected
-          ? 'bg-primary/10 text-foreground'
-          : 'text-foreground/80 hover:bg-accent',
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-primary/0 text-foreground/80 hover:bg-accent',
       )}
     >
       <button
@@ -133,7 +136,8 @@ function WorkspaceRow({
         className="min-w-0 flex-1 text-left"
       >
         <p className="truncate text-sm font-bold">{workspace.name}</p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
+        {/* 选中态反白时文档数文案需继承颜色，避免在深色背景上仍是灰色看不清 */}
+        <p className={cn('mt-0.5 text-[10px]', selected ? 'text-primary-foreground/70' : 'text-muted-foreground')}>
           {workspace.documentCount} 个文档
         </p>
       </button>
@@ -148,7 +152,12 @@ function WorkspaceRow({
         <button
           type="button"
           onClick={onEdit}
-          className="nexus-button-utility h-7 w-7 text-muted-foreground"
+          className={cn(
+            'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+            selected
+              ? 'text-primary-foreground/60 hover:bg-white/10 hover:text-primary-foreground'
+              : 'nexus-button-utility text-muted-foreground hover:text-foreground',
+          )}
           aria-label="编辑"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -157,7 +166,12 @@ function WorkspaceRow({
           <Popover.Trigger asChild>
             <button
               type="button"
-              className="nexus-button-utility h-7 w-7 text-muted-foreground hover:text-destructive"
+              className={cn(
+                'inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors',
+                selected
+                  ? 'text-primary-foreground/60 hover:bg-white/10 hover:text-primary-foreground'
+                  : 'nexus-button-utility text-muted-foreground hover:text-destructive',
+              )}
               aria-label="删除"
             >
               <Trash2 className="h-3.5 w-3.5" />

@@ -27,9 +27,9 @@ export function ChatSidebar({
   onRename,
 }: ChatSidebarProps) {
   return (
-    <aside className="hidden h-full w-64 flex-col border-r bg-card md:flex">
-      <div className="flex items-center justify-between gap-2 border-b p-3">
-        <h2 className="text-sm font-black text-muted-foreground">最近对话</h2>
+    <div className="flex h-full flex-col p-3">{/* h-full 确保填满父级 .nexus-surface 高度，不再依赖硬编码 maxHeight */}
+      <div className="flex items-center justify-between gap-2 pb-3">
+        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">最近对话</p>
         <button
           type="button"
           onClick={onCreate}
@@ -39,7 +39,7 @@ export function ChatSidebar({
         </button>
       </div>
 
-      <div className="border-b p-3">
+      <div className="pb-3">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -52,7 +52,8 @@ export function ChatSidebar({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-2">
+      {/* flex-1 自动占满前置元素（标题+搜索）的剩余空间，替代硬编码 calc */}
+      <div className="flex-1 overflow-y-auto">
         {isLoading ? (
           <p className="p-2 text-xs text-muted-foreground">加载中…</p>
         ) : conversations.length === 0 ? (
@@ -92,6 +93,6 @@ export function ChatSidebar({
           </div>
         )}
       </div>
-    </aside>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Files, MessageSquare, Bot, ChevronRight } from 'lucide-react'
+import { Plus, Files, MessageSquare, Bot, ChevronRight, FolderOpen } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import {
   MINDBANK_TABS,
@@ -153,18 +153,43 @@ export function MindBankMobileView(props: MindBankViewProps) {
 
       {/* 内容 */}
       <div className="flex-1 overflow-y-auto">
-        {activeTab === 'documents' && (
-          <DocumentList
-            workspace={selectedWorkspace}
-            documents={documents}
-            isLoading={isLoadingDocuments}
-            onRetryStep={onRetryStep}
-          />
+        {activeTab === 'documents' && !selectedWorkspace ? (
+          // 未选 workspace 的空状态：与桌面端三段式保持视觉一致
+          <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/[0.06]">
+              <FolderOpen className="h-7 w-7 text-primary/40" />
+            </div>
+            <h3 className="mt-4 text-base font-extrabold text-foreground">
+              请先选择或创建一个 Workspace
+            </h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              顶部选择已有 Workspace，或新建开始管理知识。
+            </p>
+            <button
+              type="button"
+              onClick={onOpenCreate}
+              className="nexus-button-primary mt-4 inline-flex h-9 items-center gap-1.5 px-4 text-sm font-bold"
+            >
+              <Plus className="h-4 w-4" />
+              新建 Workspace
+            </button>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'documents' && (
+              <DocumentList
+                workspace={selectedWorkspace}
+                documents={documents}
+                isLoading={isLoadingDocuments}
+                onRetryStep={onRetryStep}
+              />
+            )}
+            {activeTab === 'qa' && selectedWorkspace && (
+              <MindBankQaView workspace={selectedWorkspace} />
+            )}
+            {activeTab === 'agent' && <AgentTab />}
+          </>
         )}
-        {activeTab === 'qa' && selectedWorkspace && (
-          <MindBankQaView workspace={selectedWorkspace} />
-        )}
-        {activeTab === 'agent' && <AgentTab />}
       </div>
 
       {/* Dialogs */}
