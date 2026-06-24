@@ -1,9 +1,11 @@
 package com.nexus.controller;
 
+import com.nexus.config.SystemConfigKeys;
 import com.nexus.dto.request.*;
 import com.nexus.dto.response.ApiResponse;
 import com.nexus.dto.response.InboxSettingsResponse;
 import com.nexus.dto.response.PaperlessGatewayStatusResponse;
+import com.nexus.dto.response.SubscriptionSettingsResponse;
 import com.nexus.entity.LlmProvider;
 import com.nexus.entity.WorkflowLlmConfig;
 import com.nexus.service.InboxSettingsService;
@@ -198,5 +200,43 @@ public class SettingsController {
             systemConfigService.upsert(K_NOTES_VAULT_PATH, body.get(K_NOTES_VAULT_PATH), null);
         }
         return ApiResponse.ok();
+    }
+
+    // ==================== 订阅提醒设置 ====================
+
+    private static final int DEFAULT_NOTIFY_DAYS = 7;
+
+    /** 获取 Panel Hub 订阅提醒设置，未配置时返回默认值 7 天 */
+    @GetMapping("/subscriptions")
+    public ApiResponse<SubscriptionSettingsResponse> getSubscriptionSettings() {
+        String days = systemConfigService.get(SystemConfigKeys.SUBSCRIPTION_NOTIFY_DAYS_BEFORE);
+        SubscriptionSettingsResponse resp = new SubscriptionSettingsResponse();
+        resp.setNotifyDaysBefore(parseNotifyDays(days));
+        return ApiResponse.ok(resp);
+    }
+
+    /** 保存 Panel Hub 订阅提醒设置（范围 1-90 天，由 @Valid 校验） */
+    @PutMapping("/subscriptions")
+    public ApiResponse<SubscriptionSettingsResponse> saveSubscriptionSettings(
+            @Valid @RequestBody SubscriptionSettingsUpdateRequest req) {
+        systemConfigService.upsert(
+                SystemConfigKeys.SUBSCRIPTION_NOTIFY_DAYS_BEFORE,
+                String.valueOf(req.getNotifyDaysBefore()),
+                null);
+        return getSubscriptionSettings();
+    }
+
+    /**
+     * 历史版本可能通过通用 System key-value 写入空串或 "null"，读取时兜底到默认值避免 Settings 页面 500。
+     */
+    private int parseNotifyDays(String rawDays) {
+        if (rawDays == null || rawDays.isBlank()) return DEFAULT_NOTIFY_DAYS;
+        try {
+            int days = Integer.parseInt(rawDays);
+            return days >= 1 && days <= 90 ? days : DEFAULT_NOTIFY_DAYS;
+        } catch (NumberFormatException e) {
+            log.warn("订阅提醒天数配置非法，使用默认值 {}：{}", DEFAULT_NOTIFY_DAYS, rawDays);
+            return DEFAULT_NOTIFY_DAYS;
+        }
     }
 }

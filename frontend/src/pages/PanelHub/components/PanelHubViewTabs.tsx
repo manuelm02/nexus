@@ -13,11 +13,11 @@ const TABS: { key: SubscriptionView; label: string }[] = [
   { key: 'dashboard',     label: '概览' },
   { key: 'subscriptions', label: '订阅' },
   { key: 'apikeys',       label: 'API Keys' },
-  { key: 'credentials',   label: '凭据' },
+  { key: 'credentials',   label: '账号' },
   { key: 'archived',      label: '已归档' },
 ]
 
-/** PanelHubViewTabs 顶部 5 个视图切换：概览 / 订阅 / API Keys / 凭据 / 已归档 */
+/** PanelHubViewTabs 顶部 5 个视图切换：概览 / 订阅 / API Keys / 账号 / 已归档 */
 export function PanelHubViewTabs({ view, archivedCount, apiKeyLowBalanceCount, credentialExpiringCount, onViewChange }: PanelHubViewTabsProps) {
   return (
     <div className="inline-flex max-w-full overflow-x-auto rounded-lg border bg-muted/40 p-1">

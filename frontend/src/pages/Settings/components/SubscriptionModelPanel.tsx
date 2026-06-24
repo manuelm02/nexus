@@ -15,7 +15,7 @@ type SubscriptionModelPanelProps = {
   onCancel: () => void
 }
 
-// SubscriptionModelPanel 管理订阅工作流的专用模型绑定，用于新增/编辑订阅时的 AI 自动分类识别。
+// SubscriptionModelPanel 管理 Panel Hub 工作流的专用模型绑定，用于 Panel Hub 中新增/编辑订阅时的 AI 自动分类识别。
 export function SubscriptionModelPanel({
   providers,
   providerId,
@@ -32,8 +32,8 @@ export function SubscriptionModelPanel({
     <section className="nexus-surface space-y-4 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-extrabold text-foreground">订阅设置</h2>
-          <p className="mt-1 text-xs text-muted-foreground">用于新增/编辑订阅时的 AI 自动分类识别</p>
+          <h2 className="text-lg font-extrabold text-foreground">Panel Hub 设置</h2>
+          <p className="mt-1 text-xs text-muted-foreground">用于 Panel Hub 中新增/编辑订阅时的 AI 自动分类识别</p>
         </div>
         {dirty && (
           <span className="rounded-md bg-warning-soft px-2 py-1 text-xs font-bold text-warning">
@@ -59,7 +59,7 @@ export function SubscriptionModelPanel({
       {workflowsLoading && <p className="text-sm text-muted-foreground">加载中…</p>}
       {workflowsError && (
         <p className="flex items-center gap-1.5 text-sm text-destructive">
-          <AlertCircle className="h-4 w-4" /> 加载订阅配置失败
+          <AlertCircle className="h-4 w-4" /> 加载 Panel Hub 配置失败
         </p>
       )}
       {providers.length === 0 && (

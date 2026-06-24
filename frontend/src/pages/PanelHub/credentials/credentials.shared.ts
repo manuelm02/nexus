@@ -1,6 +1,6 @@
 import type { Credential } from '../../../types/domain.types'
 
-/** 判断凭证是否即将到期（默认 30 天内） */
+/** 判断账号是否即将到期（默认 30 天内） */
 export function isExpiringSoon(credential: Credential, daysAhead = 30): boolean {
   if (!credential.expireDate) return false
   const expire = new Date(credential.expireDate)

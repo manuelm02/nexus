@@ -1,6 +1,6 @@
 import { apiClient } from './client'
 import type { ApiResponse } from '../types/api.types'
-import type { InboxSettings, InboxSettingsUpdateRequest, MindBankSettings, MindBankSettingsUpdateRequest } from '../types/domain.types'
+import type { InboxSettings, InboxSettingsUpdateRequest, MindBankSettings, MindBankSettingsUpdateRequest, SubscriptionSettings, SubscriptionSettingsUpdateRequest } from '../types/domain.types'
 
 export const settingsApi = {
   /** 获取 Inbox 集成设置 */
@@ -34,4 +34,12 @@ export const settingsApi = {
   /** 保存 Notes 配置 */
   saveNotesSettings: (data: Record<string, string>) =>
     apiClient.put<ApiResponse<void>>('/settings/notes', data),
+
+  /** 获取 Panel Hub 订阅提醒设置 */
+  getSubscriptionSettings: () =>
+    apiClient.get<ApiResponse<SubscriptionSettings>>('/settings/subscriptions'),
+
+  /** 保存 Panel Hub 订阅提醒设置 */
+  saveSubscriptionSettings: (data: SubscriptionSettingsUpdateRequest) =>
+    apiClient.put<ApiResponse<SubscriptionSettings>>('/settings/subscriptions', data),
 }

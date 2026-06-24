@@ -20,7 +20,7 @@ type PanelHubDashboardProps = {
   credentials?: Credential[]
 }
 
-/** PanelHub 概览：订阅统计 + API Key 状态概览 + 凭证到期提醒 */
+/** PanelHub 概览：订阅统计 + API Key 状态概览 + 账号到期提醒 */
 export function PanelHubDashboard(props: PanelHubDashboardProps) {
   const { apiKeys = [], credentials = [] } = props
   const { data: ratesData } = useQuery({
@@ -94,10 +94,10 @@ export function PanelHubDashboard(props: PanelHubDashboardProps) {
         </div>
       )}
 
-      {/* 凭证到期提醒 */}
+      {/* 账号到期提醒 */}
       {expiringCredentials.length > 0 && (
         <div className="rounded-lg border bg-card p-4 shadow-[var(--shadow-xs)]">
-          <h3 className="text-sm font-bold text-foreground mb-3">即将到期的凭证</h3>
+          <h3 className="text-sm font-bold text-foreground mb-3">即将到期的账号</h3>
           <div className="space-y-1.5">
             {expiringCredentials.map((c) => {
               const days = daysUntilExpiry(c)
@@ -115,8 +115,8 @@ export function PanelHubDashboard(props: PanelHubDashboardProps) {
       )}
       {expiringCredentials.length === 0 && credentials.length > 0 && (
         <div className="rounded-lg border bg-card p-4 shadow-[var(--shadow-xs)]">
-          <h3 className="text-sm font-bold text-foreground mb-2">凭证到期提醒</h3>
-          <p className="text-[11px] text-muted-foreground">暂无即将到期的凭证</p>
+          <h3 className="text-sm font-bold text-foreground mb-2">账号到期提醒</h3>
+          <p className="text-[11px] text-muted-foreground">暂无即将到期的账号</p>
         </div>
       )}
     </div>

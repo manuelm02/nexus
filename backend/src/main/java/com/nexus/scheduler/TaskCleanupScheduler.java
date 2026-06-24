@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * 每日凌晨2点归档过期任务——属于后端基础设施，不依赖前台入口是否展示。
+ * 仅清理未被标记为"永久保留"且已过期的任务记录。
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

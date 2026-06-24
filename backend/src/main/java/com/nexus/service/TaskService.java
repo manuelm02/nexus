@@ -10,7 +10,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 异步任务服务：各模块共用的 Task 生命周期管理（创建 → 运行中 → 完成/失败），支持保留和过期清理。
+ * 异步任务生命周期服务——未来 Crawl 导入、批量处理、订阅同步、AI 长任务等共用的预留基础设施。
+ * <p>
+ * 当前业务模块暂未调用 create() / markRunning() / markCompleted() / markFailed() 等生命周期方法，
+ * 前台也暂不显性暴露入口。各模块接入时应统一通过该服务创建和流转状态，
+ * 避免各自维护分散的任务表和生命周期。
+ * </p>
  */
 @Service
 @RequiredArgsConstructor

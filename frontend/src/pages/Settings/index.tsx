@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const initialTab = (() => {
     const tab = new URLSearchParams(window.location.search).get('tab')
     if (tab === 'workflows') return 'translate'
-    return tab === 'translate' || tab === 'inbox' || tab === 'subscriptions' || tab === 'chat' || tab === 'crawl' || tab === 'notes' || tab === 'mindbank' || tab === 'system' ? tab : 'models'
+    return tab === 'translate' || tab === 'inbox' || tab === 'subscriptions' || tab === 'chat' || tab === 'crawl' || tab === 'notes' || tab === 'mindbank' ? tab : 'models'
   })() as SettingsTab
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(initialTab)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -36,11 +36,6 @@ export default function SettingsPage() {
   const { data: wfRes, isLoading: workflowsLoading, isError: workflowsError } = useQuery({
     queryKey: ['llm-workflows'],
     queryFn: () => apiClient.get<ApiResponse<WorkflowLlmConfig[]>>('/settings/llm/workflows'),
-  })
-  const { data: sysRes, isLoading: sysLoading, isError: sysError } = useQuery({
-    queryKey: ['system-config'],
-    queryFn: () => apiClient.get<ApiResponse<Record<string, string>>>('/settings/system'),
-    select: (res) => res.data?.data ?? {},
   })
 
   // --- Provider CRUD mutations ---
@@ -84,19 +79,6 @@ export default function SettingsPage() {
     mutationFn: ({ type, providerId }: { type: string; providerId: string }) =>
       apiClient.patch(`/settings/llm/workflows/${type}`, { providerId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['llm-workflows'] }),
-  })
-
-  // --- 系统配置变更状态 ---
-  const [overrides, setOverrides] = useState<Record<string, string>>({})
-  const [dirty, setDirty] = useState(false)
-
-  const sysSaveMutation = useMutation({
-    mutationFn: () => apiClient.patch('/settings/system', { configs: overrides }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['system-config'] })
-      setOverrides({})
-      setDirty(false)
-    },
   })
 
   // --- Inbox 设置 ---
@@ -208,17 +190,6 @@ export default function SettingsPage() {
     resetEditForm()
   }
 
-  // --- 系统配置操作 ---
-  const handleOverrideChange = (key: string, val: string) => {
-    setOverrides((prev) => ({ ...prev, [key]: val }))
-    setDirty(true)
-  }
-
-  const handleOverridesCancel = () => {
-    setOverrides({})
-    setDirty(false)
-  }
-
   // --- 组装视图 Props ---
   const sharedProps = {
     activeSettingsTab,
@@ -281,18 +252,6 @@ export default function SettingsPage() {
     onDelete: (id: string) => deleteMutation.mutate(id),
     workflowPending: workflowMutation.isPending,
     onWorkflowChange: (providerId: string) => workflowMutation.mutate({ type: 'translate', providerId }),
-    systemConfig: {
-      systemConfigData: sysRes,
-      systemConfigLoading: sysLoading,
-      systemConfigError: sysError,
-      overrides,
-      dirty,
-      savePending: sysSaveMutation.isPending,
-      saveError: sysSaveMutation.isError,
-      onOverrideChange: handleOverrideChange,
-      onOverridesSave: () => sysSaveMutation.mutate(),
-      onOverridesCancel: handleOverridesCancel,
-    },
     inboxSettings: {
       settings: inboxSettings ?? {
         paperlessEnabled: false,

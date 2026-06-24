@@ -5,6 +5,7 @@ import { CredentialFormDialog } from './CredentialFormDialog'
 import { groupByCategory } from './credentials.shared'
 
 type CredentialTabViewProps = {
+  isLoading: boolean
   createRequestKey: number
   credentials: Credential[]
   creating: boolean
@@ -13,8 +14,8 @@ type CredentialTabViewProps = {
   onDelete: (id: string) => void
 }
 
-/** 凭证管理 Tab 主视图：按分类分组展示卡片，新增入口由 Panel Hub 顶部按钮统一触发。数据与操作通过 props 注入。 */
-export function CredentialTabView({ createRequestKey, credentials, creating, onCreate, onUpdate, onDelete }: CredentialTabViewProps) {
+/** 账号管理 Tab 主视图：按分类分组展示卡片。加载态和空状态使用统一 nexus-surface 风格。数据与操作通过 props 注入。 */
+export function CredentialTabView({ isLoading, createRequestKey, credentials, creating, onCreate, onUpdate, onDelete }: CredentialTabViewProps) {
   const [formOpen, setFormOpen] = useState(false)
   const [editingItem, setEditingItem] = useState<Credential | null>(null)
   const previousCreateRequestKeyRef = useRef(createRequestKey)
@@ -47,18 +48,18 @@ export function CredentialTabView({ createRequestKey, credentials, creating, onC
     setFormOpen(false)
   }
 
-  if (credentials.length === 0) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">加载中…</p>
+  if (isLoading) {
+    return <section className="nexus-surface p-8 text-center text-sm text-muted-foreground">加载中…</section>
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-bold text-muted-foreground">{activeItems.length} 个凭证</p>
+        <p className="text-xs font-bold text-muted-foreground">{activeItems.length} 个账号</p>
       </div>
 
       {activeItems.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-12 text-center">暂无凭证，点击上方新增</p>
+        <section className="nexus-surface p-8 text-center text-sm text-muted-foreground">暂无账号记录</section>
       ) : (
         Object.entries(groups).map(([category, items]) => (
           <div key={category} className="space-y-2">

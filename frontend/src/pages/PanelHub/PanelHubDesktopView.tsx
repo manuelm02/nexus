@@ -34,6 +34,7 @@ type PanelHubDesktopViewProps = {
 
   // API Key 数据与操作
   apiKeys: ApiKey[]
+  apiKeysLoading: boolean
   apiKeySyncingId: string | null
   apiKeyCreating: boolean
   onCreateApiKey: (data: Parameters<typeof import('../../api/apiKey.api').apiKeyApi.create>[0]) => void
@@ -44,8 +45,9 @@ type PanelHubDesktopViewProps = {
   onSyncApiKeyBalance: (id: string) => void
   onUnarchiveApiKey: (id: string) => void
 
-  // Credential 数据与操作
+  // 账号数据与操作
   credentials: Credential[]
+  credentialsLoading: boolean
   credentialCreating: boolean
   onCreateCredential: (data: Parameters<typeof import('../../api/credential.api').credentialApi.create>[0]) => void
   onUpdateCredential: (id: string, data: Record<string, unknown>) => void
@@ -53,7 +55,7 @@ type PanelHubDesktopViewProps = {
   onUnarchiveCredential: (id: string) => void
 }
 
-/** Panel Hub 桌面端视图：5 个 Tab（概览/订阅/API Keys/凭据/已归档），全部数据和操作由 index.tsx 通过 props 注入 */
+/** Panel Hub 桌面端视图：5 个 Tab（概览/订阅/API Keys/账号/已归档），全部数据和操作由 index.tsx 通过 props 注入 */
 export function PanelHubDesktopView(props: PanelHubDesktopViewProps) {
   const { view } = props
   const [apiKeyCreateRequestKey, setApiKeyCreateRequestKey] = useState(0)
@@ -68,7 +70,7 @@ export function PanelHubDesktopView(props: PanelHubDesktopViewProps) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold">Panel Hub</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">所有服务、密钥和凭证，一处掌控。</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">订阅、密钥和账号，一处掌控。</p>
         </div>
         {showAddButton && (
           <button type="button"
@@ -112,6 +114,7 @@ export function PanelHubDesktopView(props: PanelHubDesktopViewProps) {
 
       {view === 'apikeys' && (
         <ApiKeyTabView
+          isLoading={props.apiKeysLoading}
           createRequestKey={apiKeyCreateRequestKey}
           apiKeys={props.apiKeys}
           syncingId={props.apiKeySyncingId}
@@ -127,6 +130,7 @@ export function PanelHubDesktopView(props: PanelHubDesktopViewProps) {
 
       {view === 'credentials' && (
         <CredentialTabView
+          isLoading={props.credentialsLoading}
           createRequestKey={credentialCreateRequestKey}
           credentials={props.credentials}
           creating={props.credentialCreating}
@@ -170,7 +174,7 @@ export function PanelHubDesktopView(props: PanelHubDesktopViewProps) {
             )}
             {archivedCredentials.length > 0 && (
               <div className="space-y-2">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">凭据</h3>
+                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">账号</h3>
                 <div className="grid gap-3 lg:grid-cols-2">
                   {archivedCredentials.map((c) => (
                     <CredentialCard key={c.id} item={c} deleting={false}

@@ -4,16 +4,17 @@ import { ProviderForm, type ProviderFormData } from './components/ProviderForm'
 import { TranslateSettingsPanel } from './components/TranslateSettingsPanel'
 import { ChatModelPanel } from './components/ChatModelPanel'
 import { SubscriptionModelPanel } from './components/SubscriptionModelPanel'
-import { SystemConfigSection, type SystemConfigSectionProps } from './components/SystemConfigSection'
+
 import { InboxSettingsPanel } from './components/InboxSettingsPanel'
 import { SubscriptionCategoriesPanel } from './components/SubscriptionCategoriesPanel'
+import { SubscriptionNotificationSettingsPanel } from './components/SubscriptionNotificationSettingsPanel'
 import { MindBankSettingsPanel } from './components/MindBankSettingsPanel'
 import { CrawlSettingsPanel } from './components/CrawlSettingsPanel'
 import { NotesSettingsPanel } from './components/NotesSettingsPanel'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-export type SettingsTab = 'models' | 'translate' | 'inbox' | 'subscriptions' | 'chat' | 'crawl' | 'notes' | 'mindbank' | 'system'
+export type SettingsTab = 'models' | 'translate' | 'inbox' | 'subscriptions' | 'chat' | 'crawl' | 'notes' | 'mindbank'
 
 export type SettingsViewProps = {
   activeSettingsTab: SettingsTab
@@ -73,9 +74,6 @@ export type SettingsViewProps = {
   onSetDefault: (id: string) => void
   onDelete: (id: string) => void
 
-  // System config
-  systemConfig: SystemConfigSectionProps
-
   // Inbox settings
   inboxSettings: {
     settings: InboxSettings
@@ -119,7 +117,7 @@ export function SettingsDesktopView(props: SettingsViewProps) {
     createPending, createError, updatePending, updateError,
     setDefaultPendingId, deletePendingId,
     onCreateSubmit, onUpdateSubmit, onSetDefault, onDelete,
-    systemConfig, inboxSettings, subscriptionCategories, mindbankSettings,
+    inboxSettings, subscriptionCategories, mindbankSettings,
     translateSettings, subscriptionsSettings, chatSettings,
   } = props
 
@@ -128,12 +126,11 @@ export function SettingsDesktopView(props: SettingsViewProps) {
     { key: 'models', label: '模型' },
     { key: 'translate', label: 'Translate' },
     { key: 'inbox', label: 'Inbox' },
-    { key: 'subscriptions', label: 'Subscriptions' },
+    { key: 'subscriptions', label: 'Panel Hub' },
     { key: 'chat', label: 'Chat' },
     { key: 'crawl', label: 'Crawl' },
     { key: 'notes', label: 'Notes' },
     { key: 'mindbank', label: 'Mindbank' },
-    { key: 'system', label: 'System' },
   ]
 
   return (
@@ -274,10 +271,6 @@ export function SettingsDesktopView(props: SettingsViewProps) {
             />
           )}
 
-          {activeSettingsTab === 'system' && (
-            <SystemConfigSection {...systemConfig} />
-          )}
-
           {activeSettingsTab === 'inbox' && !inboxSettings.isLoading && (
             <section className="nexus-surface space-y-4 p-4">
               <InboxSettingsPanel
@@ -308,6 +301,7 @@ export function SettingsDesktopView(props: SettingsViewProps) {
                 onSave={subscriptionsSettings.onSave}
                 onCancel={subscriptionsSettings.onCancel}
               />
+              <SubscriptionNotificationSettingsPanel />
               <section className="nexus-surface space-y-4 p-4">
                 <SubscriptionCategoriesPanel
                   categories={subscriptionCategories.categories}

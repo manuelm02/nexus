@@ -2,6 +2,7 @@ package com.nexus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.nexus.config.SystemConfigKeys;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nexus.dto.request.CreateWorkspaceRequest;
@@ -110,7 +111,7 @@ public class MindBankSuggestionExecutor {
         }
 
         // 为每份创建新 Workspace + 写笔记 + embedding
-        String subFolder = systemConfigService.get("notes.obsidian.sub_folder", "Mindbank");
+        String subFolder = systemConfigService.get(SystemConfigKeys.MINDBANK_OBSIDIAN_SUB_FOLDER, "Mindbank");
         List<String> createdNames = new ArrayList<>();
 
         for (Map<String, String> part : parts) {
@@ -208,7 +209,7 @@ public class MindBankSuggestionExecutor {
         }
 
         // 写入合并后 Master Note
-        String subFolder = systemConfigService.get("notes.obsidian.sub_folder", "Mindbank");
+        String subFolder = systemConfigService.get(SystemConfigKeys.MINDBANK_OBSIDIAN_SUB_FOLDER, "Mindbank");
         notePort.writeMaster(targetName, subFolder, mergedContent);
 
         // 更新目标 Workspace 的 masterNotePath 和 embedding
@@ -259,7 +260,7 @@ public class MindBankSuggestionExecutor {
      * 修正 _index.md：移除指向不存在文件的条目，补充未被索引的 Master Note。
      */
     private String executeFixIndex(MindBankAgentSuggestion suggestion) {
-        String subFolder = systemConfigService.get("notes.obsidian.sub_folder", "Mindbank");
+        String subFolder = systemConfigService.get(SystemConfigKeys.MINDBANK_OBSIDIAN_SUB_FOLDER, "Mindbank");
 
         // 读取现有索引
         String currentIndex = notePort.readIndex(subFolder);

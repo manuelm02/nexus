@@ -1,5 +1,6 @@
 package com.nexus.service;
 
+import com.nexus.config.SystemConfigKeys;
 import com.nexus.dto.request.MindBankSettingsUpdateRequest;
 import com.nexus.dto.response.MindBankSettingsResponse;
 import com.nexus.entity.LlmProvider;
@@ -32,7 +33,7 @@ public class MindBankSettingsService {
     private static final String K_MINIO_ACCESS_KEY = "mindbank.minio.access_key";
     private static final String K_MINIO_SECRET_KEY = "mindbank.minio.secret_key";
     private static final String K_MINIO_BUCKET = "mindbank.minio.bucket";
-    private static final String K_OBSIDIAN_SUB_FOLDER = "mindbank.obsidian.sub_folder";
+    private static final String K_OBSIDIAN_SUB_FOLDER = SystemConfigKeys.MINDBANK_OBSIDIAN_SUB_FOLDER;
     private static final String K_PIPELINE_AUTO_SESSION_NOTE = "mindbank.pipeline.auto_session_note";
 
     // 默认值
