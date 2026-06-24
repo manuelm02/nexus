@@ -20,7 +20,7 @@ import java.util.UUID;
 
 /**
  * CrawlService 编排网页爬取、文件上传转换、MinIO 存储和文档入库的全流程。
- * 网页爬取：Crawl4AiClient 异步提交 + 同步轮询（最长 60s），结果上传 MinIO。
+ * 网页爬取：新版 Crawl4AiClient 同步 API，直接返回结果，无需轮询。
  * 文件上传：MarkItDownClient 转换为 Markdown，原始文件和 Markdown 分别上传 MinIO。
  * 两者均创建 MindBankDocument 记录（workspace_id=null），等待用户导入到 Workspace。
  */
@@ -30,8 +30,6 @@ import java.util.UUID;
 public class CrawlService {
 
     private static final DateTimeFormatter MONTH_FMT = DateTimeFormatter.ofPattern("yyyy-MM");
-    private static final int POLL_MAX_SECONDS = 60;
-    private static final int POLL_INTERVAL_MS = 3000;
     private static final int PREVIEW_LENGTH = 500;
 
     private final Crawl4AiClient crawl4AiClient;
@@ -42,19 +40,17 @@ public class CrawlService {
     private final MindBankPipelineService mindBankPipelineService;
 
     /**
-     * 爬取网页：提交 Crawl4AI 任务 → 轮询直到完成 → 上传 MinIO → 入库。
-     * 同步阻塞等待结果（最长 60s），因为 HTTP 请求需要返回 Markdown 预览给前端。
+     * 爬取网页：同步调用 Crawl4AI → 上传 MinIO → 入库。
+     * 新版 Crawl4AI API 直接同步返回结果，无需轮询。
      *
      * @param url 目标网页 URL
      * @return 包含 docId 和 markdown 预览的结果
      */
     public CrawlResultResponse crawlWeb(String url) {
-        // 1. 提交异步爬取任务
-        String taskId = crawl4AiClient.submitCrawl(url);
-        log.info("Crawl4AI 任务已提交: url={}, taskId={}", url, taskId);
+        // 1. 同步爬取（新版 API 直接返回结果）
+        Crawl4AiResult result = crawl4AiClient.crawl(url);
+        log.info("Crawl4AI 同步爬取完成: url={}", url);
 
-        // 2. 同步轮询直到完成或超时
-        Crawl4AiResult result = pollUntilDone(taskId);
         if (result.isFailed() || result.markdownContent() == null) {
             throw new RuntimeException("网页爬取失败: " + (result.errorMsg() != null ? result.errorMsg() : "未返回内容"));
         }
@@ -181,24 +177,6 @@ public class CrawlService {
     }
 
     // === 内部工具方法 ===
-
-    /** 同步轮询 Crawl4AI 任务直到 completed/failed 或超时 */
-    private Crawl4AiResult pollUntilDone(String taskId) {
-        long deadline = System.currentTimeMillis() + POLL_MAX_SECONDS * 1000L;
-        while (System.currentTimeMillis() < deadline) {
-            Crawl4AiResult result = crawl4AiClient.getResult(taskId);
-            if (result.isCompleted() || result.isFailed()) {
-                return result;
-            }
-            try {
-                Thread.sleep(POLL_INTERVAL_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException("爬取轮询被中断", e);
-            }
-        }
-        return new Crawl4AiResult("failed", null, null, "爬取超时（" + POLL_MAX_SECONDS + "s）");
-    }
 
     /** 读取 MinIO bucket 配置 */
     private String getBucket() {

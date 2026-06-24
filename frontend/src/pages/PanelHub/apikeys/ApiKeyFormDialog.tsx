@@ -6,7 +6,10 @@ import { cn } from '../../../lib/utils'
 import { DatePicker } from '../../../components/ui/DatePicker'
 import type { ApiKey } from '../../../types/domain.types'
 
+type BillingType = 'pay_as_you_go' | 'plan_based'
+
 type ApiKeyFormData = {
+  billingType: BillingType
   label: string
   provider: string
   apiKey: string
@@ -18,14 +21,16 @@ type ApiKeyFormData = {
   notes: string
 }
 
-const PROVIDERS = ['deepseek', 'openai', 'anthropic', 'claude']
+/** 按量计费可用平台（支持 API 余额查询的 Provider） */
+const PAYG_PROVIDERS = ['deepseek']
 
 function emptyForm(): ApiKeyFormData {
-  return { label: '', provider: 'deepseek', apiKey: '', baseUrl: '', planName: '', planExpireDate: '', lowBalanceNotify: false, lowBalanceThreshold: '', notes: '' }
+  return { billingType: 'plan_based', label: '', provider: '', apiKey: '', baseUrl: '', planName: '', planExpireDate: '', lowBalanceNotify: false, lowBalanceThreshold: '', notes: '' }
 }
 
 function itemToForm(item: ApiKey): ApiKeyFormData {
   return {
+    billingType: item.billingType,
     label: item.label,
     provider: item.provider,
     apiKey: '',
@@ -46,7 +51,7 @@ type ApiKeyFormDialogProps = {
   onSubmit: (data: Parameters<typeof import('../../../api/apiKey.api').apiKeyApi.create>[0], id?: string) => void
 }
 
-/** API Key 创建/编辑表单对话框，支持桌面弹窗和移动端底部 Sheet */
+/** API Key 创建/编辑表单对话框，按 billingType 动态显示字段，支持桌面弹窗和移动端底部 Sheet */
 export function ApiKeyFormDialog({ open, item, saving, onOpenChange, onSubmit }: ApiKeyFormDialogProps) {
   const [form, setForm] = useState<ApiKeyFormData>(emptyForm())
 
@@ -58,12 +63,25 @@ export function ApiKeyFormDialog({ open, item, saving, onOpenChange, onSubmit }:
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
+  const setBillingType = (t: BillingType) => {
+    setForm((prev) => ({
+      ...prev,
+      billingType: t,
+      // 切换类型时重置 provider（按量→下拉首项，套餐→清空自由输入）
+      provider: t === 'pay_as_you_go' ? PAYG_PROVIDERS[0] : '',
+    }))
+  }
+
+  const isPayAsYouGo = form.billingType === 'pay_as_you_go'
+  const isEdit = !!item
+
   const handleSubmit = () => {
     if (!form.label.trim() || !form.provider.trim()) return
     const data: Parameters<typeof import('../../../api/apiKey.api').apiKeyApi.create>[0] = {
       label: form.label,
       provider: form.provider,
       apiKey: form.apiKey,
+      billingType: form.billingType,
       baseUrl: form.baseUrl || undefined,
       planName: form.planName || undefined,
       planExpireDate: form.planExpireDate || undefined,
@@ -90,34 +108,59 @@ export function ApiKeyFormDialog({ open, item, saving, onOpenChange, onSubmit }:
           </div>
 
           <div className="mt-3 space-y-3 sm:mt-4">
+            {/* 计费类型切换 */}
+            {!isEdit && (
+              <div className="space-y-1.5">
+                <span className="text-xs font-bold text-muted-foreground">计费类型 *</span>
+                <div className="flex gap-1 rounded-lg bg-muted p-1">
+                  <button type="button" onClick={() => setBillingType('pay_as_you_go')}
+                    className={cn('flex-1 rounded-md py-1.5 text-xs font-bold transition',
+                      isPayAsYouGo ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')}>
+                    按量计费
+                  </button>
+                  <button type="button" onClick={() => setBillingType('plan_based')}
+                    className={cn('flex-1 rounded-md py-1.5 text-xs font-bold transition',
+                      !isPayAsYouGo ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground')}>
+                    套餐型
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 平台：按量→下拉选择，套餐→自由输入 */}
             <label className="block space-y-1">
               <span className="text-xs font-bold text-muted-foreground">平台 *</span>
-              <Select.Root value={form.provider} onValueChange={(v) => update('provider', v)}>
-                <Select.Trigger className="nexus-input inline-flex h-9 w-full items-center justify-between gap-2 px-3 text-xs font-semibold shadow-none focus:outline-none focus:ring-2 focus:ring-ring">
-                  <Select.Value />
-                  <Select.Icon><ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></Select.Icon>
-                </Select.Trigger>
-                <Select.Portal>
-                  <Select.Content position="popper" sideOffset={6} className="z-[90] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg">
-                    <Select.Viewport>
-                      {PROVIDERS.map((p) => (
-                        <Select.Item key={p} value={p} className="relative flex h-9 cursor-default select-none items-center rounded-md px-8 text-xs font-semibold outline-none data-[highlighted]:bg-accent">
-                          <Select.ItemIndicator className="absolute left-2 flex h-4 w-4 items-center justify-center text-primary">
-                            <Check className="h-3.5 w-3.5" />
-                          </Select.ItemIndicator>
-                          <Select.ItemText>{p}</Select.ItemText>
-                        </Select.Item>
-                      ))}
-                    </Select.Viewport>
-                  </Select.Content>
-                </Select.Portal>
-              </Select.Root>
+              {isPayAsYouGo ? (
+                <Select.Root value={form.provider} onValueChange={(v) => update('provider', v)}>
+                  <Select.Trigger className="nexus-input inline-flex h-9 w-full items-center justify-between gap-2 px-3 text-xs font-semibold shadow-none focus:outline-none focus:ring-2 focus:ring-ring">
+                    <Select.Value />
+                    <Select.Icon><ChevronDown className="h-3.5 w-3.5 text-muted-foreground" /></Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content position="popper" sideOffset={6} className="z-[90] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-lg border bg-popover p-1 text-popover-foreground shadow-lg">
+                      <Select.Viewport>
+                        {PAYG_PROVIDERS.map((p) => (
+                          <Select.Item key={p} value={p} className="relative flex h-9 cursor-default select-none items-center rounded-md px-8 text-xs font-semibold outline-none data-[highlighted]:bg-accent">
+                            <Select.ItemIndicator className="absolute left-2 flex h-4 w-4 items-center justify-center text-primary">
+                              <Check className="h-3.5 w-3.5" />
+                            </Select.ItemIndicator>
+                            <Select.ItemText>{p}</Select.ItemText>
+                          </Select.Item>
+                        ))}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+              ) : (
+                <input value={form.provider} onChange={(e) => update('provider', e.target.value)}
+                  className="nexus-input h-9 w-full px-3 text-xs" placeholder="输入平台名，例如：OpenCode GO、百炼、方舟" />
+              )}
             </label>
 
             <label className="block space-y-1">
               <span className="text-xs font-bold text-muted-foreground">标签 *</span>
               <input value={form.label} onChange={(e) => update('label', e.target.value)}
-                className="nexus-input h-9 w-full px-3 text-xs" placeholder="例如：工作 DeepSeek" />
+                className="nexus-input h-9 w-full px-3 text-xs" placeholder={isPayAsYouGo ? '例如：工作 DeepSeek' : '例如：百炼 Pro 套餐'} />
             </label>
 
             <label className="block space-y-1">
@@ -134,38 +177,48 @@ export function ApiKeyFormDialog({ open, item, saving, onOpenChange, onSubmit }:
                 className="nexus-input h-9 w-full px-3 text-xs" placeholder="https://api.deepseek.com" />
             </label>
 
-            <label className="block space-y-1">
-              <span className="text-xs font-bold text-muted-foreground">套餐名称</span>
-              <input value={form.planName} onChange={(e) => update('planName', e.target.value)}
-                className="nexus-input h-9 w-full px-3 text-xs" placeholder="Pro Plan" />
-            </label>
+            {/* 按量计费专属：低余额预警 */}
+            {isPayAsYouGo && (
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-muted-foreground">低余额预警</span>
+                  <button type="button" role="switch" aria-checked={form.lowBalanceNotify}
+                    onClick={() => update('lowBalanceNotify', !form.lowBalanceNotify)}
+                    className={cn('h-5 w-9 rounded-full transition', form.lowBalanceNotify ? 'bg-[hsl(var(--primary))]' : 'bg-muted')}>
+                    <span className={cn('block h-4 w-4 rounded-full bg-white shadow transition-transform m-0.5', form.lowBalanceNotify ? 'translate-x-4' : '')} />
+                  </button>
+                </div>
 
-            <label className="block space-y-1">
-              <span className="text-xs font-bold text-muted-foreground">套餐到期日</span>
-              <DatePicker
-                value={form.planExpireDate}
-                onChange={(v) => update('planExpireDate', v)}
-                allowClear
-                compact
-                placeholder="选择到期日"
-              />
-            </label>
+                {form.lowBalanceNotify && (
+                  <label className="block space-y-1">
+                    <span className="text-xs font-bold text-muted-foreground">预警阈值</span>
+                    <input type="number" min="0" step="0.01" value={form.lowBalanceThreshold} onChange={(e) => update('lowBalanceThreshold', e.target.value)}
+                      className="nexus-input h-9 w-full px-3 text-xs" placeholder="余额低于此值时提醒" />
+                  </label>
+                )}
+              </>
+            )}
 
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-muted-foreground">低余额预警</span>
-              <button type="button" role="switch" aria-checked={form.lowBalanceNotify}
-                onClick={() => update('lowBalanceNotify', !form.lowBalanceNotify)}
-                className={cn('h-5 w-9 rounded-full transition', form.lowBalanceNotify ? 'bg-[hsl(var(--primary))]' : 'bg-muted')}>
-                <span className={cn('block h-4 w-4 rounded-full bg-white shadow transition-transform m-0.5', form.lowBalanceNotify ? 'translate-x-4' : '')} />
-              </button>
-            </div>
+            {/* 套餐型专属：套餐名称 + 到期日 */}
+            {!isPayAsYouGo && (
+              <>
+                <label className="block space-y-1">
+                  <span className="text-xs font-bold text-muted-foreground">套餐名称</span>
+                  <input value={form.planName} onChange={(e) => update('planName', e.target.value)}
+                    className="nexus-input h-9 w-full px-3 text-xs" placeholder="Pro Plan" />
+                </label>
 
-            {form.lowBalanceNotify && (
-              <label className="block space-y-1">
-                <span className="text-xs font-bold text-muted-foreground">预警阈值</span>
-                <input type="number" min="0" step="0.01" value={form.lowBalanceThreshold} onChange={(e) => update('lowBalanceThreshold', e.target.value)}
-                  className="nexus-input h-9 w-full px-3 text-xs" placeholder="余额低于此值时提醒" />
-              </label>
+                <label className="block space-y-1">
+                  <span className="text-xs font-bold text-muted-foreground">套餐到期日</span>
+                  <DatePicker
+                    value={form.planExpireDate}
+                    onChange={(v) => update('planExpireDate', v)}
+                    allowClear
+                    compact
+                    placeholder="选择到期日"
+                  />
+                </label>
+              </>
             )}
 
             <label className="block space-y-1">
@@ -181,7 +234,7 @@ export function ApiKeyFormDialog({ open, item, saving, onOpenChange, onSubmit }:
             </Dialog.Close>
             <button type="button" disabled={saving || !form.label.trim()} onClick={handleSubmit}
               className="nexus-button h-9 px-6 text-xs font-bold sm:w-auto">
-              {saving ? '保存中…' : item ? '保存' : form.provider === 'deepseek' ? '创建并同步余额' : '创建'}
+              {saving ? '保存中…' : item ? '保存' : isPayAsYouGo ? '创建并同步余额' : '创建'}
             </button>
           </div>
         </Dialog.Content>
@@ -189,4 +242,3 @@ export function ApiKeyFormDialog({ open, item, saving, onOpenChange, onSubmit }:
     </Dialog.Root>
   )
 }
-

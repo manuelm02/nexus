@@ -1,7 +1,6 @@
 package com.nexus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.nexus.dto.request.ApiKeyConsumeRequest;
 import com.nexus.dto.request.ApiKeyCreateRequest;
 import com.nexus.dto.request.ApiKeyRechargeRequest;
@@ -64,11 +63,14 @@ public class ApiKeyService {
     }
 
     /**
-     * 创建 API Key：加密存储明文 Key → 可选立即同步余额（仅支持 deepseek Provider）。
+     * 创建 API Key：加密存储明文 Key，根据 billingType 初始化不同字段。
+     * pay_as_you_go：开启余额同步、月消费实时计算；plan_based：清空余额相关字段、只存信息。
      * 若同步失败，整个事务回滚，避免用户拿到一个"余额未知"的 Key。
      */
     @Transactional
     public ApiKeyResponse create(@Valid ApiKeyCreateRequest req) {
+        String billingType = req.getBillingType() != null ? req.getBillingType() : "plan_based";
+
         ApiKey entity = new ApiKey();
         entity.setLabel(req.getLabel());
         entity.setProvider(req.getProvider().toLowerCase());
@@ -79,15 +81,28 @@ public class ApiKeyService {
         entity.setPlanExpireDate(req.getPlanExpireDate());
         entity.setSubscriptionId(req.getSubscriptionId());
         entity.setMonthlySpend(BigDecimal.ZERO);
-        entity.setLowBalanceNotify(Boolean.TRUE.equals(req.getLowBalanceNotify()));
-        entity.setLowBalanceThreshold(req.getLowBalanceThreshold());
-        entity.setApiFetchEnabled("deepseek".equalsIgnoreCase(req.getProvider()));
         entity.setNotes(req.getNotes());
         entity.setArchived(false);
+        entity.setBillingType(billingType);
+
+        // apiFetchEnabled 由 billingType 决定，不再硬编码 Provider 判断
+        entity.setApiFetchEnabled("pay_as_you_go".equals(billingType));
+
+        if ("pay_as_you_go".equals(billingType)) {
+            // 按量计费：初始化月初余额为 0，创建后立即同步余额覆盖
+            entity.setMonthStartBalance(BigDecimal.ZERO);
+            entity.setLowBalanceNotify(Boolean.TRUE.equals(req.getLowBalanceNotify()));
+            entity.setLowBalanceThreshold(req.getLowBalanceThreshold());
+        } else {
+            // 套餐型：清空余额相关字段，不参与余额/消费逻辑
+            entity.setRemainingBalance(null);
+            entity.setLowBalanceNotify(false);
+            entity.setLowBalanceThreshold(null);
+        }
 
         apiKeyMapper.insert(entity);
 
-        // 支持余额自动查询的 Provider 创建后立即同步一次
+        // 仅按量计费 Key 创建后立即同步余额
         if (entity.isApiFetchEnabled()) {
             syncBalanceInternal(entity);
         }
@@ -151,10 +166,17 @@ public class ApiKeyService {
     /**
      * 消费记录：余额扣减 + 月消费累加 + 写入 consume 流水。
      * apiFetchEnabled 账户的 remainingBalance 不受消费影响（以 API 同步为真值），仅写流水用于记账。
+     * 按量计费类型禁止手动消费——月消费由公式 (月初余额 + 月充值 - 当前余额) 实时计算。
      */
     @Transactional
     public ApiKeyResponse consume(String id, ApiKeyConsumeRequest req) {
         ApiKey entity = getOrThrow(id);
+
+        // 按量计费 Key 不允许手动消费记录
+        if ("pay_as_you_go".equals(entity.getBillingType())) {
+            throw new IllegalStateException("按量计费 API Key 不支持手动消费记录，消费由系统自动计算");
+        }
+
         BigDecimal currentBalance = entity.getRemainingBalance() != null ? entity.getRemainingBalance() : BigDecimal.ZERO;
         BigDecimal currentSpend = entity.getMonthlySpend() != null ? entity.getMonthlySpend() : BigDecimal.ZERO;
         entity.setMonthlySpend(currentSpend.add(req.getAmount()));
@@ -238,14 +260,23 @@ public class ApiKeyService {
 
     /**
      * 获取最近 N 条充值/消费流水记录（上限 100，防止恶意大数查询）。
+     * 按量计费只返回 recharge 类型的流水，套餐型返回所有类型。
      */
     public List<ApiKeyLedgerEntry> getLedger(String id, int limit) {
-        getOrThrow(id);
+        ApiKey entity = getOrThrow(id);
         int safeLimit = Math.min(Math.max(limit, 1), 100);
-        return ledgerMapper.selectList(new LambdaQueryWrapper<ApiKeyLedgerEntry>()
+
+        LambdaQueryWrapper<ApiKeyLedgerEntry> query = new LambdaQueryWrapper<ApiKeyLedgerEntry>()
                 .eq(ApiKeyLedgerEntry::getApiKeyId, id)
                 .orderByDesc(ApiKeyLedgerEntry::getCreatedAt)
-                .last("LIMIT " + safeLimit));
+                .last("LIMIT " + safeLimit);
+
+        // 按量计费只展示充值记录，消费由公式自动计算
+        if ("pay_as_you_go".equals(entity.getBillingType())) {
+            query.eq(ApiKeyLedgerEntry::getEntryType, "recharge");
+        }
+
+        return ledgerMapper.selectList(query);
     }
 
     /**
@@ -276,11 +307,75 @@ public class ApiKeyService {
     }
 
     /**
-     * 月初重置所有 API Key 的月消费额。
+     * 查找套餐即将到期的 API Key：planExpireDate 在 daysAhead 天内、未归档。
      */
-    public int resetMonthlySpend() {
-        return apiKeyMapper.update(null, new LambdaUpdateWrapper<ApiKey>()
-                .set(ApiKey::getMonthlySpend, BigDecimal.ZERO));
+    public List<ApiKey> findExpiringPlans(int daysAhead) {
+        LocalDate threshold = LocalDate.now().plusDays(daysAhead);
+        return apiKeyMapper.selectList(new LambdaQueryWrapper<ApiKey>()
+                .eq(ApiKey::isArchived, false)
+                .isNotNull(ApiKey::getPlanExpireDate)
+                .le(ApiKey::getPlanExpireDate, threshold)
+                .ge(ApiKey::getPlanExpireDate, LocalDate.now()));
+    }
+
+    /**
+     * 月初任务：为所有按量计费 Key 快照当前余额到 monthStartBalance。
+     * 月消费由公式 (monthStartBalance + 月充值 - 当前余额) 实时计算，
+     * 更新 monthStartBalance 后公式自然归零，无需手动清 monthlySpend 列。
+     */
+    public int snapshotMonthStartBalance() {
+        List<ApiKey> targets = apiKeyMapper.selectList(new LambdaQueryWrapper<ApiKey>()
+                .eq(ApiKey::getBillingType, "pay_as_you_go")
+                .eq(ApiKey::isArchived, false));
+
+        int count = 0;
+        for (ApiKey key : targets) {
+            key.setMonthStartBalance(
+                    key.getRemainingBalance() != null ? key.getRemainingBalance() : BigDecimal.ZERO);
+            apiKeyMapper.updateById(key);
+            count++;
+        }
+        return count;
+    }
+
+    /**
+     * 实时计算按量计费 API Key 的当月消费。
+     * 公式：月初余额 + 当月充值总额 - 当前余额。
+     * 负值兜底为 0（意味着有未记录的充值，前端可选择性提示）。
+     */
+    private BigDecimal computeMonthlySpend(ApiKey entity) {
+        if (!"pay_as_you_go".equals(entity.getBillingType())) {
+            return entity.getMonthlySpend();
+        }
+
+        BigDecimal monthStart = entity.getMonthStartBalance() != null
+                ? entity.getMonthStartBalance() : BigDecimal.ZERO;
+        BigDecimal currentBalance = entity.getRemainingBalance() != null
+                ? entity.getRemainingBalance() : BigDecimal.ZERO;
+
+        // 查询当月 recharge 总额
+        LocalDate firstDayOfMonth = LocalDate.now().withDayOfMonth(1);
+        BigDecimal monthlyRecharges = getMonthlyRechargeSum(entity.getId(), firstDayOfMonth);
+
+        BigDecimal spend = monthStart.add(monthlyRecharges).subtract(currentBalance);
+
+        // 负值意味着有未记录的充值（用户直接在平台充值），兜底为 0
+        return spend.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : spend;
+    }
+
+    /**
+     * 查询指定 API Key 从 since 日期开始的 recharge 流水总额。
+     */
+    private BigDecimal getMonthlyRechargeSum(String apiKeyId, LocalDate since) {
+        List<ApiKeyLedgerEntry> entries = ledgerMapper.selectList(
+                new LambdaQueryWrapper<ApiKeyLedgerEntry>()
+                        .eq(ApiKeyLedgerEntry::getApiKeyId, apiKeyId)
+                        .eq(ApiKeyLedgerEntry::getEntryType, "recharge")
+                        .ge(ApiKeyLedgerEntry::getOccurredOn, since));
+
+        return entries.stream()
+                .map(ApiKeyLedgerEntry::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     /**
@@ -297,7 +392,14 @@ public class ApiKeyService {
      */
     private ApiKeyResponse toResponse(ApiKey entity) {
         String maskedKey = maskKey(entity.getEncryptedKey());
-        return ApiKeyResponse.from(entity, maskedKey);
+        ApiKeyResponse response = ApiKeyResponse.from(entity, maskedKey);
+
+        // 按量计费：monthlySpend 由公式实时计算，覆盖 DB 中存储的枚举值
+        if ("pay_as_you_go".equals(entity.getBillingType())) {
+            response.setMonthlySpend(computeMonthlySpend(entity));
+        }
+
+        return response;
     }
 
     /**

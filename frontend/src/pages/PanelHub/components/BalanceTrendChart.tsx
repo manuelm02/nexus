@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { formatDate } from '../../../lib/utils'
+import { useContainerReady } from '../../../hooks/useContainerReady'
 
 type BalancePoint = { balance: number; snapshottedAt: string }
 
@@ -19,13 +20,15 @@ export function BalanceTrendChart({ entityId, fetchFn, queryKey, days = 30 }: Ba
   })
   const points = data?.data?.data ?? []
 
+  const { ref, ready } = useContainerReady()
+
   if (points.length < 2) {
     return <p className="text-[11px] text-muted-foreground">同步数据不足，暂无趋势图</p>
   }
 
   return (
-    <div className="h-16 w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div ref={ref} className="h-16 w-full">
+      {ready && <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={points} margin={{ top: 4, right: 4, bottom: 0, left: 4 }}>
           <defs>
             <linearGradient id={`balance-${entityId}`} x1="0" y1="0" x2="0" y2="1">
@@ -42,7 +45,7 @@ export function BalanceTrendChart({ entityId, fetchFn, queryKey, days = 30 }: Ba
           />
           <Area type="monotone" dataKey="balance" name="余额" stroke="hsl(var(--primary))" fill={`url(#balance-${entityId})`} strokeWidth={1.5} />
         </AreaChart>
-      </ResponsiveContainer>
+      </ResponsiveContainer>}
     </div>
   )
 }

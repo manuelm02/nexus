@@ -9,6 +9,8 @@ import java.time.LocalDate;
 @Data
 public class ApiKeyUpdateRequest {
     private String label;
+    /** 计费类型：pay_as_you_go / plan_based */
+    private String billingType;
     private String provider;
     /** 若提供则 Service 重新加密存储 */
     private String apiKey;

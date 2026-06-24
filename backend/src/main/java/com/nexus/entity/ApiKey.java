@@ -22,6 +22,12 @@ public class ApiKey {
     private String id;
     private String label;
     private String provider;
+    /** 计费类型：pay_as_you_go(按量) / plan_based(套餐)，核心分类字段 */
+    private String billingType;
+
+    /** 月初余额快照，用于实时计算当月消费：月初余额 + 当月充值 - 当前余额（仅按量计费使用） */
+    private BigDecimal monthStartBalance;
+
     private String encryptedKey;
     private String baseUrl;
     private String status;
