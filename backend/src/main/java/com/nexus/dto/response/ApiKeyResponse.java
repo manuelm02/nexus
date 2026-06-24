@@ -13,6 +13,10 @@ public class ApiKeyResponse {
     private String id;
     private String label;
     private String provider;
+    /** 计费类型：pay_as_you_go(按量) / plan_based(套餐) */
+    private String billingType;
+    /** 月初余额快照（仅按量计费使用） */
+    private BigDecimal monthStartBalance;
     /** 打码后的 Key，如 sk-abc...wxyz */
     private String maskedKey;
     private String baseUrl;
@@ -43,6 +47,8 @@ public class ApiKeyResponse {
         r.setId(entity.getId());
         r.setLabel(entity.getLabel());
         r.setProvider(entity.getProvider());
+        r.setBillingType(entity.getBillingType());
+        r.setMonthStartBalance(entity.getMonthStartBalance());
         r.setMaskedKey(maskedKey);
         r.setBaseUrl(entity.getBaseUrl());
         r.setStatus(entity.getStatus());

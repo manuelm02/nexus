@@ -15,7 +15,7 @@ import java.util.List;
 
 /**
  * StoragePort 的 MinIO 实现，委托已有 MinioService 完成实际操作。
- * bucket 从 SystemConfigService 读取 mindbank.minio.bucket，未配置时使用 "nexus" 作为兜底。
+ * bucket 从 SystemConfigService 读取 mindbank.minio.bucket，未配置时使用 "mindbank" 作为兜底。
  *
  * 不在此处重复 MinioClient 构造和加密凭据管理逻辑，全部复用 MinioService。
  */
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MinioStorageAdapter implements StoragePort {
 
-    private static final String DEFAULT_BUCKET = "nexus";
+    private static final String DEFAULT_BUCKET = "mindbank";
 
     private final MinioService minioService;
     private final com.nexus.service.SystemConfigService systemConfigService;

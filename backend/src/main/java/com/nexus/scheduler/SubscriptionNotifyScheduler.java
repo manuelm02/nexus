@@ -52,12 +52,13 @@ public class SubscriptionNotifyScheduler {
     }
 
     /**
-     * 每月 1 日 00:10 重置所有 API Key 的当月消费。
+     * 每月 1 日 00:10 快照所有按量计费 Key 的当前余额到 monthStartBalance。
+     * 月消费由公式 (monthStartBalance + 月充值 - 当前余额) 实时计算，无需手动清 monthlySpend。
      */
     @Scheduled(cron = "0 10 0 1 * *")
-    public void resetMonthlySpend() {
-        int affected = apiKeyService.resetMonthlySpend();
-        log.info("API Key 月初消费重置完成，共 {} 条", affected);
+    public void snapshotMonthStartBalance() {
+        int affected = apiKeyService.snapshotMonthStartBalance();
+        log.info("API Key 月初余额快照完成，共 {} 条", affected);
     }
 
     /**
@@ -121,7 +122,7 @@ public class SubscriptionNotifyScheduler {
             );
             notificationServices.forEach(svc -> {
                 try {
-                    svc.send(null, NotificationEvent.SUBSCRIPTION_LOW_BALANCE, payload);
+                    svc.send(null, NotificationEvent.API_KEY_LOW_BALANCE, payload);
                 } catch (Exception e) {
                     log.warn("发送低余额提醒失败 [{}]: {}", svc.channel(), e.getMessage());
                 }
@@ -147,12 +148,37 @@ public class SubscriptionNotifyScheduler {
             );
             notificationServices.forEach(svc -> {
                 try {
-                    svc.send(null, NotificationEvent.SUBSCRIPTION_EXPIRING, payload);
+                    svc.send(null, NotificationEvent.CREDENTIAL_EXPIRING, payload);
                 } catch (Exception e) {
                     log.warn("发送凭证到期提醒失败 [{}]: {}", svc.channel(), e.getMessage());
                 }
             });
         });
         log.info("凭证到期提醒发送完成，共 {} 条", expiring.size());
+    }
+
+    /**
+     * 每天 09:05 检查 API Key 套餐到期（7 天内）并发送通知。
+     */
+    @Scheduled(cron = "0 5 9 * * *")
+    public void checkApiKeyPlanExpiry() {
+        List<ApiKey> expiring = apiKeyService.findExpiringPlans(7);
+        if (expiring.isEmpty()) return;
+
+        expiring.forEach(k -> {
+            Map<String, Object> payload = Map.of(
+                    "name", k.getLabel(),
+                    "expire_date", k.getPlanExpireDate().toString(),
+                    "days_left", java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now(), k.getPlanExpireDate())
+            );
+            notificationServices.forEach(svc -> {
+                try {
+                    svc.send(null, NotificationEvent.API_KEY_PLAN_EXPIRING, payload);
+                } catch (Exception e) {
+                    log.warn("发送 API Key 套餐到期提醒失败 [{}]: {}", svc.channel(), e.getMessage());
+                }
+            });
+        });
+        log.info("API Key 套餐到期提醒发送完成，共 {} 条", expiring.size());
     }
 }

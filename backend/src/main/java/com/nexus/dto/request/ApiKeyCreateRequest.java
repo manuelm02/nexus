@@ -12,6 +12,9 @@ public class ApiKeyCreateRequest {
     @NotBlank(message = "标签不能为空")
     private String label;
 
+    /** 计费类型：pay_as_you_go / plan_based，默认 plan_based */
+    private String billingType;
+
     @NotBlank(message = "平台不能为空")
     private String provider;
 

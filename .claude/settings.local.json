@@ -27,7 +27,22 @@
       "Bash(xargs -I{} sh -c 'echo === {} ===; cat {}')",
       "WebSearch",
       "Bash(git log *)",
-      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")"
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(/usr/libexec/java_home -v 21)",
+      "Bash(JAVA_HOME=$\\(/usr/libexec/java_home -v 21 || echo /Users/manuelm/.local/share/mise/installs/java/21/bin/..\\) mvn -q compile)",
+      "Bash(npx tsc *)",
+      "Bash(mise exec *)",
+      "WebFetch(domain:docs.crawl4ai.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:github.com)",
+      "Bash(pip show *)",
+      "Bash(pip3 show *)",
+      "Bash(curl -s http://192.168.110.10:3003/health)",
+      "Bash(curl -s http://192.168.110.10:11235/health)",
+      "Bash(curl -sL \"https://api.github.com/repos/unclecode/crawl4ai/git/trees/main?recursive=1\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(x['path']\\) for x in d.get\\('tree',[]\\) if 'server' in x['path'].lower\\(\\) or 'api' in x['path'].lower\\(\\) or 'docker' in x['path'].lower\\(\\) or 'dispatch' in x['path'].lower\\(\\) or 'route' in x['path'].lower\\(\\)]\")",
+      "Bash(curl -sL \"https://api.github.com/repos/unclecode/crawl4ai/contents/docs\")",
+      "Bash(python3 -c \"import sys,json; [print\\(x['name'], x['type']\\) for x in json.load\\(sys.stdin\\)]\")"
     ]
   },
   "enabledPlugins": {

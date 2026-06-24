@@ -131,9 +131,8 @@ type SubscriptionFormFieldsProps = {
 const BILLING_TYPES = Object.keys(BILLING_TYPE_LABELS)
 const CURRENCIES = ['CNY', 'USD', 'EUR', 'HKD', 'JPY']
 
-// 计费类型下拉，已移除按量类型
-function billingTypeOptions(currentType: string): string[] {
-  return currentType === 'per_token' ? BILLING_TYPES : BILLING_TYPES
+function billingTypeOptions(): string[] {
+  return BILLING_TYPES
 }
 
 function FieldLabel({ label, children }: { label: string; children: ReactNode }) {
@@ -209,7 +208,7 @@ export function SubscriptionFormFields({ values, editing, item: _item, onChange,
           />
         </FieldLabel>
         <FieldLabel label="计费类型">
-          <SelectField value={values.billingType} options={billingTypeOptions(bt)} labels={BILLING_TYPE_LABELS} onChange={(v) => setField('billingType', v)} />
+          <SelectField value={values.billingType} options={billingTypeOptions()} labels={BILLING_TYPE_LABELS} onChange={(v) => setField('billingType', v)} />
         </FieldLabel>
       </div>
 

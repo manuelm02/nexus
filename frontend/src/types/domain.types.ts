@@ -164,6 +164,10 @@ export interface ApiKey {
   id: string
   label: string
   provider: string
+  /** 计费类型：pay_as_you_go(按量) / plan_based(套餐) */
+  billingType: 'pay_as_you_go' | 'plan_based'
+  /** 月初余额快照（仅按量计费使用） */
+  monthStartBalance?: number
   maskedKey: string
   baseUrl?: string
   status: 'active' | 'exhausted' | 'disabled'

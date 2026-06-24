@@ -50,6 +50,15 @@ public class TelegramNotificationService implements NotificationService {
             case SUBSCRIPTION_EXPIRING -> String.format(
                     "⚠️ <b>订阅即将到期</b>\n%s 将在 %s 天后到期（%s）",
                     payload.get("name"), payload.get("days_left"), payload.get("expire_date"));
+            case API_KEY_PLAN_EXPIRING -> String.format(
+                    "⚠️ <b>API Key 套餐即将到期</b>\n%s 将在 %s 天后到期（%s）",
+                    payload.get("name"), payload.get("days_left"), payload.get("expire_date"));
+            case API_KEY_LOW_BALANCE -> String.format(
+                    "💰 <b>API Key 余额不足</b>\n%s 余额 %s，低于阈值 %s",
+                    payload.get("name"), payload.get("remaining_balance"), payload.get("threshold"));
+            case CREDENTIAL_EXPIRING -> String.format(
+                    "🔑 <b>凭证即将到期</b>\n%s（%s）将在 %s 天后到期（%s）",
+                    payload.get("platform"), payload.get("label"), payload.get("days_left"), payload.get("expire_date"));
             case TASK_COMPLETED -> String.format("✅ 任务完成");
             default -> event.name() + ": " + payload;
         };

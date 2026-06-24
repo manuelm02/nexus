@@ -14,7 +14,7 @@ public class SubscriptionCreateRequest {
     private String category;
     private BigDecimal price;
     private String currency = "CNY";
-    private String billingType;  // monthly|yearly|per_token|lifetime|one_time
+    private String billingType;  // monthly|yearly|lifetime|one_time
     private LocalDate startDate;
     private LocalDate expireDate;
     private LocalDate nextBillingDate;

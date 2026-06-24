@@ -2,8 +2,9 @@ import type { ApiKey } from '../../../types/domain.types'
 
 export type BalanceHealth = 'normal' | 'low' | 'empty'
 
-/** 根据余额和阈值判断健康状态 */
+/** 根据余额和阈值判断健康状态，套餐型永远 normal（无余额概念） */
 export function balanceHealth(item: ApiKey): BalanceHealth {
+  if (item.billingType === 'plan_based') return 'normal'
   const balance = item.remainingBalance ?? 0
   if (balance <= 0) return 'empty'
   if (item.lowBalanceNotify && item.lowBalanceThreshold && balance < item.lowBalanceThreshold) return 'low'

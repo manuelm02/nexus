@@ -5,13 +5,18 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
+import java.net.Proxy;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 /**
- * Crawl4AI 爬虫服务客户端，支持异步提交 URL 爬取任务并轮询结果。
- * 基础地址从 SystemConfigService 读取，默认 http://192.168.110.10:3003。
+ * Crawl4AI 爬虫服务客户端，新版同步 API：POST /crawl 阻塞返回 results 数组。
+ * 基础地址从 SystemConfigService 读取，默认 http://192.168.110.10:11235。
  * Crawl4AI 无需认证，URL 为公开配置项。
  */
 @Slf4j
@@ -19,7 +24,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class Crawl4AiClient {
 
-    private static final String DEFAULT_BASE_URL = "http://192.168.110.10:3003";
+    private static final String DEFAULT_BASE_URL = "http://192.168.110.10:11235";
     private static final String CONFIG_URL = "crawl.crawl4ai.url";
 
     private final SystemConfigService systemConfigService;
@@ -29,56 +34,78 @@ public class Crawl4AiClient {
         log.info("Crawl4AI 配置：baseUrl={}", systemConfigService.get(CONFIG_URL, DEFAULT_BASE_URL));
     }
 
+    /**
+     * 构建 RestClient，同步 API 爬取耗时长，readTimeout 设为 120 秒。
+     */
+    /** Crawl4AI 部署在内网，必须绕过本地 HTTP 代理直连 */
     private RestClient client() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(10));
+        factory.setReadTimeout(Duration.ofSeconds(120));
+        factory.setProxy(Proxy.NO_PROXY);
         return RestClient.builder()
                 .baseUrl(systemConfigService.get(CONFIG_URL, DEFAULT_BASE_URL))
                 .defaultHeader("Accept", "application/json")
+                .requestFactory(factory)
                 .build();
     }
 
     /**
-     * 提交 URL 爬取任务，Crawl4AI 异步处理。
+     * 同步爬取 URL，新版 API 直接阻塞返回结果，无需轮询。
      *
      * @param url 目标网页 URL
-     * @return 任务 ID，用于后续 getResult 轮询
+     * @return 爬取结果，包含 Markdown 和 HTML 内容
      */
-    public String submitCrawl(String url) {
-        Map<String, Object> body = Map.of("url", url);
+    public Crawl4AiResult crawl(String url) {
+        // 新版 API 请求体：urls 数组 + browser_config + crawler_config
+        Map<String, Object> body = Map.of(
+                "urls", List.of(url),
+                "browser_config", Map.of(),
+                "crawler_config", Map.of()
+        );
+
         Map<?, ?> resp = client().post()
                 .uri("/crawl")
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
                 .body(Map.class);
-        Object taskId = resp.get("task_id");
-        if (taskId == null) {
-            throw new RuntimeException("Crawl4AI 提交任务失败: 响应缺少 task_id 字段");
-        }
-        return String.valueOf(taskId);
-    }
 
-    /**
-     * 查询任务状态和结果，前端或 Pipeline 据此轮询直到 completed/failed。
-     *
-     * @param taskId submitCrawl 返回的任务 ID
-     * @return 任务结果，包含状态和爬取内容
-     */
-    @SuppressWarnings("unchecked")
-    public Crawl4AiResult getResult(String taskId) {
-        Map<String, Object> resp = client().get()
-                .uri("/task/{taskId}", taskId)
-                .retrieve()
-                .body(Map.class);
-        String status = String.valueOf(resp.get("status"));
-        String errorMsg = resp.get("error") != null ? String.valueOf(resp.get("error")) : null;
-
-        if ("completed".equals(status)) {
-            Map<String, Object> result = (Map<String, Object>) resp.get("result");
-            if (result != null) {
-                String markdown = result.get("markdown") != null ? String.valueOf(result.get("markdown")) : null;
-                String html = result.get("html") != null ? String.valueOf(result.get("html")) : null;
-                return new Crawl4AiResult(status, markdown, html, null);
-            }
+        // 检查顶层 success 标志
+        Boolean success = (Boolean) resp.get("success");
+        if (!Boolean.TRUE.equals(success)) {
+            throw new RuntimeException("Crawl4AI 爬取失败");
         }
-        return new Crawl4AiResult(status, null, null, errorMsg);
+
+        List<?> results = (List<?>) resp.get("results");
+        if (results == null || results.isEmpty()) {
+            throw new RuntimeException("Crawl4AI 返回空结果");
+        }
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> first = (Map<String, Object>) results.get(0);
+
+        // 检查单个结果的 success 标志
+        Boolean resultSuccess = (Boolean) first.get("success");
+        if (!Boolean.TRUE.equals(resultSuccess)) {
+            String errorMsg = first.get("error_message") != null
+                    ? String.valueOf(first.get("error_message")) : "未知错误";
+            throw new RuntimeException("Crawl4AI 爬取失败: " + errorMsg);
+        }
+
+        // Markdown 在新版 API 中是嵌套对象，优先用 fit_markdown（智能过滤版），为空降级到 raw_markdown
+        String markdown = null;
+        Object markdownObj = first.get("markdown");
+        if (markdownObj instanceof Map<?, ?> mdMap) {
+            markdown = mdMap.get("fit_markdown") != null
+                    ? String.valueOf(mdMap.get("fit_markdown"))
+                    : String.valueOf(mdMap.get("raw_markdown"));
+        } else if (markdownObj != null) {
+            markdown = String.valueOf(markdownObj);
+        }
+
+        String html = first.get("html") != null ? String.valueOf(first.get("html")) : null;
+
+        return new Crawl4AiResult("completed", markdown, html, null);
     }
 }

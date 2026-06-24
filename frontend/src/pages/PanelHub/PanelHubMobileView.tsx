@@ -6,7 +6,8 @@ import { PanelHubDashboard } from './components/PanelHubDashboard'
 import { SubscriptionCard } from './components/SubscriptionCard'
 import { PanelHubViewTabs } from './components/PanelHubViewTabs'
 import { ApiKeyTabView } from './apikeys/ApiKeyTabView'
-import { ApiKeyCard } from './apikeys/ApiKeyCard'
+import { PayAsYouGoCard } from './apikeys/PayAsYouGoCard'
+import { PlanBasedCard } from './apikeys/PlanBasedCard'
 import { CredentialTabView } from './credentials/CredentialTabView'
 import { CredentialCard } from './credentials/CredentialCard'
 
@@ -163,12 +164,16 @@ export function PanelHubMobileView(props: PanelHubMobileViewProps) {
                 <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">API Keys</h3>
                 <div className="space-y-3">
                   {archivedApiKeys.map((k) => (
-                    <ApiKeyCard key={k.id} item={k} deleting={false} syncing={props.apiKeySyncingId === k.id}
-                      onEdit={() => {}} onDelete={props.onDeleteApiKey}
-                      onRecharge={(id, amount, note) => props.onRechargeApiKey(id, { amount, note })}
-                      onConsume={(id, amount, note) => props.onConsumeApiKey(id, { amount, note })}
-                      onSyncBalance={props.onSyncApiKeyBalance}
-                      onUnarchive={props.onUnarchiveApiKey} />
+                    k.billingType === 'pay_as_you_go' ? (
+                      <PayAsYouGoCard key={k.id} item={k} deleting={false} syncing={props.apiKeySyncingId === k.id}
+                        onEdit={() => {}} onDelete={props.onDeleteApiKey}
+                        onRecharge={(id, amount, note) => props.onRechargeApiKey(id, { amount, note })}
+                        onSyncBalance={props.onSyncApiKeyBalance} />
+                    ) : (
+                      <PlanBasedCard key={k.id} item={k} deleting={false}
+                        onEdit={() => {}} onDelete={props.onDeleteApiKey}
+                        onUnarchive={props.onUnarchiveApiKey} />
+                    )
                   ))}
                 </div>
               </div>

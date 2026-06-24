@@ -11,6 +11,7 @@ export const apiKeyApi = {
     label: string
     provider: string
     apiKey: string
+    billingType?: 'pay_as_you_go' | 'plan_based'
     baseUrl?: string
     planName?: string
     planExpireDate?: string
