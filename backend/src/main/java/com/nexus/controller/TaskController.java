@@ -9,7 +9,11 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 异步任务查询接口：查询任务列表、详情、保留/删除操作。
+ * 通用任务查询接口——接口保留给未来任务中心和内部调试使用。
+ * <p>
+ * 当前不是所有业务长任务都已接入该表（例如 Mindbank Agent 使用独立的 mindbank_agent_tasks 表），
+ * 因此前台暂不显性暴露入口，但列表、详情、保留/删除等基本查询能力已具备。
+ * </p>
  */
 @RestController
 @RequestMapping("/api/v1/tasks")

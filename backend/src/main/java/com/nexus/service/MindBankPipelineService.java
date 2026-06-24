@@ -1,6 +1,7 @@
 package com.nexus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.config.SystemConfigKeys;
 import com.nexus.entity.MindBankDocument;
 import com.nexus.entity.MindBankPromptTemplate;
 import com.nexus.entity.MindBankWorkspace;
@@ -267,7 +268,7 @@ public class MindBankPipelineService {
     private void step4WriteObsidian(Long docId) {
         MindBankDocument doc = getDoc(docId);
         MindBankWorkspace workspace = getWorkspace(doc.getWorkspaceId());
-        String subFolder = systemConfigService.get("notes.obsidian.sub_folder", "Mindbank");
+        String subFolder = systemConfigService.get(SystemConfigKeys.MINDBANK_OBSIDIAN_SUB_FOLDER, "Mindbank");
 
         String folderClassifyPrompt = getDefaultPromptTemplate("classify_folder")
             .replace("{existing_folders}", getExistingFolders(subFolder))

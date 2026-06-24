@@ -1,6 +1,7 @@
 package com.nexus.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nexus.config.SystemConfigKeys;
 import com.nexus.entity.MindBankDocument;
 import com.nexus.entity.MindBankWorkspace;
 import com.nexus.mapper.MindBankDocumentMapper;
@@ -62,7 +63,7 @@ public class MindBankAgentTools {
 
     @Tool("读取知识库全局索引（_index.md），查看所有已整理的知识条目和结构")
     public String readIndex() {
-        String subFolder = systemConfigService.get("notes.obsidian.sub_folder", "Mindbank");
+        String subFolder = systemConfigService.get(SystemConfigKeys.MINDBANK_OBSIDIAN_SUB_FOLDER, "Mindbank");
         String index = notePort.readIndex(subFolder);
         return index.isBlank() ? "全局索引为空，尚无已整理的知识条目" : index;
     }

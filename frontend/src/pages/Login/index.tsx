@@ -46,7 +46,7 @@ export default function LoginPage() {
           </div>
           <div className="grid gap-2 text-xs text-secondary-foreground/65">
             <span>ToDo · Translate · Inbox</span>
-            <span>Subscriptions · Chat · Mindbank</span>
+            <span>Panel Hub · Chat · Mindbank</span>
           </div>
         </div>
         <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8 md:p-10">

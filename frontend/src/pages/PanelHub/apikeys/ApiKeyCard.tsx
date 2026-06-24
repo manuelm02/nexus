@@ -107,9 +107,9 @@ export function ApiKeyCard({ item, deleting, syncing, onEdit, onDelete, onUnarch
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground">
             <span className={cn(health !== 'normal' && TEXT_COLOR_BY_HEALTH[health])}>
-              余额：{item.remainingBalance?.toFixed(2) ?? '—'}
+              {item.apiFetchEnabled ? '官方余额：' : '余额：'}{item.remainingBalance?.toFixed(2) ?? '—'}
             </span>
-            <span>月消费：{item.monthlySpend?.toFixed(2) ?? '0.00'}</span>
+            <span>{item.apiFetchEnabled ? '本月记录消费：' : '月消费：'}{item.monthlySpend?.toFixed(2) ?? '0.00'}</span>
             {item.lowBalanceThreshold != null && (
               <span>预警阈值：{item.lowBalanceThreshold.toFixed(2)}</span>
             )}
@@ -131,7 +131,7 @@ export function ApiKeyCard({ item, deleting, syncing, onEdit, onDelete, onUnarch
 
       {item.apiFetchEnabled && (
         <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>余额由 {item.provider} 自动同步{item.apiLastFetchedAt ? `（${formatRelative(item.apiLastFetchedAt)}）` : ''}</span>
+          <span>余额由 {item.provider} 官方同步，手动消费只记录流水和月消费，不改写官方余额{item.apiLastFetchedAt ? `（同步于 ${formatRelative(item.apiLastFetchedAt)}）` : ''}</span>
           <button type="button" onClick={() => onSyncBalance(item.id)} disabled={syncing} className="nexus-button-utility h-7 gap-1 px-2 text-[11px]">
             <RefreshCw className={cn('h-3 w-3', syncing && 'animate-spin')} /> 刷新余额
           </button>

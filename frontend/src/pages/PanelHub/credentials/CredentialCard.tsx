@@ -15,7 +15,7 @@ type CredentialCardProps = {
   onUnarchive?: (id: string) => void
 }
 
-/** 凭证卡片：展示平台、用户名、密码打码/揭示/复制、TOTP 实时验证码 */
+/** 账号卡片：展示平台、用户名、密码打码/揭示/复制、TOTP 实时验证码 */
 export function CredentialCard({ item, deleting, onEdit, onDelete, onUnarchive }: CredentialCardProps) {
   const [passwordRevealed, setPasswordRevealed] = useState(false)
   const [passwordText, setPasswordText] = useState('')

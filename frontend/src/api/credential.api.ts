@@ -2,7 +2,7 @@ import { apiClient } from './client'
 import type { Credential } from '../types/domain.types'
 import type { ApiResponse } from '../types/api.types'
 
-/** 账号凭据管理接口：管理各平台登录账号、密码和 TOTP 密钥的加密存储 */
+/** 账号信息管理接口：管理各平台登录账号、密码和 TOTP 密钥的加密存储 */
 export const credentialApi = {
   list: () =>
     apiClient.get<ApiResponse<Credential[]>>('/credentials'),

@@ -11,7 +11,7 @@ import type { SubscriptionPayload } from './components/SubscriptionFormFields'
 import { useApiKeys } from './apikeys/useApiKeys'
 import { useCredentials } from './credentials/useCredentials'
 
-/** PanelHubPage 编排订阅、API Key、凭证的全部数据查询和操作，桌面/移动视图共享 */
+/** PanelHubPage 编排订阅、API Key、账号的全部数据查询和操作，桌面/移动视图共享 */
 export default function PanelHubPage() {
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<SubscriptionFilter>('all')
@@ -35,11 +35,11 @@ export default function PanelHubPage() {
     queryFn: () => subscriptionCategoryApi.list(),
   })
 
-  // API Keys 和凭证完整 Hook：index.tsx 是唯一数据源，Desktop/Mobile 通过 props 接收全部数据和操作
+  // API Keys 和账号完整 Hook：index.tsx 是唯一数据源，Desktop/Mobile 通过 props 接收全部数据和操作
   const apiKeyHook = useApiKeys()
   const credentialHook = useCredentials()
-  const { apiKeys } = apiKeyHook
-  const { credentials } = credentialHook
+  const { apiKeys, isLoading: apiKeysLoading } = apiKeyHook
+  const { credentials, isLoading: credentialsLoading } = credentialHook
 
   const items: Subscription[] = useMemo(() => data?.data?.data ?? [], [data])
   const stats = statsData?.data?.data ?? null
@@ -179,6 +179,7 @@ export default function PanelHubPage() {
 
     // API Key 数据与操作（F2：统一提升到 index.tsx，避免 Desktop/Mobile 重复调用 Hook）
     apiKeys: apiKeyHook.apiKeys,
+    apiKeysLoading,
     apiKeySyncingId: apiKeyHook.syncingId,
     apiKeyCreating: apiKeyHook.creating,
     onCreateApiKey: apiKeyHook.create,
@@ -189,8 +190,9 @@ export default function PanelHubPage() {
     onSyncApiKeyBalance: apiKeyHook.syncBalance,
     onUnarchiveApiKey: handleUnarchiveApiKey,
 
-    // Credential 数据与操作
+    // 账号（Credential）数据与操作
     credentials: credentialHook.credentials,
+    credentialsLoading,
     credentialCreating: credentialHook.creating,
     onCreateCredential: credentialHook.create,
     onUpdateCredential: credentialHook.update,

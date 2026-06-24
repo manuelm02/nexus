@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { credentialApi } from '../../../api/credential.api'
 import type { Credential } from '../../../types/domain.types'
 
-/** 凭证数据操作 Hook：集中管理列表和 CRUD */
+/** 账号数据操作 Hook：集中管理列表和 CRUD */
 export function useCredentials() {
   const queryClient = useQueryClient()
 

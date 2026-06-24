@@ -205,7 +205,7 @@ export interface ApiKeyBalanceSnapshot {
   snapshottedAt: string
 }
 
-/** 账号凭证 */
+/** 账号 */
 export interface Credential {
   id: string
   platform: string
@@ -607,4 +607,16 @@ export interface MindBankSettingsUpdateRequest {
   mindbankOrganizeProviderId?: string
   mindbankCondenseProviderId?: string
   pipelineAutoSessionNote?: boolean
+}
+
+// ==================== 订阅提醒设置 ====================
+
+/** Panel Hub 订阅提醒设置（到期前提醒天数） */
+export interface SubscriptionSettings {
+  notifyDaysBefore: number
+}
+
+/** 订阅提醒设置更新请求（范围 1-90） */
+export interface SubscriptionSettingsUpdateRequest {
+  notifyDaysBefore?: number
 }
