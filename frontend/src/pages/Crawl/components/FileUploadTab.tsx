@@ -30,11 +30,7 @@ export function FileUploadTab({ onUpload, isPending, error, result }: FileUpload
 
   return (
     <section className="nexus-surface space-y-4 p-4">
-      <div className="flex items-center gap-2">
-        <UploadCloud className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-extrabold text-foreground">文件上传</h2>
-      </div>
-
+      {/* 标题由页眉 tab「文件上传」承担，此处不再重复 */}
       {/* 拖拽上传区（桌面端）/ 点击选择区（移动端） */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}

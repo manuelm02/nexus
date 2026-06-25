@@ -107,9 +107,9 @@ function statusIcon(status: PipelineStepStatus): {
     case 'processing':
       return { Icon: Loader2, color: 'bg-primary/10 text-primary', spin: true }
     case 'done':
-      return { Icon: CheckCircle2, color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', spin: false }
+      return { Icon: CheckCircle2, color: 'bg-accent text-foreground', spin: false }
     case 'failed':
-      return { Icon: XCircle, color: 'bg-destructive/10 text-destructive', spin: false }
+      return { Icon: XCircle, color: 'bg-muted text-muted-foreground', spin: false }
   }
 }
 

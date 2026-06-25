@@ -82,7 +82,7 @@ export function SuggestionCard({
 
       {/* 采纳成功结果展示 */}
       {isAccepted && executeResult && (
-        <div className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-500">
+        <div className="flex items-center gap-1.5 text-xs text-success">
           <CheckCircle className="h-3.5 w-3.5 shrink-0" />
           <span>已采纳</span>
           <span className="text-muted-foreground">— {executeResult}</span>
@@ -91,7 +91,7 @@ export function SuggestionCard({
 
       {/* 执行错误提示（可重试） */}
       {executeError && (
-        <p className="text-xs text-red-500">
+        <p className="text-xs text-destructive">
           {executeError}（可重试）
         </p>
       )}
@@ -141,7 +141,7 @@ export function SuggestionCard({
 
       {/* accepted 状态（未记录本地执行结果时兜底展示） */}
       {isAccepted && !executeResult && (
-        <div className="flex items-center gap-1.5 pt-1 text-xs text-green-600 dark:text-green-500">
+        <div className="flex items-center gap-1.5 pt-1 text-xs text-success">
           <CheckCircle className="h-3.5 w-3.5" />
           <span>已采纳</span>
         </div>
@@ -154,8 +154,8 @@ export function SuggestionCard({
 function StatusBadge({ status }: { status: SuggestionStatus }) {
   const styles: Record<SuggestionStatus, string> = {
     pending: 'bg-muted text-muted-foreground',
-    accepted: 'bg-green-500/15 text-green-600 dark:text-green-500',
-    ignored: 'bg-gray-500/10 text-gray-500 line-through',
+    accepted: 'bg-success-soft text-success',
+    ignored: 'bg-muted text-muted-foreground line-through',
   }
   const labels: Record<SuggestionStatus, string> = {
     pending: '待审批',

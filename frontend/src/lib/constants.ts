@@ -1,13 +1,21 @@
 export const NAV_ITEMS = [
-  { path: '/chat',            label: 'Chat',            icon: 'Sparkles'  },
-  { path: '/todo',            label: 'ToDo',            icon: 'Target'    },
-  { path: '/inbox',           label: 'Inbox',           icon: 'Feather'   },
-  { path: '/notes',           label: 'Notes',           icon: 'FileText'  },
-  { path: '/crawl',           label: 'Crawl',           icon: 'Radio'     },
-  { path: '/mindbank',        label: 'Mindbank',        icon: 'Brain'     },
-  { path: '/coding-practice', label: 'Coding Practice', icon: 'Hammer'    },
-  { path: '/translate',       label: 'Translate',       icon: 'Languages' },
-  { path: '/panel-hub',      label: 'Panel Hub',        icon: 'LayoutDashboard'},
+  { path: '/chat',            label: 'Chat',            icon: 'Sparkles',  group: 'space'   },
+  { path: '/todo',            label: 'ToDo',            icon: 'Target',    group: 'tools'   },
+  { path: '/inbox',           label: 'Inbox',           icon: 'Feather',   group: 'capture' },
+  { path: '/notes',           label: 'Notes',           icon: 'FileText',  group: 'space'   },
+  { path: '/crawl',           label: 'Crawl',           icon: 'Radio',     group: 'capture' },
+  { path: '/mindbank',        label: 'Mindbank',        icon: 'Brain',     group: 'space'   },
+  { path: '/coding-practice', label: 'Coding Practice', icon: 'Hammer',    group: 'tools'   },
+  { path: '/translate',       label: 'Translate',       icon: 'Languages', group: 'tools'   },
+  { path: '/panel-hub',      label: 'Panel Hub',        icon: 'LayoutDashboard', group: 'manage'},
+] as const
+
+// NAV_GROUPS 定义侧栏分组顺序与中文标签，保持与 NAV_ITEMS.group 单一数据源
+export const NAV_GROUPS = [
+  { key: 'space',   label: '空间' },
+  { key: 'capture', label: '收集' },
+  { key: 'tools',   label: '工具' },
+  { key: 'manage',  label: '管理' },
 ] as const
 
 export const PRIORITY_LABELS: Record<string, string> = {

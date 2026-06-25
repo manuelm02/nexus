@@ -26,11 +26,11 @@ export const PROVIDER_COLORS: Record<string, string> = {
   claude: 'bg-purple-100 text-purple-700',
 }
 
-/** Status 到展示色的映射 */
+/** Status 到展示色的映射（中性色调，避免三色强调） */
 export const STATUS_STYLES: Record<string, string> = {
-  active: 'bg-emerald-100 text-emerald-700',
-  exhausted: 'bg-red-100 text-red-700',
-  disabled: 'bg-gray-100 text-gray-500',
+  active: 'bg-accent text-foreground',
+  exhausted: 'bg-muted text-muted-foreground',
+  disabled: 'bg-muted text-muted-foreground',
 }
 
 export const STATUS_LABELS: Record<string, string> = {

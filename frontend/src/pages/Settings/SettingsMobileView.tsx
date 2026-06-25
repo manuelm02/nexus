@@ -12,6 +12,7 @@ import { MindBankSettingsPanel } from './components/MindBankSettingsPanel'
 import { CrawlSettingsPanel } from './components/CrawlSettingsPanel'
 import { NotesSettingsPanel } from './components/NotesSettingsPanel'
 import type { LlmProvider, InboxSettings, InboxSettingsUpdateRequest, SubscriptionCategory, MindBankSettings, MindBankSettingsUpdateRequest } from '../../types/domain.types'
+import { PageHeader, PageShell } from '../../components/shell'
 
 type SettingsMobileViewProps = {
   activeSettingsTab: SettingsTab
@@ -129,13 +130,11 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
   ]
 
   return (
-    <div className="space-y-4 md:hidden">
-      {/* 页面头部 */}
-      <section className="nexus-surface p-4">
-        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System</p>
-        <h1 className="mt-1 text-[24px] font-black leading-tight text-foreground">Settings</h1>
-        <div className="mt-4 grid grid-cols-3 rounded-lg border bg-muted/40 p-1">
-          {tabs.map((tab) => (
+    <div className="md:hidden">
+      <PageShell variant="full" header={<PageHeader eyebrow="SYSTEM" title="Settings" />}>
+      {/* 移动端 tab 导航：水平滚动 chip/pill */}
+      <div className="grid grid-cols-3 rounded-lg border bg-muted/40 p-1">
+        {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
@@ -149,7 +148,6 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
             </button>
           ))}
         </div>
-      </section>
 
       {activeSettingsTab === 'models' && (
       <>
@@ -319,7 +317,8 @@ export function SettingsMobileView(props: SettingsMobileViewProps) {
           updateError={mindbankSettings.updateError}
           onUpdate={mindbankSettings.onUpdate}
         />
-      )}
+        )}
+      </PageShell>
     </div>
   )
 }

@@ -2,6 +2,7 @@ import type { Todo } from '../../types/domain.types'
 import { TodoDetailDialog } from './todo.components'
 import { TodoDesktopView, type HeaderMetric, type TodoMainViewProps } from './TodoDesktopView'
 import { TodoMobileView } from './TodoMobileView'
+import { PageHeader, PageShell } from '../../components/shell'
 import type { TodoStatus, TodoTab } from './todo.shared'
 
 export type TodoViewProps = TodoMainViewProps & {
@@ -29,17 +30,41 @@ export function TodoView({
 }: TodoViewProps) {
   return (
     <>
+    <PageShell
+      variant="full"
+      header={
+        <PageHeader
+          eyebrow="EXECUTION"
+          title="ToDo"
+          subtitle="看板、任务和历史。"
+          actions={
+            <div className="grid grid-cols-4 gap-2">
+              {mainViewProps.headerMetrics.map((metric) => (
+                <div
+                  key={metric.label}
+                  className="flex h-14 w-[68px] flex-col justify-center rounded-lg border bg-card px-3 shadow-[var(--shadow-xs)]"
+                >
+                  <p className="text-lg font-black leading-none text-foreground">{metric.value}</p>
+                  <p className="mt-1 truncate text-[10px] font-bold text-muted-foreground">{metric.label}</p>
+                </div>
+              ))}
+            </div>
+          }
+        />
+      }
+    >
       <TodoDesktopView {...mainViewProps} />
       <TodoMobileView {...mainViewProps} />
-      <TodoDetailDialog
-        item={detailTarget}
-        dateValidation={dateValidation}
-        saving={saving}
-        deleting={deleting}
-        onOpenChange={(open) => !open && onCloseDetail()}
-        onSave={onSave}
-        onDelete={onDelete}
-      />
+    </PageShell>
+    <TodoDetailDialog
+      item={detailTarget}
+      dateValidation={dateValidation}
+      saving={saving}
+      deleting={deleting}
+      onOpenChange={(open) => !open && onCloseDetail()}
+      onSave={onSave}
+      onDelete={onDelete}
+    />
     </>
   )
 }

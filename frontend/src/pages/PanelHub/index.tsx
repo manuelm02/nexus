@@ -201,7 +201,7 @@ export default function PanelHubPage() {
   }
 
   return (
-    <>
+    <div className="nexus-page-enter p-4 md:p-0">
       <PanelHubDesktopView {...sharedProps} />
       <PanelHubMobileView {...sharedProps} />
       <SubscriptionFormDialog
@@ -218,6 +218,6 @@ export default function PanelHubPage() {
         }}
         onSubmit={handleSubmit}
       />
-    </>
+    </div>
   )
 }

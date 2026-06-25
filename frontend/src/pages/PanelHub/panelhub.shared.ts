@@ -11,10 +11,11 @@ export const STATUS_LABELS: Record<SubscriptionStatus, string> = {
   paused: '已暂停',
 }
 
+/** 订阅状态标签样式（中性色调，避免三色强调） */
 export const STATUS_STYLES: Record<SubscriptionStatus, string> = {
-  active: 'border-[hsl(var(--success)/0.25)] bg-[hsl(var(--success-soft))] text-[hsl(var(--success))]',
-  expired: 'border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] text-[hsl(var(--destructive))]',
-  paused: 'border-[hsl(var(--warning)/0.28)] bg-[hsl(var(--warning-soft))] text-[hsl(var(--warning))]',
+  active: 'bg-accent text-foreground',
+  expired: 'bg-muted text-muted-foreground',
+  paused: 'bg-muted text-muted-foreground',
 }
 
 export { BILLING_TYPE_LABELS }

@@ -307,7 +307,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="nexus-page-enter mx-auto w-full max-w-[1180px] p-4 md:p-6">
+    <div className="nexus-page-enter p-4 md:p-0">
       <SettingsDesktopView {...sharedProps} />
       <SettingsMobileView {...sharedProps} />
     </div>

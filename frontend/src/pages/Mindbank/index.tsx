@@ -166,9 +166,9 @@ export default function MindbankPage() {
   }
 
   return (
-    <>
+    <div className="nexus-page-enter p-4 md:p-0">
       <MindBankDesktopView {...sharedProps} />
       <MindBankMobileView {...sharedProps} />
-    </>
+    </div>
   )
 }

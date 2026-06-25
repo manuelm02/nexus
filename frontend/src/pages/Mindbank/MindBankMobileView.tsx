@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Plus, Files, MessageSquare, Bot, ChevronRight, FolderOpen } from 'lucide-react'
+import { Plus, ChevronRight, FolderOpen } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { PageShell, PageHeader, Tabs } from '@/components/shell'
 import {
   MINDBANK_TABS,
-  type MindBankTab,
 } from '../../types/mindbank.types'
 import { WorkspaceDialog } from './components/WorkspaceDialog'
 import { DocumentList } from './components/DocumentList'
@@ -11,12 +11,6 @@ import { MinioFilePicker } from './components/MinioFilePicker'
 import { MindBankQaView } from './components/MindBankQaView'
 import { AgentTab } from './components/AgentTab'
 import type { MindBankViewProps } from './MindBankDesktopView'
-
-const TAB_ICONS: Record<MindBankTab, typeof Files> = {
-  documents: Files,
-  qa: MessageSquare,
-  agent: Bot,
-}
 
 // MindBankMobileView 移动端 Mindbank 布局：顶部 Workspace chip 横向滚动 + Tab 切换 + 全宽内容，与 DesktopView 共享 props。
 export function MindBankMobileView(props: MindBankViewProps) {
@@ -49,148 +43,124 @@ export function MindBankMobileView(props: MindBankViewProps) {
   const [editingWsId, setEditingWsId] = useState<number | null>(null)
   const editingWs = editingWsId != null ? workspaces.find((w) => w.id === editingWsId) ?? null : null
 
+  const tabItems = MINDBANK_TABS.map(({ key, label }) => ({ value: key, label }))
+
   return (
-    <div className="nexus-page-enter flex h-[calc(100dvh-2rem)] flex-col md:hidden">
-      {/* 标题 */}
-      <div className="px-4 pb-2 pt-3">
-        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">
-          Knowledge memory
-        </p>
-        <h1 className="mt-0.5 text-2xl font-black leading-tight">Mindbank</h1>
-      </div>
-
-      {/* 横向 Workspace chip：移除外层 border-y 和 bg-muted/30,避免为 chip 区域再套一层 surface */}
-      <div className="px-1 py-2">
-        <div
-          className="flex gap-2 overflow-x-auto pb-1"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-        >
-          {workspaces.map((w) => {
-            const active = w.id === selectedWorkspaceId
-            return (
-              <button
-                key={w.id}
-                type="button"
-                onClick={() => {
-                  onSelectWorkspace(w.id)
-                  // 长按进入编辑态（这里用单击触发简化交互，移动端后续可改为长按）
-                  if (w.id === selectedWorkspaceId) setEditingWsId(w.id)
-                }}
-                className={cn(
-                  'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
-                  active
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-card text-foreground hover:bg-accent',
-                )}
-              >
-                {w.domainTag && (
-                  <span className={cn('text-[10px] font-black', active ? 'opacity-90' : 'text-primary')}>
-                    #{w.domainTag}
-                  </span>
-                )}
-                <span className="max-w-[120px] truncate">{w.name}</span>
-                <span className={cn('text-[10px]', active ? 'opacity-80' : 'text-muted-foreground')}>
-                  {w.documentCount}
-                </span>
-              </button>
-            )
-          })}
-          <button
-            type="button"
-            onClick={onOpenCreate}
-            className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-bold text-muted-foreground hover:border-primary hover:text-primary"
+    <div className="md:hidden">
+      <PageShell variant="full" header={
+        <PageHeader eyebrow="KNOWLEDGE" title="Mindbank" subtitle="你的知识在这里沉淀、连接。" />
+      }>
+        {/* 横向 Workspace chip */}
+        <div className="px-1 py-2">
+          <div
+            className="flex gap-2 overflow-x-auto pb-1"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
           >
-            <Plus className="h-3 w-3" /> 新建
-          </button>
-        </div>
-      </div>
-
-      {/* 当前 workspace 信息条 */}
-      {selectedWorkspace && (
-        <div className="flex items-center justify-between border-b border-border px-4 py-2">
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-black">{selectedWorkspace.name}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {selectedWorkspace.documentCount} 个文档
-            </p>
-          </div>
-          {activeTab === 'documents' && (
-            <button
-              type="button"
-              onClick={onOpenFilePicker}
-              className="nexus-button-primary inline-flex h-9 items-center gap-1 px-3 text-xs font-bold"
-            >
-              <Plus className="h-3.5 w-3.5" /> 添加
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Tab 切换 */}
-      <div className="border-b border-border px-4 py-2">
-        <div className="grid h-10 grid-cols-3 rounded-lg border bg-card p-1 shadow-[var(--shadow-xs)]">
-          {MINDBANK_TABS.map(({ key, label }) => {
-            const Icon = TAB_ICONS[key]
-            return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => onTabChange(key)}
-                className={cn(
-                  'inline-flex h-full items-center justify-center gap-1 rounded-md text-xs font-bold transition-colors',
-                  activeTab === key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-accent-foreground hover:bg-accent',
-                )}
-              >
-                <Icon className="h-3 w-3" />
-                {label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {/* 内容 */}
-      <div className="flex-1 overflow-y-auto">
-        {activeTab === 'documents' && !selectedWorkspace ? (
-          // 未选 workspace 的空状态：与桌面端三段式保持视觉一致
-          <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/[0.06]">
-              <FolderOpen className="h-7 w-7 text-primary/40" />
-            </div>
-            <h3 className="mt-4 text-base font-extrabold text-foreground">
-              请先选择或创建一个 Workspace
-            </h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              顶部选择已有 Workspace，或新建开始管理知识。
-            </p>
+            {workspaces.map((w) => {
+              const active = w.id === selectedWorkspaceId
+              return (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectWorkspace(w.id)
+                    if (w.id === selectedWorkspaceId) setEditingWsId(w.id)
+                  }}
+                  className={cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition-colors',
+                    active
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-border bg-card text-foreground hover:bg-accent',
+                  )}
+                >
+                  {w.domainTag && (
+                    <span className={cn('text-[10px] font-black', active ? 'opacity-90' : 'text-primary')}>
+                      #{w.domainTag}
+                    </span>
+                  )}
+                  <span className="max-w-[120px] truncate">{w.name}</span>
+                  <span className={cn('text-[10px]', active ? 'opacity-80' : 'text-muted-foreground')}>
+                    {w.documentCount}
+                  </span>
+                </button>
+              )
+            })}
             <button
               type="button"
               onClick={onOpenCreate}
-              className="nexus-button-primary mt-4 inline-flex h-9 items-center gap-1.5 px-4 text-sm font-bold"
+              className="flex shrink-0 items-center gap-1 rounded-full border border-dashed border-border bg-card px-3 py-1.5 text-xs font-bold text-muted-foreground hover:border-primary hover:text-primary"
             >
-              <Plus className="h-4 w-4" />
-              新建 Workspace
+              <Plus className="h-3 w-3" /> 新建
             </button>
           </div>
-        ) : (
-          <>
+        </div>
+
+        {/* 当前 workspace 信息条 */}
+        {selectedWorkspace && (
+          <div className="flex items-center justify-between border-b border-border px-4 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-black">{selectedWorkspace.name}</p>
+              <p className="text-[11px] text-muted-foreground">
+                {selectedWorkspace.documentCount} 个文档
+              </p>
+            </div>
             {activeTab === 'documents' && (
-              <DocumentList
-                workspace={selectedWorkspace}
-                documents={documents}
-                isLoading={isLoadingDocuments}
-                onRetryStep={onRetryStep}
-              />
+              <button
+                type="button"
+                onClick={onOpenFilePicker}
+                className="nexus-button-primary inline-flex h-9 items-center gap-1 px-3 text-xs font-bold"
+              >
+                <Plus className="h-3.5 w-3.5" /> 添加
+              </button>
             )}
-            {activeTab === 'qa' && selectedWorkspace && (
-              <MindBankQaView workspace={selectedWorkspace} />
-            )}
-            {activeTab === 'agent' && <AgentTab />}
-          </>
+          </div>
         )}
-      </div>
+
+        {/* Tab 切换 */}
+        <div className="border-b border-border px-4 py-2">
+          <Tabs value={activeTab} onChange={onTabChange} items={tabItems} />
+        </div>
+
+        {/* 内容 */}
+        <div className="flex-1 overflow-y-auto">
+          {activeTab === 'documents' && !selectedWorkspace ? (
+            <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/[0.06]">
+                <FolderOpen className="h-7 w-7 text-primary/40" />
+              </div>
+              <h3 className="mt-4 text-base font-extrabold text-foreground">
+                请先选择或创建一个 Workspace
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                顶部选择已有 Workspace，或新建开始管理知识。
+              </p>
+              <button
+                type="button"
+                onClick={onOpenCreate}
+                className="nexus-button-primary mt-4 inline-flex h-9 items-center gap-1.5 px-4 text-sm font-bold"
+              >
+                <Plus className="h-4 w-4" />
+                新建 Workspace
+              </button>
+            </div>
+          ) : (
+            <>
+              {activeTab === 'documents' && (
+                <DocumentList
+                  workspace={selectedWorkspace}
+                  documents={documents}
+                  isLoading={isLoadingDocuments}
+                  onRetryStep={onRetryStep}
+                />
+              )}
+              {activeTab === 'qa' && selectedWorkspace && (
+                <MindBankQaView workspace={selectedWorkspace} />
+              )}
+              {activeTab === 'agent' && <AgentTab />}
+            </>
+          )}
+        </div>
+      </PageShell>
 
       {/* Dialogs */}
       <WorkspaceDialog

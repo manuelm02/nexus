@@ -137,7 +137,7 @@ export function AgentTab() {
 
       {/* 错误提示 */}
       {triggerMutation.isError && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-400">
+        <div className="rounded-lg border border-destructive/30 bg-destructive-soft p-3 text-xs text-destructive">
           触发巡检失败：{(triggerMutation.error as Error)?.message ?? '未知错误'}
         </div>
       )}

@@ -15,7 +15,7 @@ export function SuggestionChips({ suggestions, onSelect }: SuggestionChipsProps)
           key={s.text}
           type="button"
           onClick={() => onSelect(s.text)}
-          className="inline-flex items-center rounded-full border border-border bg-card px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-accent hover:text-foreground hover:shadow-[var(--shadow-xs)]"
+            className="inline-flex items-center rounded-full border border-border bg-accent-soft px-3.5 py-2 text-xs font-semibold text-muted-foreground transition-all hover:bg-accent-soft hover:text-foreground hover:shadow-[var(--shadow-xs)]"
         >
           {s.text}
         </button>

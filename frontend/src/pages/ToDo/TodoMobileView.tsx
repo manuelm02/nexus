@@ -3,6 +3,7 @@ import { useRef, useState } from 'react'
 import type { Todo } from '../../types/domain.types'
 import { PRIORITY_LABELS, STATUS_LABELS } from '../../lib/constants'
 import { cn } from '../../lib/utils'
+import { Tabs } from '../../components/shell'
 import { MobileTaskCard, StatusFilterSelect } from './todo.components'
 import { TodoDatePicker } from './components/TodoDatePicker'
 import {
@@ -12,22 +13,13 @@ import {
   normalizePriority,
   type Priority,
   type TodoStatus,
-  type TodoTab,
 } from './todo.shared'
-import type { TodoMainViewProps, HeaderMetric } from './TodoDesktopView'
-
-const METRIC_CARD_STYLES: Record<HeaderMetric['tone'], string> = {
-  primary: 'border-[hsl(var(--primary)/0.25)] bg-[hsl(var(--primary)/0.06)] text-primary',
-  success: 'border-[hsl(var(--success)/0.22)] bg-[hsl(var(--success-soft))] text-[hsl(var(--success))]',
-  danger: 'border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] text-destructive',
-  warning: 'border-[hsl(var(--warning)/0.28)] bg-[hsl(var(--warning-soft))] text-[hsl(var(--warning))]',
-}
+import type { TodoMainViewProps } from './TodoDesktopView'
 
 // TodoMobileView 使用独立移动端信息架构，适配看板三栏 + 任务 + 历史。
 export function TodoMobileView(props: TodoMainViewProps) {
   const {
     activeTab,
-    headerMetrics,
     operationError,
     createPending,
     onCreate,
@@ -35,28 +27,7 @@ export function TodoMobileView(props: TodoMainViewProps) {
   } = props
 
   return (
-    <div className="nexus-page-enter mx-auto space-y-3 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] pt-3 md:hidden">
-      <header className="space-y-2">
-        <div>
-          <h1 className="text-[24px] font-black leading-none text-foreground">ToDo</h1>
-          <p className="mt-1 text-[12px] font-medium leading-5 text-muted-foreground">看板、任务和历史。</p>
-        </div>
-        <div className="grid grid-cols-4 gap-1.5">
-          {headerMetrics.map((metric) => (
-            <div
-              key={metric.label}
-              className={cn(
-                'rounded-lg border bg-card px-2.5 py-1.5',
-                METRIC_CARD_STYLES[metric.tone],
-              )}
-            >
-              <div className="text-base font-black leading-none">{metric.value}</div>
-              <div className="mt-0.5 text-[10px] font-bold leading-none text-muted-foreground">{metric.label}</div>
-            </div>
-          ))}
-        </div>
-      </header>
-
+    <div className="nexus-page-enter space-y-3 px-4 pb-[calc(env(safe-area-inset-bottom,0px)+4rem)] pt-3 md:hidden">
       <MobileQuickCreate pending={createPending} onCreate={onCreate} />
       {operationError && (
         <div className="rounded-lg border border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] px-3 py-2 text-xs font-semibold text-destructive">
@@ -64,7 +35,16 @@ export function TodoMobileView(props: TodoMainViewProps) {
         </div>
       )}
 
-      <MobileTabs activeTab={activeTab} onTabChange={onTabChange} />
+      <Tabs
+        variant="segmented"
+        value={activeTab}
+        onChange={onTabChange}
+        items={[
+          { value: 'list', label: 'List' },
+          { value: 'tasks', label: '任务' },
+          { value: 'history', label: '历史' },
+        ]}
+      />
       {activeTab === 'list' ? <MobileBoardSections {...props} /> : activeTab === 'tasks' ? <MobileTaskSection {...props} /> : <MobileHistorySection {...props} />}
     </div>
   )
@@ -173,30 +153,6 @@ function MobileQuickCreate({ pending, onCreate }: {
         </div>
       )}
     </form>
-  )
-}
-
-function MobileTabs({ activeTab, onTabChange }: { activeTab: TodoTab; onTabChange: (tab: TodoTab) => void }) {
-  return (
-    <div className="grid grid-cols-3 rounded-xl border bg-card p-1">
-      {([
-        ['list', 'List'],
-        ['tasks', '任务'],
-        ['history', '历史'],
-      ] as const).map(([key, label]) => (
-        <button
-          key={key}
-          type="button"
-          onClick={() => onTabChange(key)}
-          className={cn(
-            'h-10 rounded-lg text-sm font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-            activeTab === key ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
   )
 }
 
