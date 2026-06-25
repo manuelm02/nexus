@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Trash2, Search, ChevronDown, ChevronLeft, ChevronRight, Check } from 'lucide-react'
 import * as Select from '@radix-ui/react-select'
 import type { TranslationResult } from '../../../types/domain.types'
+import { EmptyState } from '../../../components/shell'
 import { formatRelative } from '../../../lib/utils'
 import { styleLabel } from '../translate.shared'
 
@@ -101,9 +102,11 @@ export function TranslateHistoryList({ history, historyLoading, historyQuery, hi
       {historyLoading ? (
         <div className="nexus-surface p-4 text-sm text-muted-foreground">加载中...</div>
       ) : history.length === 0 ? (
-        <div className="nexus-surface p-4 text-sm leading-7 text-muted-foreground">
-          {historyTotal === 0 ? '完成第一次翻译后，历史会出现在这里。' : '没有匹配的记录。'}
-        </div>
+        historyTotal === 0 ? (
+          <EmptyState title="暂无翻译记录" hint="翻译完成后历史将显示在这里。" />
+        ) : (
+          <div className="nexus-surface p-4 text-sm leading-7 text-muted-foreground">没有匹配的记录。</div>
+        )
       ) : mode === 'desktop' ? (
         <ul className="grid gap-1.5 md:grid-cols-2">
           {history.map((item) => (

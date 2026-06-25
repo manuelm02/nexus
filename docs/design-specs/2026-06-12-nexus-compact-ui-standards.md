@@ -7,6 +7,21 @@
 
 ---
 
+> **⚠️ 2026-06-25 部分被取代（Warm Studio 重构）**
+>
+> 本文档的**密度体系**（按钮/输入/列表尺寸、间距、surface padding、移动端规范、审计清单）**继续有效**，是 Nexus 长期 UI 底线。
+>
+> 但以下**视觉基调**部分已被 `docs/plans/2026-06-25-warm-studio-ui-redesign.md` 取代，以新方案与更新后的 `DESIGN.md` 为准：
+> - 配色：旧"Navy Mono / 冷蓝灰" → **Warm Studio 暖纸 + 钢笔墨水蓝 accent**（paper #FAFAF8 / sidebar #F3F2EE / accent #2B50C8）。
+> - 侧栏：旧深海军蓝 → **浅暖灰浅色侧栏**，按"空间/收集/工具/管理"分组。
+> - 字体：旧"全 sans，禁用 serif" → **标题 Source Serif 4 + 正文 Noto Sans SC + 数据 JetBrains Mono**。
+> - 语义色：旧"优先级保留绿/黄/红" → **收敛为单 accent + 中性灰**，语义色仅用于真实状态。
+> - 页面外壳：新增统一 `src/components/shell/`（PageHeader/PageShell/Tabs/EmptyState/SectionCard）与章节式页眉 Signature，取代各页手写 header/tab/空态。
+>
+> 下文凡涉及具体颜色值、深色侧栏、serif 禁令的描述，按上述新方向理解。
+
+---
+
 ## 1. Design Direction
 
 Nexus 是个人 AI 工作台，不是营销站、官网或展示型 SaaS 首页。界面应像长期使用的专业工具：安静、紧凑、明确、可扫描。

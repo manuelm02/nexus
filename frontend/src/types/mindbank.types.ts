@@ -225,13 +225,13 @@ export const SUGGESTION_TYPE_LABELS: Record<SuggestionType, string> = {
   orphan_note: '孤立笔记',
 }
 
-/** 建议类型对应的 chip 颜色（Tailwind class） */
+/** 建议类型对应的 chip 颜色（收敛为中性 + accent，token 驱动） */
 export const SUGGESTION_TYPE_COLORS: Record<SuggestionType, string> = {
-  split_note: 'bg-yellow-500/15 text-yellow-600 dark:text-yellow-500',
-  merge_workspace: 'bg-blue-500/15 text-blue-600 dark:text-blue-500',
-  resplit_workspace: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-500',
-  fix_index: 'bg-purple-500/15 text-purple-600 dark:text-purple-500',
-  orphan_note: 'bg-gray-500/15 text-gray-600 dark:text-gray-400',
+  split_note: 'bg-muted text-foreground',
+  merge_workspace: 'bg-accent-soft text-primary',
+  resplit_workspace: 'bg-accent text-foreground',
+  fix_index: 'bg-muted/70 text-muted-foreground',
+  orphan_note: 'bg-muted text-muted-foreground',
 }
 
 // ==================== Notes（Phase 6 closeout: Master Note / Session Note UI） ====================

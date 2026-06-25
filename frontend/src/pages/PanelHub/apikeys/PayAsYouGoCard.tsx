@@ -90,12 +90,12 @@ export function PayAsYouGoCard({ item, deleting, syncing, onEdit, onDelete, onRe
           )}
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground">
-            <span className={cn(health !== 'normal' && TEXT_COLOR_BY_HEALTH[health])}>
+            <span className={cn('font-mono', health !== 'normal' && TEXT_COLOR_BY_HEALTH[health])}>
               官方余额：{item.remainingBalance?.toFixed(2) ?? '—'}
             </span>
-            <span>当月消费：{item.monthlySpend?.toFixed(2) ?? '0.00'}</span>
+            <span className="font-mono">当月消费：{item.monthlySpend?.toFixed(2) ?? '0.00'}</span>
             {item.lowBalanceThreshold != null && (
-              <span>预警阈值：{item.lowBalanceThreshold.toFixed(2)}</span>
+              <span className="font-mono">预警阈值：{item.lowBalanceThreshold.toFixed(2)}</span>
             )}
           </div>
         </div>

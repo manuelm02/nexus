@@ -1,62 +1,96 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Inter+Tight:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 214 33% 97%;
-    --background-rgb: 246 248 251;
-    --foreground: 221 61% 5%;
-    --foreground-rgb: 7 11 18;
+    /* Core surfaces — Warm paper */
+    --background: 60 17% 98%;
+    --background-rgb: 250 250 248;
+    --foreground: 40 7% 10%;
+    --foreground-rgb: 28 27 25;
     --card: 0 0% 100%;
     --card-rgb: 255 255 255;
-    --card-foreground: 221 61% 5%;
-    --card-foreground-rgb: 7 11 18;
+    --card-foreground: 40 7% 10%;
+    --card-foreground-rgb: 28 27 25;
     --popover: 0 0% 100%;
     --popover-rgb: 255 255 255;
-    --popover-foreground: 221 61% 5%;
-    --popover-foreground-rgb: 7 11 18;
-    --primary: 215 65% 12%;
-    --primary-rgb: 11 29 51;
+    --popover-foreground: 40 7% 10%;
+    --popover-foreground-rgb: 28 27 25;
+
+    /* Sidebar — light warm */
+    --sidebar: 48 17% 94%;
+    --sidebar-rgb: 243 242 238;
+    --sidebar-foreground: 40 7% 10%;
+    --sidebar-foreground-rgb: 28 27 25;
+    --sidebar-muted: 40 7% 45%;
+    --sidebar-muted-rgb: 122 118 109;
+    --sidebar-hover: 45 18% 91%;
+    --sidebar-hover-rgb: 236 234 227;
+
+    /* Brand — Pen ink blue */
+    --primary: 226 65% 48%;
+    --primary-rgb: 43 80 200;
     --primary-foreground: 0 0% 100%;
     --primary-foreground-rgb: 255 255 255;
-    --secondary: 213 58% 15%;
-    --secondary-rgb: 16 36 61;
-    --secondary-foreground: 214 45% 93%;
-    --secondary-foreground-rgb: 220 232 248;
-    --muted: 214 35% 94%;
-    --muted-rgb: 238 243 249;
-    --muted-foreground: 213 20% 41%;
-    --muted-foreground-rgb: 83 101 123;
-    --accent: 214 35% 94%;
-    --accent-rgb: 238 243 249;
-    --accent-foreground: 218 35% 15%;
-    --accent-foreground-rgb: 24 34 52;
-    --destructive: 355 67% 42%;
-    --destructive-rgb: 180 35 47;
-    --destructive-foreground: 0 0% 100%;
-    --destructive-foreground-rgb: 255 255 255;
-    --border: 214 34% 90%;
-    --border-rgb: 220 227 238;
-    --input: 215 32% 84%;
-    --input-rgb: 203 213 227;
-    --ring: 212 45% 45%;
-    --ring-rgb: 63 110 165;
-    --success: 159 60% 24%;
+    --secondary: 226 68% 37%;
+    --secondary-rgb: 30 61 160;
+    --secondary-foreground: 0 0% 100%;
+    --secondary-foreground-rgb: 255 255 255;
+
+    /* Neutral structure — warm grays */
+    --muted: 45 20% 93%;
+    --muted-rgb: 240 238 231;
+    --muted-foreground: 40 7% 51%;
+    --muted-foreground-rgb: 138 134 124;
+    --accent: 45 22% 93%;
+    --accent-rgb: 241 239 233;
+    --accent-foreground: 40 7% 10%;
+    --accent-foreground-rgb: 28 27 25;
+    --accent-soft: 226 67% 95%;
+    --accent-soft-rgb: 234 238 251;
+
+    --border: 43 19% 88%;
+    --border-rgb: 231 228 220;
+    --input: 43 16% 83%;
+    --input-rgb: 218 214 204;
+    --ring: 226 65% 48%;
+    --ring-rgb: 43 80 200;
+
+    /* Semantic states — restrained, real status only */
+    --success: 162 72% 24%;
     --success-rgb: 22 98 75;
-    --success-soft: 150 55% 96%;
-    --success-soft-rgb: 239 250 246;
+    --success-soft: 150 40% 95%;
+    --success-soft-rgb: 239 247 243;
     --warning: 39 74% 33%;
     --warning-rgb: 147 101 22;
-    --warning-soft: 43 100% 96%;
-    --warning-soft-rgb: 255 249 234;
-    --destructive-soft: 0 100% 98%;
-    --destructive-soft-rgb: 255 247 247;
-    --radius: 0.75rem;
-    --shadow-xs: 0 1px 2px rgba(var(--primary-rgb), 0.04);
-    --shadow-sm: 0 4px 12px rgba(var(--primary-rgb), 0.04);
-    --shadow-md: 0 8px 24px rgba(var(--primary-rgb), 0.06);
-    --shadow-lg: 0 18px 50px rgba(var(--primary-rgb), 0.12);
+    --warning-soft: 43 60% 95%;
+    --warning-soft-rgb: 251 246 234;
+    --destructive: 355 67% 42%;
+    --destructive-rgb: 180 35 48;
+    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground-rgb: 255 255 255;
+    --destructive-soft: 0 60% 97%;
+    --destructive-soft-rgb: 252 245 245;
+
+    /* Layout grid columns — 统一两栏布局列宽，禁止各页写死像素 */
+    --shell-list: clamp(240px, 22vw, 300px);   /* list-detail 左列表栏（Chat/Notes） */
+    --shell-panel: clamp(320px, 24vw, 380px);  /* with-panel 右辅助面板（Inbox/Crawl/Mindbank） */
+
+    /* Shape & depth */
+    --radius: 0.5rem;
+    --shadow-rgb: 28 27 25;
+    --shadow-xs: 0 1px 2px rgba(var(--shadow-rgb), 0.05);
+    --shadow-sm: 0 2px 8px rgba(var(--shadow-rgb), 0.05);
+    --shadow-md: 0 8px 24px rgba(var(--shadow-rgb), 0.07);
+    --shadow-lg: 0 18px 50px rgba(var(--shadow-rgb), 0.14);
+
+    /* Typography */
+    --font-display: "Inter Tight", "Noto Sans SC", Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-sans: "Noto Sans SC", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", monospace;
   }
 
   .dark {
@@ -88,7 +122,7 @@
   }
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: "Noto Sans SC", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-family: var(--font-sans);
     font-feature-settings: "lnum" 1, "locl" 1;
     letter-spacing: 0;
   }
@@ -103,13 +137,13 @@
 @layer components {
   /* 响应式 surface：mobile 18px / desktop 12px 圆角，使用轻阴影 shadow-sm 替代原 shadow-soft */
   .nexus-surface {
-    @apply rounded-[1.125rem] md:rounded-[0.75rem] border bg-card;
+    @apply rounded-[0.75rem] md:rounded-[0.625rem] border bg-card;
     box-shadow: var(--shadow-sm);
   }
 
   /* 响应式 primary button：mobile min-h-11(44px) / desktop min-h-9(36px)，圆角 8px */
   .nexus-button-primary {
-    @apply inline-flex min-h-11 md:min-h-9 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground transition-all hover:bg-secondary hover:shadow-[0_4px_12px_rgba(var(--primary-rgb),0.1)] active:translate-y-px active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none;
+    @apply inline-flex min-h-11 md:min-h-9 items-center justify-center rounded-lg bg-primary font-bold text-primary-foreground transition-all hover:bg-secondary hover:shadow-[0_4px_12px_rgba(var(--shadow-rgb),0.12)] active:translate-y-px active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none;
   }
 
   /* 响应式 utility button：mobile min-h-10(40px) / desktop min-h-8(32px)，圆角 8px */

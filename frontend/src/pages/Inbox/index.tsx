@@ -432,23 +432,27 @@ export default function InboxPage() {
   }
 
   return (
-    <>
-      <InboxDesktopView
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        bookmarkProps={bookmarkProps}
-        documentProps={documentProps}
-        quickNoteProps={quickNoteSection}
-        memoProps={memoSection}
-      />
-      <InboxMobileView
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        bookmarkProps={bookmarkProps}
-        documentProps={documentProps}
-        quickNoteProps={quickNoteSection}
-        memoProps={memoSection}
-      />
-    </>
+    <div className="nexus-page-enter p-4 md:p-0">
+      <div className="hidden md:block">
+        <InboxDesktopView
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          bookmarkProps={bookmarkProps}
+          documentProps={documentProps}
+          quickNoteProps={quickNoteSection}
+          memoProps={memoSection}
+        />
+      </div>
+      <div className="md:hidden">
+        <InboxMobileView
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          bookmarkProps={bookmarkProps}
+          documentProps={documentProps}
+          quickNoteProps={quickNoteSection}
+          memoProps={memoSection}
+        />
+      </div>
+    </div>
   )
 }

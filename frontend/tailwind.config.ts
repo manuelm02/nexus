@@ -45,12 +45,32 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar))',
+          foreground: 'hsl(var(--sidebar-foreground))',
+          muted: 'hsl(var(--sidebar-muted))',
+          hover: 'hsl(var(--sidebar-hover))',
+        },
+        'accent-soft': 'hsl(var(--accent-soft))',
+        success: {
+          DEFAULT: 'hsl(var(--success))',
+          soft: 'hsl(var(--success-soft))',
+        },
+        warning: {
+          DEFAULT: 'hsl(var(--warning))',
+          soft: 'hsl(var(--warning-soft))',
+        },
       },
       borderRadius: {
-        xl: '1rem',
-        lg: '0.75rem',
+        xl: '0.875rem',
+        lg: '0.625rem',
         md: 'var(--radius)',
-        sm: '0.3125rem',
+        sm: '0.375rem',
+      },
+      fontFamily: {
+        display: ['Inter Tight', 'Noto Sans SC', 'Inter', 'sans-serif'],
+        sans: ['Noto Sans SC', 'Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'SFMono-Regular', 'monospace'],
       },
       keyframes: {
         'accordion-down': {

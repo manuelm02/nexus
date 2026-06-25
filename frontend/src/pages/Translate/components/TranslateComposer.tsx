@@ -104,7 +104,7 @@ export function TranslateComposer({ sourceText, targetLang, style, pending, prov
                 onClick={() => onStyleChange(item.value)}
                 className={cn(
                   'nexus-button-utility h-9 shrink-0 px-3 text-[11px] font-extrabold',
-                  style === item.value && 'border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+                  style === item.value && 'border-primary bg-accent-soft text-accent-foreground',
                 )}
               >
                 {item.label}
@@ -133,7 +133,7 @@ export function TranslateComposer({ sourceText, targetLang, style, pending, prov
                   onClick={() => onStyleChange(item.value)}
                   className={cn(
                     'nexus-button-utility h-10 shrink-0 px-3 text-[11px] font-extrabold',
-                    style === item.value && 'border-primary bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground',
+                    style === item.value && 'border-primary bg-accent-soft text-accent-foreground',
                   )}
                 >
                   {item.label}

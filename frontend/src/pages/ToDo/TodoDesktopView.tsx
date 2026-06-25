@@ -1,4 +1,4 @@
-import { cn } from '../../lib/utils'
+import { Tabs } from '../../components/shell'
 import type { Todo } from '../../types/domain.types'
 import {
   ErrorRow,
@@ -14,13 +14,6 @@ export type HeaderMetric = {
   label: string
   value: number
   tone: 'primary' | 'success' | 'danger' | 'warning'
-}
-
-const METRIC_CARD_STYLES: Record<HeaderMetric['tone'], string> = {
-  primary: 'border-[hsl(var(--primary)/0.25)] bg-[hsl(var(--primary)/0.06)] text-primary',
-  success: 'border-[hsl(var(--success)/0.22)] bg-[hsl(var(--success-soft))] text-[hsl(var(--success))]',
-  danger: 'border-[hsl(var(--destructive)/0.22)] bg-[hsl(var(--destructive-soft))] text-destructive',
-  warning: 'border-[hsl(var(--warning)/0.28)] bg-[hsl(var(--warning-soft))] text-[hsl(var(--warning))]',
 }
 
 export type TodoMainViewProps = {
@@ -53,7 +46,6 @@ export type TodoMainViewProps = {
 export function TodoDesktopView({
   activeTab,
   historyStatus,
-  headerMetrics,
   operationError,
   createPending,
   boardLoading,
@@ -75,30 +67,9 @@ export function TodoDesktopView({
   onScheduleTask,
   onOpenTodo,
 }: TodoMainViewProps) {
+  // padding 由 PageShell 统一提供（TodoView 包裹），此处只保留区块间距
   return (
-    <div className="nexus-page-enter mx-auto hidden max-w-[1180px] space-y-4 p-4 md:block lg:p-6">
-      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-        <div>
-          <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Today execution</p>
-          <h1 className="mt-1 text-[28px] font-black leading-tight">ToDo</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">看板、任务和历史。</p>
-        </div>
-        <div className="grid grid-cols-4 gap-2 justify-self-end">
-          {headerMetrics.map((metric) => (
-            <div
-              key={metric.label}
-              className={cn(
-                'flex h-14 w-[68px] flex-col justify-center rounded-lg border bg-card px-3 shadow-[var(--shadow-xs)]',
-                METRIC_CARD_STYLES[metric.tone],
-              )}
-            >
-              <p className="text-lg font-black leading-none">{metric.value}</p>
-              <p className="mt-1 truncate text-[10px] font-bold text-muted-foreground">{metric.label}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
+    <div className="hidden space-y-4 md:block">
       <QuickCreate pending={createPending} onCreate={onCreate} />
       {operationError && (
         <div className="rounded-xl border border-[hsl(var(--destructive)/0.24)] bg-[hsl(var(--destructive-soft))] px-4 py-3 text-sm font-semibold text-destructive">
@@ -106,7 +77,16 @@ export function TodoDesktopView({
         </div>
       )}
 
-      <TodoTabs activeTab={activeTab} onTabChange={onTabChange} />
+      <Tabs
+        variant="segmented"
+        value={activeTab}
+        onChange={onTabChange}
+        items={[
+          { value: 'list', label: 'ToDo List' },
+          { value: 'tasks', label: '任务' },
+          { value: 'history', label: '历史' },
+        ]}
+      />
 
       {activeTab === 'list' ? (
         <BoardSections
@@ -146,30 +126,6 @@ export function TodoDesktopView({
           ))}
         </TodoSection>
       )}
-    </div>
-  )
-}
-
-function TodoTabs({ activeTab, onTabChange }: { activeTab: TodoTab; onTabChange: (tab: TodoTab) => void }) {
-  return (
-    <div className="grid h-11 grid-cols-3 rounded-lg border bg-card p-1 shadow-[var(--shadow-xs)]">
-      {([
-        ['list', 'ToDo List'],
-        ['tasks', '任务'],
-        ['history', '历史'],
-      ] as const).map(([key, label]) => (
-        <button
-          key={key}
-          type="button"
-          onClick={() => onTabChange(key)}
-          className={cn(
-            'h-full rounded-md text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-            activeTab === key ? 'bg-primary text-primary-foreground' : 'text-accent-foreground hover:bg-accent',
-          )}
-        >
-          {label}
-        </button>
-      ))}
     </div>
   )
 }

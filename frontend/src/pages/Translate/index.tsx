@@ -166,9 +166,9 @@ export default function TranslatePage() {
   }
 
   return (
-    <main className="nexus-page-enter mx-auto w-full max-w-[1180px] p-4 sm:p-4 lg:p-6">
+    <div className="nexus-page-enter p-4 md:p-0">
       <TranslateDesktopView {...viewProps} {...historyProps} />
       <TranslateMobileView {...viewProps} {...historyProps} />
-    </main>
+    </div>
   )
 }

@@ -20,12 +20,7 @@ export function WebCrawlTab({ onCrawl, isPending, error, result }: WebCrawlTabPr
 
   return (
     <section className="nexus-surface space-y-4 p-4">
-      <div className="flex items-center gap-2">
-        <Globe className="h-4 w-4 text-muted-foreground" />
-        <h2 className="text-sm font-extrabold text-foreground">网页爬取</h2>
-      </div>
-
-      {/* URL 输入区 */}
+      {/* URL 输入区（标题由页眉 tab「网页爬取」承担，此处不再重复） */}
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           type="url"

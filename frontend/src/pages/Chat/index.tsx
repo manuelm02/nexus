@@ -8,6 +8,7 @@ import { ChatSidebar } from './ChatSidebar'
 import { WelcomeView } from './WelcomeView'
 import { ChatView } from './ChatView'
 import { ConversationRenameDialog } from './components/ConversationRenameDialog'
+import { PageShell, PageHeader } from '@/components/shell'
 import type { ChatConversation } from '../../types/domain.types'
 
 // ChatPage 编排日常问答会话：侧边栏、空状态、对话视图、重命名弹窗与 SSE 流式发送
@@ -78,44 +79,46 @@ export default function ChatPage() {
     }
   }
 
+  // 桌面端侧边栏节点，在 PageShell list prop 和移动端 overlay 中共用
+  // 外框（nexus-surface）由 PageShell list-detail 统一提供，此处不再自套 surface
+  const sidebarNode = (
+    <ChatSidebar
+      conversations={filteredConversations}
+      activeId={activeId}
+      search={search}
+      isLoading={isLoading}
+      onSearchChange={setSearch}
+      onCreate={handleCreate}
+      onSelect={handleSelect}
+      onDelete={handleDelete}
+      onRename={setRenameTarget}
+    />
+  )
+
   return (
-    <div className="nexus-page-enter">
+    <>
       {/* ============ 桌面端 ============ */}
-      {/* h-dvh 精确填满视口（不做 calc 减法，AppLayout 的 <main> 为 flex-1 直接占满）；
-          去掉独立页面头部——侧边栏已高亮 Chat 导航项，无需重复标题。 */}
-      <div className="hidden h-dvh flex-col p-4 md:flex">
-        {/* 双栏 flex：自动等高拉满，四周 p-4 提供统一呼吸间距 */}
-        <div className="flex min-h-0 flex-1 gap-4">
-          <aside className="nexus-surface flex w-[260px] shrink-0 flex-col overflow-hidden">
-            <ChatSidebar
-              conversations={filteredConversations}
-              activeId={activeId}
-              search={search}
-              isLoading={isLoading}
-              onSearchChange={setSearch}
-              onCreate={handleCreate}
-              onSelect={handleSelect}
-              onDelete={handleDelete}
-              onRename={setRenameTarget}
+      {/* hidden h-full md:flex md:flex-col 与 Notes / Mindbank 保持同一高度链模式 */}
+      <div className="hidden h-full md:flex md:flex-col">
+        <PageShell
+          variant="list-detail"
+          header={<PageHeader eyebrow="CHAT" title="Chat" subtitle="日常问答与 AI 对话" />}
+          list={sidebarNode}
+        >
+          {activeId && activeConversation ? (
+            <ChatView
+              conversation={activeConversation}
+              messages={messages}
+              isLoading={messagesLoading}
+              isStreaming={isStreaming}
+              streamingContent={streamingContent}
+              onSend={handleSend}
+              onRename={() => setRenameTarget(activeConversation)}
             />
-          </aside>
-          {/* 右侧对话/欢迎区域：flex-1 由 flex 自动撑满，不再硬编码 calc 高度 */}
-          <div className="nexus-surface flex min-w-0 flex-1 flex-col overflow-hidden">
-            {activeId && activeConversation ? (
-              <ChatView
-                conversation={activeConversation}
-                messages={messages}
-                isLoading={messagesLoading}
-                isStreaming={isStreaming}
-                streamingContent={streamingContent}
-                onSend={handleSend}
-                onRename={() => setRenameTarget(activeConversation)}
-              />
-            ) : (
-              <WelcomeView suggestions={suggestions} isStreaming={isStreaming} onSend={handleSend} />
-            )}
-          </div>
-        </div>
+          ) : (
+            <WelcomeView suggestions={suggestions} isStreaming={isStreaming} onSend={handleSend} />
+          )}
+        </PageShell>
 
         {streamingError && (
           <div className="mt-2 rounded-lg bg-destructive-soft px-4 py-2 text-xs text-destructive">
@@ -125,8 +128,7 @@ export default function ChatPage() {
       </div>
 
       {/* ============ 移动端 ============ */}
-      {/* 移动端保持原有 h-dvh 单栏结构，顶部栏 + 弹出侧边栏 overlay */}
-      <div className="flex h-dvh flex-col md:hidden">
+      <div className="flex h-full flex-col p-4 md:hidden">
         {/* 顶部栏：有活跃对话时显示对话标题 */}
         <div className="flex items-center justify-between border-b bg-card p-3">
           <h1 className="truncate text-base font-black">
@@ -194,6 +196,6 @@ export default function ChatPage() {
         onSave={handleRenameSave}
         onAiGenerate={handleAiGenerate}
       />
-    </div>
+    </>
   )
 }

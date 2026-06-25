@@ -32,12 +32,12 @@ export default function LoginPage() {
         <div className="relative hidden overflow-hidden bg-primary p-8 text-primary-foreground md:flex md:flex-col md:justify-between">
           <div>
             <div className="flex items-center gap-4">
-              <BrandMark className="h-16 w-16 rounded-2xl bg-white/95 shadow-[0_18px_42px_rgba(0,0,0,0.22)]" imageClassName="p-1" />
+              <BrandMark className="h-16 w-16 rounded-2xl shadow-[0_18px_42px_rgba(0,0,0,0.22)]" />
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.12em] text-secondary-foreground/70">
                   Personal Knowledge OS
                 </p>
-                <h1 className="mt-1 text-4xl font-black leading-none">Nexus</h1>
+                <h1 className="mt-1 font-display text-4xl font-bold leading-none tracking-tight">Nexus</h1>
               </div>
             </div>
             <p className="mt-8 max-w-sm text-sm leading-7 text-secondary-foreground/75">
@@ -51,9 +51,9 @@ export default function LoginPage() {
         </div>
         <form onSubmit={handleSubmit} className="space-y-5 p-6 sm:p-8 md:p-10">
           <div className="space-y-1">
-            <BrandMark className="mb-4 h-14 w-14 rounded-2xl bg-white shadow-[var(--shadow-sm)] md:hidden" imageClassName="p-1" />
+            <BrandMark className="mb-4 h-14 w-14 rounded-2xl shadow-[var(--shadow-sm)] md:hidden" />
             <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">Sign in</p>
-            <h2 className="text-3xl font-black">Nexus</h2>
+            <h2 className="font-display text-3xl font-bold tracking-tight">Nexus</h2>
             <p className="text-sm text-muted-foreground">个人 AI 工作台</p>
           </div>
           <div className="space-y-2">

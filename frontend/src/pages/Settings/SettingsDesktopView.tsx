@@ -13,6 +13,7 @@ import { CrawlSettingsPanel } from './components/CrawlSettingsPanel'
 import { NotesSettingsPanel } from './components/NotesSettingsPanel'
 import { AlertCircle } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { PageHeader, PageShell } from '../../components/shell'
 
 export type SettingsTab = 'models' | 'translate' | 'inbox' | 'subscriptions' | 'chat' | 'crawl' | 'notes' | 'mindbank'
 
@@ -134,13 +135,8 @@ export function SettingsDesktopView(props: SettingsViewProps) {
   ]
 
   return (
-    <div className="hidden space-y-4 md:block">
-      {/* 页面头部 */}
-      <div>
-        <p className="text-[11px] font-black uppercase tracking-[0.12em] text-muted-foreground">System</p>
-        <h1 className="mt-1 text-[28px] font-black leading-tight text-foreground">Settings</h1>
-      </div>
-
+    <div className="hidden md:block">
+      <PageShell variant="full" header={<PageHeader eyebrow="SYSTEM" title="Settings" />}>
       <div className="grid items-start gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
         <aside className="nexus-surface sticky top-4 space-y-1 p-2">
           {tabs.map((tab) => (
@@ -350,6 +346,7 @@ export function SettingsDesktopView(props: SettingsViewProps) {
           )}
         </div>
       </div>
+      </PageShell>
     </div>
   )
 }

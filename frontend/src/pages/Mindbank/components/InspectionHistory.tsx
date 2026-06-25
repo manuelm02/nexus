@@ -55,10 +55,10 @@ export function InspectionHistory({
 function TaskStatusBadge({ status }: { status: AgentTaskStatus }) {
   const styles: Record<AgentTaskStatus, string> = {
     pending: 'bg-muted text-muted-foreground',
-    running: 'bg-blue-500/15 text-blue-600 dark:text-blue-500',
-    awaiting_approval: 'bg-amber-500/15 text-amber-600 dark:text-amber-500',
-    done: 'bg-green-500/15 text-green-600 dark:text-green-500',
-    failed: 'bg-red-500/15 text-red-600 dark:text-red-500',
+    running: 'bg-accent-soft text-primary',
+    awaiting_approval: 'bg-warning-soft text-warning',
+    done: 'bg-success-soft text-success',
+    failed: 'bg-destructive-soft text-destructive',
   }
   const labels: Record<AgentTaskStatus, string> = {
     pending: '等待中',

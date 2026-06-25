@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, FileText } from 'lucide-react'
 import type { FileTreeNode } from './notes.types'
 import { NotesFileTree } from './components/NotesFileTree'
 import { NotesEditor } from './components/NotesEditor'
 import { FileNameDialog, type FileNameDialogMode } from './components/FileNameDialog'
+import { PageShell, PageHeader, EmptyState } from '@/components/shell'
 
 type EditorMode = 'edit' | 'preview' | 'split'
 
@@ -29,8 +30,7 @@ type NotesMobileViewProps = {
   onDelete: (node: FileTreeNode) => void
 }
 
-// NotesMobileView 移动端：编辑器全屏，顶部 Hamburger 按钮展开文件树底部 Sheet。
-// 选中文件后自动关闭 Sheet，编辑器默认 preview 模式（由外部 editorMode 控制）。
+// NotesMobileView 移动端：编辑器全屏，PageShell full + 底部 Sheet 文件树，保持移动端交互。
 export function NotesMobileView(props: NotesMobileViewProps) {
   const {
     tree, selectedPath, content, isDirty, isSaving, editorMode, expandedPaths,
@@ -71,67 +71,82 @@ export function NotesMobileView(props: NotesMobileViewProps) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-120px)] w-full flex-col md:hidden">
-      {/* 顶部栏：Hamburger + 文件路径 */}
-      <div className="flex h-10 shrink-0 items-center gap-2 border-b px-2">
-        <Dialog.Root open={sheetOpen} onOpenChange={setSheetOpen}>
-          <Dialog.Trigger asChild>
-            <button
-              type="button"
-              className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
-              aria-label="文件树"
-            >
-              <Menu className="h-4 w-4" />
-            </button>
-          </Dialog.Trigger>
-          <Dialog.Portal>
-            <Dialog.Overlay className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" />
-            <Dialog.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[70dvh] overflow-y-auto rounded-t-2xl border bg-card p-3">
-              <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-muted-foreground/25" />
-              <div className="flex items-center justify-between">
-                <Dialog.Title className="text-sm font-black">文件树</Dialog.Title>
-                <Dialog.Close asChild>
-                  <button type="button" className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground">
-                    <X className="h-4 w-4" />
-                  </button>
-                </Dialog.Close>
-              </div>
-              <div className="mt-2 max-h-[55dvh] overflow-y-auto">
-                {treeLoading && <p className="p-4 text-sm text-muted-foreground">加载中…</p>}
-                {treeError && <p className="p-4 text-sm text-destructive">{treeError}</p>}
-                {!treeLoading && !treeError && (
-                  <NotesFileTree
-                    tree={tree}
-                    selectedPath={selectedPath}
-                    expandedPaths={expandedPaths}
-                    onToggleFolder={onToggleFolder}
-                    onSelectFile={handleSelectFile}
-                    onRename={handleRename}
-                    onDelete={onDelete}
-                    onCreateFile={handleCreateFile}
-                    onCreateFolder={handleCreateFolder}
-                  />
-                )}
-              </div>
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog.Root>
-        <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{selectedPath ?? '未选择文件'}</span>
-      </div>
+    <div className="md:hidden">
+      <PageShell
+        variant="full"
+        header={<PageHeader eyebrow="NOTES" title="Notes" />}
+      >
+        <div className="flex h-[calc(100vh-120px)] w-full flex-col">
+          {/* 顶部栏：Hamburger + 文件路径 */}
+          <div className="flex h-10 shrink-0 items-center gap-2 border-b px-2">
+            <Dialog.Root open={sheetOpen} onOpenChange={setSheetOpen}>
+              <Dialog.Trigger asChild>
+                <button
+                  type="button"
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+                  aria-label="文件树"
+                >
+                  <Menu className="h-4 w-4" />
+                </button>
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm" />
+                <Dialog.Content className="fixed inset-x-0 bottom-0 z-50 max-h-[70dvh] overflow-y-auto rounded-t-2xl border bg-card p-3">
+                  <div className="mx-auto mb-2 h-1 w-9 rounded-full bg-muted-foreground/25" />
+                  <div className="flex items-center justify-between">
+                    <Dialog.Title className="text-sm font-black">文件树</Dialog.Title>
+                    <Dialog.Close asChild>
+                      <button type="button" className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </Dialog.Close>
+                  </div>
+                  <div className="mt-2 max-h-[55dvh] overflow-y-auto">
+                    {treeLoading && <p className="p-4 text-sm text-muted-foreground">加载中…</p>}
+                    {treeError && <p className="p-4 text-sm text-destructive">{treeError}</p>}
+                    {!treeLoading && !treeError && (
+                      <NotesFileTree
+                        tree={tree}
+                        selectedPath={selectedPath}
+                        expandedPaths={expandedPaths}
+                        onToggleFolder={onToggleFolder}
+                        onSelectFile={handleSelectFile}
+                        onRename={handleRename}
+                        onDelete={onDelete}
+                        onCreateFile={handleCreateFile}
+                        onCreateFolder={handleCreateFolder}
+                      />
+                    )}
+                  </div>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
+            <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{selectedPath ?? '未选择文件'}</span>
+          </div>
 
-      {/* 编辑器 */}
-      <div className="min-h-0 flex-1 overflow-hidden">
-        <NotesEditor
-          selectedPath={selectedPath}
-          content={content}
-          isDirty={isDirty}
-          isSaving={isSaving}
-          mode={editorMode}
-          onContentChange={onContentChange}
-          onSave={onSave}
-          onModeChange={onModeChange}
-        />
-      </div>
+          {/* 编辑器或空状态 */}
+          {selectedPath ? (
+            <div className="min-h-0 flex-1 overflow-hidden">
+              <NotesEditor
+                selectedPath={selectedPath}
+                content={content}
+                isDirty={isDirty}
+                isSaving={isSaving}
+                mode={editorMode}
+                onContentChange={onContentChange}
+                onSave={onSave}
+                onModeChange={onModeChange}
+              />
+            </div>
+          ) : (
+            <EmptyState
+              icon={FileText}
+              title="选择文件开始编辑"
+              hint="点击左上角菜单选择文件。"
+            />
+          )}
+        </div>
+      </PageShell>
 
       {/* 文件操作弹窗 */}
       <FileNameDialog

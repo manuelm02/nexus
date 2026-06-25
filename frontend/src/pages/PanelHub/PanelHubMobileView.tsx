@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
+import { PageShell, PageHeader, Tabs } from '@/components/shell'
 import type { ApiKey, Credential, Subscription, SubscriptionStats } from '../../types/domain.types'
 import type { SubscriptionFilter, SubscriptionView } from './panelhub.shared'
 import { PanelHubDashboard } from './components/PanelHubDashboard'
 import { SubscriptionCard } from './components/SubscriptionCard'
-import { PanelHubViewTabs } from './components/PanelHubViewTabs'
 import { ApiKeyTabView } from './apikeys/ApiKeyTabView'
 import { PayAsYouGoCard } from './apikeys/PayAsYouGoCard'
 import { PlanBasedCard } from './apikeys/PlanBasedCard'
@@ -66,30 +66,32 @@ export function PanelHubMobileView(props: PanelHubMobileViewProps) {
   const archivedApiKeys = props.apiKeys.filter((k) => k.archived)
   const archivedCredentials = props.credentials.filter((c) => c.archived)
 
-  return (
-    <div className="space-y-4 p-4 md:hidden">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-black">Panel Hub</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">订阅、密钥和账号，一处掌控。</p>
-        </div>
-        {showAddButton && (
-          <button type="button"
-            onClick={() => {
-              if (view === 'subscriptions') props.onCreateClick()
-              else if (view === 'apikeys') setApiKeyCreateRequestKey((key) => key + 1)
-              else if (view === 'credentials') setCredentialCreateRequestKey((key) => key + 1)
-            }}
-            className="nexus-button-primary h-10 w-10 p-0" aria-label="新增">
-            <Plus className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+  const tabItems: { value: SubscriptionView; label: string; count?: number }[] = [
+    { value: 'dashboard', label: '概览' },
+    { value: 'subscriptions', label: '订阅' },
+    { value: 'apikeys', label: 'API Keys', ...(props.apiKeyLowBalanceCount > 0 ? { count: props.apiKeyLowBalanceCount } : {}) },
+    { value: 'credentials', label: '账号', ...(props.credentialExpiringCount > 0 ? { count: props.credentialExpiringCount } : {}) },
+    { value: 'archived', label: '已归档', count: props.archivedCount },
+  ]
 
-      <PanelHubViewTabs view={view} archivedCount={props.archivedCount}
-        apiKeyLowBalanceCount={props.apiKeyLowBalanceCount}
-        credentialExpiringCount={props.credentialExpiringCount}
-        onViewChange={props.onViewChange} />
+  const actions = showAddButton ? (
+    <button type="button"
+      onClick={() => {
+        if (view === 'subscriptions') props.onCreateClick()
+        else if (view === 'apikeys') setApiKeyCreateRequestKey((key) => key + 1)
+        else if (view === 'credentials') setCredentialCreateRequestKey((key) => key + 1)
+      }}
+      className="nexus-button-primary h-10 w-10 p-0" aria-label="新增">
+      <Plus className="h-4 w-4" />
+    </button>
+  ) : undefined
+
+  return (
+    <div className="md:hidden">
+      <PageShell variant="full" header={
+        <PageHeader eyebrow="CONTROL" title="Panel Hub" subtitle="订阅、密钥和账号，一处掌控。" actions={actions} />
+      }>
+        <Tabs variant="underline" value={view} onChange={props.onViewChange} items={tabItems} />
 
       {view === 'dashboard' && (
         <PanelHubDashboard stats={props.stats} statsLoading={props.statsLoading}
@@ -193,6 +195,7 @@ export function PanelHubMobileView(props: PanelHubMobileViewProps) {
           </div>
         )
       )}
+      </PageShell>
     </div>
   )
 }
